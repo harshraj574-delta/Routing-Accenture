@@ -1,0 +1,36 @@
+{
+  "distance_matrix": [
+    [
+      0,
+      32513.8
+    ],
+    [
+      33315.7,
+      0
+    ]
+  ],
+  "duration_matrix": [
+    [
+      0,
+      2143.5
+    ],
+    [
+      1957,
+      0
+    ]
+  ],
+  "num_vehicles": 1,
+  "vehicle_capacities": [
+    6
+  ],
+  "demands": [
+    0,
+    1
+  ],
+  "depot_index": 0,
+  "max_route_duration": 6000,
+  "service_times": [
+    0,
+    180
+  ]
+}

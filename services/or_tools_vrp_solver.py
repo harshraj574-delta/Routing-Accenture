@@ -352,7 +352,7 @@ def solve_cvrptw(data_model):
         routing_enums_pb2.FirstSolutionStrategy.AUTOMATIC # Often good, can try others like PATH_CHEAPEST_ARC or SWEEP
     )
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.AUTOMATIC
+        routing_enums_pb2.LocalSearchMetaheuristic.AUTOMATIC # Can try others like SIMULATED_ANNEALING or TABU_SEARCH
     )
     print_debug(f"  First solution strategy: {search_parameters.first_solution_strategy}, Local search: {search_parameters.local_search_metaheuristic}")
 

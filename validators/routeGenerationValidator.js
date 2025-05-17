@@ -5,7 +5,8 @@ const employeeSchema = z.object({
   geoX: z.number().optional(),
   geoY: z.number().optional(),
   gender: z.string().optional(),
-  isMedical: z.boolean().optional()
+  isMedical: z.boolean().optional(),
+  isPWD: z.boolean().optional().default(false) 
 });
 
 const employeesArraySchema = z.array(employeeSchema).min(1, { message: "At least one employee is required" }).superRefine((employees, ctx) => {
@@ -63,11 +64,25 @@ const facilitySchema = z.object({
   // Add other fields as needed
 });
 
+// --- Schema for Night Shift Timings ---
+const nightShiftTimingsSchema = z.object({
+  start: z.number().int().min(0).max(2359, "Start time must be 0000-2359 (numeric, e.g., 2000 for 8 PM)"),
+  end: z.number().int().min(0).max(2359, "End time must be 0000-2359 (numeric, e.g., 700 for 7 AM)"),
+});
+
 const profileSchema = z.object({
   id: z.number().optional(),
   name: z.string().optional(),
   zoneClubbing: z.boolean({ required_error: "zoneClubbing is required and must be a boolean" }),
   zoneBasedRouting: z.boolean({ required_error: "zoneBasedRouting is required and must be a boolean" }),
+  // SL #5: Night Shift Guard Timings - THIS IS THE KEY ADDITION FOR CURRENT GUARD LOGIC
+  nightShiftGuardTimings: z.record(z.string(), nightShiftTimingsSchema)
+    .optional() // Making it optional so your code can use defaults if not provided
+    .refine(val => { // Optional: Validate keys if you want to be strict
+        if (!val) return true; // Allow it to be undefined
+        const allowedKeys = ["PICKUP", "DROPOFF", "CDC_PICKUP", "CDC_DROPOFF", "DDC_PICKUP", "DDC_DROPOFF"];
+        return Object.keys(val).every(key => allowedKeys.includes(key.toUpperCase()));
+    }, { message: "Invalid keys in nightShiftGuardTimings. Allowed keys are like PICKUP, CDC_DROPOFF, etc." }),
   LargeCapacityZones: z.array(z.string()).optional(),
   MediumCapacityZones: z.array(z.string()).optional(),
   SmallCapacityZones: z.array(z.string()).optional(),
@@ -75,7 +90,7 @@ const profileSchema = z.object({
   isAutoClubbing: z.boolean().optional(),
   maxDuration: z.number({ required_error: "maxDuration is required and must be a number" }),
   // ...other fields
-}).passthrough();
+}).strict();
 
 const routeRequestSchema = z.object({
   employees: employeesArraySchema,

@@ -70,6 +70,15 @@ const nightShiftTimingsSchema = z.object({
   end: z.number().int().min(0).max(2359, "End time must be 0000-2359 (numeric, e.g., 700 for 7 AM)"),
 });
 
+const routeDeviationRuleSchema = z.object({
+    minDistKm: z.number().nonnegative(),
+    maxDistKm: z.number().positive(),
+    // thresholdPercent: z.number().min(0).max(100), // Optional, if you use it
+    // exampleDistanceKm: z.number().positive(),    // Optional, if you use it
+    // acceptableDeviationKm: z.number().nonnegative(), // Optional, if you use it
+    maxTotalOneWayKm: z.number().positive({ message: "maxTotalOneWayKm is required and must be positive" }),
+});
+
 const profileSchema = z.object({
   id: z.number().optional(),
   name: z.string().optional(),
@@ -83,6 +92,9 @@ const profileSchema = z.object({
         const allowedKeys = ["PICKUP", "DROPOFF", "CDC_PICKUP", "CDC_DROPOFF", "DDC_PICKUP", "DDC_DROPOFF"];
         return Object.keys(val).every(key => allowedKeys.includes(key.toUpperCase()));
     }, { message: "Invalid keys in nightShiftGuardTimings. Allowed keys are like PICKUP, CDC_DROPOFF, etc." }),
+  facilityType: z.enum(["CDC", "DDC"]).optional(), // To select correct rule set
+  routeDeviationRules: z.record(z.string(), z.array(routeDeviationRuleSchema).min(1)) // e.g., "CDC": [rules]
+    .optional(),
   LargeCapacityZones: z.array(z.string()).optional(),
   MediumCapacityZones: z.array(z.string()).optional(),
   SmallCapacityZones: z.array(z.string()).optional(),

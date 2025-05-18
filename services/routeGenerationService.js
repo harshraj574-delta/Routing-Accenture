@@ -7,7 +7,7 @@ const TRAFFIC_BUFFER_PERCENTAGE = 0.4; // 40% buffer for traffic
 const MAX_SWAP_DISTANCE_KM = 1.5; // or your business threshold
 
 // Constants for processEmployeeBatch (your original heuristic)
-const OSRM_PROBE_COUNT_HEURISTIC = 0; // Can be different from OR-Tools related OSRM_PROBE_COUNT
+const OSRM_PROBE_COUNT_HEURISTIC = 5; // Can be different from OR-Tools related OSRM_PROBE_COUNT
 const OSRM_PROBE_TIMEOUT_HEURISTIC = 3000;
 const OSRM_PROBE_TIMEOUT = 8000;
 
@@ -227,18 +227,6 @@ function getZoneCapacity(zoneName, profile) {
   return 6;
 }
 
-// Add this helper function somewhere accessible within routeGenerationService.js
-
-/**
- * Checks if the given shift time and trip type fall within the night shift
- * requiring a guard for female employees.
- * @param {string|number} shiftTime - The shift time (e.g., "0900", "2330", or 900, 2330).
- * @param {string} tripType - "PICKUP" or "DROPOFF".
- * @param {object} profile - The profile object, potentially containing night shift timings.
- * @returns {boolean}
- */
-// In routeGenerationService.js
-
 /**
  * Checks if the given shift time and trip type fall within the night shift
  * requiring a guard for female employees.
@@ -249,68 +237,143 @@ function getZoneCapacity(zoneName, profile) {
  */
 function isNightShiftForGuard(shiftTime, tripType, profile) {
   if (!shiftTime || !tripType) {
-    // console.warn("[isNightShiftForGuard] Missing shiftTime or tripType.");
     return false;
   }
 
-  // Standardize shiftTime to a number (e.g., "2330" -> 2330, "0700" -> 700)
   const st = parseInt(shiftTime.toString(), 10);
   if (isNaN(st)) {
-    // console.warn(`[isNightShiftForGuard] Invalid shiftTime format: ${shiftTime}`);
     return false;
   }
 
   let nightShiftConfig = profile?.nightShiftGuardTimings;
   if (!nightShiftConfig) {
-    // Default timings if not in profile (example based on CDC from SL #5)
-    // It's better if these always come from the profile for clarity and configurability.
-    // console.warn("[isNightShiftForGuard] Night shift timings not found in profile, using defaults.");
     nightShiftConfig = {
-      PICKUP: { start: 2000, end: 700 },   // 8:00 PM to 07:00 AM (inclusive of 07:00)
-      DROPOFF: { start: 1900, end: 530 },  // 7:00 PM to 05:30 AM (inclusive of 05:30)
-      // DDC_DROPOFF: { start: 1830, end: 600 } // Example for DDC
+      PICKUP: { start: 2000, end: 700 },
+      DROPOFF: { start: 1900, end: 530 },
     };
   }
 
-  // Construct key based on facility type if available in profile, else default
-  const facilityTypePrefix = (profile?.facilityType || "CDC").toUpperCase(); // Default to CDC if not specified
+  const facilityTypePrefix = (profile?.facilityType || "CDC").toUpperCase();
   const typeConfigKeyWithFacility = `${facilityTypePrefix}_${tripType.toUpperCase()}`;
   let config = nightShiftConfig[typeConfigKeyWithFacility];
 
-  if (!config) { // Fallback to generic tripType if facility-specific is not found
-      config = nightShiftConfig[tripType.toUpperCase()];
+  if (!config) {
+    config = nightShiftConfig[tripType.toUpperCase()];
   }
 
   if (!config) {
-    // console.warn(`[isNightShiftForGuard] No night shift config for key: ${typeConfigKeyWithFacility} or ${tripType.toUpperCase()}`);
     return false;
   }
 
-  const { start, end } = config; // These should be numbers like 2000, 700
+  const { start, end } = config;
 
- 
-  if (start > end) { 
-    if (st >= start || st <= end) { 
+  if (start > end) {
+    if (st >= start || st <= end) {
       return true;
     }
-  } else if (start < end) { 
-    if (st >= start && st <= end) { 
+  } else if (start < end) {
+    if (st >= start && st <= end) {
       return true;
     }
-  } else { 
+  } else {
     if (st === start) {
-        return true;
+      return true;
     }
   }
   return false;
 }
 
 const isSpecialNeedsUser = (emp) => {
-  if (!emp) return false; // Guard against undefined employee object
+  if (!emp) return false;
   return (emp.isMedical || false) || (emp.isPWD || false);
 };
 
+function checkRouteDeviation(route, facility, profile) {
+  // console.log(`[Route ${route.routeNumber}] checkRouteDeviation called.`);
+  if (!profile) {
+    // console.warn(`[Route ${route.routeNumber}] No profile object provided to checkRouteDeviation. Returning true.`);
+    return true;
+  }
+  if (!profile.routeDeviationRules) {
+    // console.warn(`[Route ${route.routeNumber}] profile.routeDeviationRules is missing. Returning true.`);
+    return true;
+  }
+  if (
+    !route?.routeDetails?.totalDistance || // Check for totalDistance
+    !route?.employees?.length
+  ) {
+    // console.warn(`[Route ${route.routeNumber}] Missing routeDetails, totalDistance, or employees. Returning true.`);
+    return true;
+  }
 
+  const facilityType = profile.facilityType || "CDC";
+  // console.log(`[Route ${route.routeNumber}] Using facilityType: ${facilityType}`);
+  const rules =
+    profile.routeDeviationRules[facilityType] ||
+    profile.routeDeviationRules["DEFAULT"];
+
+  if (!rules || rules.length === 0) {
+    // console.warn(`[Route ${route.routeNumber}] No deviation rules found for facilityType: ${facilityType}. Returning true.`);
+    return true;
+  }
+
+  let maxHaversineDistKm = 0;
+  for (const emp of route.employees) {
+    if (emp.location) {
+      const dist = haversineDistance(
+        [facility.geoY, facility.geoX],
+        [emp.location.lat, emp.location.lng]
+      );
+      if (dist > maxHaversineDistKm) {
+        maxHaversineDistKm = dist;
+      }
+    }
+  }
+  // console.log(`[Route ${route.routeNumber}] Max Haversine distance to furthest employee: ${maxHaversineDistKm.toFixed(2)} km`);
+
+  if (maxHaversineDistKm === 0 && route.employees.length > 0) {
+    // console.warn(`[Route ${route.routeNumber}] maxHaversineDistKm is 0 with employees present. Returning true (cannot determine rule).`);
+    return true;
+  }
+
+  let applicableRule = rules.find(
+    (rule) =>
+      maxHaversineDistKm >= rule.minDistKm &&
+      maxHaversineDistKm <= rule.maxDistKm
+  );
+
+  if (!applicableRule) {
+    const sortedRules = [...rules].sort((a, b) => a.maxDistKm - b.maxDistKm);
+    const lastRule = sortedRules[sortedRules.length - 1];
+    if (lastRule && maxHaversineDistKm > lastRule.maxDistKm) {
+      // console.log(`[Route ${route.routeNumber}] Furthest emp ${maxHaversineDistKm.toFixed(2)}km is beyond last rule's max (${lastRule.maxDistKm}km). Applying last rule's limit.`);
+      applicableRule = lastRule;
+    } else {
+      // console.warn(`[Route ${route.routeNumber}] No specific deviation rule for furthest distance ${maxHaversineDistKm.toFixed(2)}km. Assuming okay.`);
+      return true;
+    }
+  }
+
+  if (!applicableRule || applicableRule.maxTotalOneWayKm == null) {
+    // console.error(`[Route ${route.routeNumber}] Could not determine applicable rule or rule is malformed (missing maxTotalOneWayKm). Furthest: ${maxHaversineDistKm.toFixed(2)}km. Assuming okay to prevent error.`);
+    return true;
+  }
+
+  // console.log(`[Route ${route.routeNumber}] Applicable rule: min ${applicableRule.minDistKm}km, max ${applicableRule.maxDistKm}km, maxTotalOneWay ${applicableRule.maxTotalOneWayKm}km`);
+
+  const actualOneWayKm = route.routeDetails.totalDistance / 1000; // Use totalDistance
+  const maxAllowedKm = applicableRule.maxTotalOneWayKm;
+
+  // console.log(`[Route ${route.routeNumber}] Actual OSRM one-way: ${actualOneWayKm.toFixed(2)} km. Max allowed by rule: ${maxAllowedKm.toFixed(2)} km.`);
+
+  if (actualOneWayKm > maxAllowedKm) {
+    // console.warn(`  [Route ${route.routeNumber}] DEVIATION EXCEEDED. Allowed: ${maxAllowedKm.toFixed(2)}km, Actual: ${actualOneWayKm.toFixed(2)}km. Returning false.`);
+    return false;
+  }
+
+  // console.log(`  [Route ${route.routeNumber}] Deviation OK. Returning true.`);
+  return true;
+}
 
 async function calculateRouteDetails(
   routeCoordinates,
@@ -391,19 +454,16 @@ async function calculateRouteDetails(
   }
 }
 
-// Add this function in your routeGenerationService.js
-
 async function reOptimizeSwappedRouteWithORTools(
-  routeToReOptimize, // The route object after a successful swap
+  routeToReOptimize,
   facilityData,
   pickupTimePerEmployee
-  // profileMaxDuration, // Already available in routeToReOptimize or facilityData.profile
 ) {
   const {
     employees: swappedEmployees,
     tripType,
     zone,
-    vehicleCapacity, // Original capacity before guard reduction
+    vehicleCapacity,
     isMedicalRoute,
   } = routeToReOptimize;
   const profileMaxDuration = facilityData.profile?.maxDuration || 7200;
@@ -431,14 +491,10 @@ async function reOptimizeSwappedRouteWithORTools(
   let otherEmployeesInRoute;
   let fixedNodeParam = {};
 
-  // The `employees` in routeToReOptimize are already in the swapped order
-  // from handleGuardRequirements and its OSRM /trip call.
-  // The critical employee (now male) is at the start/end.
   if (tripType.toLowerCase() === "pickup") {
     pinnedEmployee = swappedEmployees[0];
     otherEmployeesInRoute = swappedEmployees.slice(1);
   } else {
-    // Dropoff
     pinnedEmployee = swappedEmployees[swappedEmployees.length - 1];
     otherEmployeesInRoute = swappedEmployees.slice(
       0,
@@ -453,19 +509,16 @@ async function reOptimizeSwappedRouteWithORTools(
     return { reOptimized: false, employees: swappedEmployees };
   }
 
-  // Prepare a new pointMap and matrices specifically for this re-optimization call
-  // The order in this pointMap will define the indices sent to Python
   const employeesForThisOrRun = [pinnedEmployee, ...otherEmployeesInRoute];
   const pointMapForReSolve = [
     { empCode: "FACILITY", isFacility: true, ...facilityLocation },
-    ...employeesForThisOrRun.map((emp) => ({ ...emp })), // Ensure fresh objects
+    ...employeesForThisOrRun.map((emp) => ({ ...emp })),
   ];
 
-  // The pinned employee will always be at index 1 in pointMapForReSolve (depot is 0)
   const pinnedNodeIndexInMatrix = 1;
   const otherCustomerIndicesInMatrix = otherEmployeesInRoute.map(
     (_, i) => i + 2
-  ); // Start from index 2
+  );
 
   if (tripType.toLowerCase() === "pickup") {
     fixedNodeParam = {
@@ -480,7 +533,7 @@ async function reOptimizeSwappedRouteWithORTools(
 
   try {
     const matrixData = await generateDistanceDurationMatrix(
-      employeesForThisOrRun, // Only the employees in this specific route
+      employeesForThisOrRun,
       facilityLocation
     );
     const { distanceMatrix, durationMatrix } = matrixData;
@@ -502,7 +555,7 @@ async function reOptimizeSwappedRouteWithORTools(
       return { reOptimized: false, employees: swappedEmployees };
     }
 
-    const demands = [0, ...employeesForThisOrRun.map(() => 1)]; // Depot + N employees
+    const demands = [0, ...employeesForThisOrRun.map(() => 1)];
     const serviceTimes = [
       0,
       ...employeesForThisOrRun.map(() => pickupTimePerEmployee),
@@ -511,19 +564,18 @@ async function reOptimizeSwappedRouteWithORTools(
     const orToolsInput = {
       distance_matrix: distanceMatrix,
       duration_matrix: durationMatrix,
-      num_vehicles: 1, // We are optimizing a single, existing route
-      vehicle_capacities: [vehicleCapacity], // Use original capacity
+      num_vehicles: 1,
+      vehicle_capacities: [vehicleCapacity],
       demands: demands,
       depot_index: 0,
       max_route_duration: profileMaxDuration,
       service_times: serviceTimes,
-      allow_dropping_visits: false, // Do not allow dropping in re-optimization
-      // drop_visit_penalty: facilityData.profile?.dropPenalty || 36000,
+      allow_dropping_visits: false,
       facility_coords: [facilityLocation.lat, facilityLocation.lng],
       trip_type: tripType.toUpperCase(),
       direction_penalty_weight:
-        facilityData.profile?.directionPenaltyWeight || 0.5, // Maybe lower for re-opt
-      ...fixedNodeParam, // Add the new fixed node parameters
+        facilityData.profile?.directionPenaltyWeight || 0.5,
+      ...fixedNodeParam,
     };
 
     const pythonExecutable = "python";
@@ -549,14 +601,9 @@ async function reOptimizeSwappedRouteWithORTools(
 
     return new Promise((resolve, reject) => {
       pythonProcess.on("close", (code) => {
-        // ... (Standard JSON parsing and error handling for scriptOutput)
-        // (Similar to what's in solveZoneWithORTools)
         let solution = null;
         let parsedSuccessfully = false;
-        // (Copy parsing logic from solveZoneWithORTools here)
-        // For brevity, assuming parsing logic is copied and works:
         try {
-          // Simplified parsing for example
           const lines = scriptOutput.trim().split("\n");
           const lastLine = lines[lines.length - 1].trim();
           if (lastLine.startsWith("{") && lastLine.endsWith("}")) {
@@ -621,19 +668,17 @@ async function reOptimizeSwappedRouteWithORTools(
           solution.routes.length > 0 &&
           solution.routes[0].length > 0
         ) {
-          const routeNodeIndices = solution.routes[0]; // Expecting one route
+          const routeNodeIndices = solution.routes[0];
           const reOptimizedEmployeeList = routeNodeIndices
             .map((nodeIndex) => {
-              if (nodeIndex === 0) return null; // Depot
-              // nodeIndex is 1-based for customers from Python if depot is 0
-              // It maps to pointMapForReSolve[nodeIndex]
+              if (nodeIndex === 0) return null;
               if (nodeIndex >= pointMapForReSolve.length) {
                 console.error(
                   `[RE-OPTIMIZE] Route nodeIndex ${nodeIndex} out of bounds for pointMap length ${pointMapForReSolve.length}`
                 );
                 return null;
               }
-              return pointMapForReSolve[nodeIndex]; // empCode, geoX, geoY etc.
+              return pointMapForReSolve[nodeIndex];
             })
             .filter((emp) => emp != null && !emp.isFacility);
 
@@ -680,25 +725,19 @@ async function reOptimizeSwappedRouteWithORTools(
   }
 }
 
-// --- YOUR ORIGINAL HEURISTIC BATCH PROCESSOR ---
-// routeGenerationService.js
-
-// ... (all other helper functions like isOsrmAvailable, calculateDistance, etc. remain the same)
-// ... (reOptimizeSwappedRouteWithORTools, generateDistanceDurationMatrix, solveZoneWithORTools also remain the same for now)
-
-// In routeGenerationService.js
-// REPLACE your existing processEmployeeBatch with this one:
 async function processEmployeeBatch(
   employees,
-  maxCapacity, // Original physical capacity
+  maxCapacity,
   facility,
   tripType = "pickup",
-  maxDuration, // Not directly used in this heuristic for capacity, but good to have
-  pickupTimePerEmployee, // Not directly used in this heuristic for capacity
-  guard = false,
+  maxDuration,
+  pickupTimePerEmployee,
+  guard = false
 ) {
   const routes = [];
   const isDropoff = tripType.toLowerCase() === "dropoff";
+  const facilityCoordinates = [facility.geoY, facility.geoX];
+  const deferredEmployees = []; // Track employees that couldn't be added to current route
 
   const validEmployees = employees.filter(
     (emp) =>
@@ -706,22 +745,21 @@ async function processEmployeeBatch(
       typeof emp.location.lat === "number" &&
       typeof emp.location.lng === "number" &&
       !isNaN(emp.location.lat) &&
-      !isNaN(emp.location.lng),
+      !isNaN(emp.location.lng)
   );
 
   if (validEmployees.length === 0) {
-    // console.warn("[processEmployeeBatch] No valid employees found.");
     return { routes: [] };
   }
 
-  // Helper to determine if an employee is a special needs user
-  const isSpecialNeedsUser = (emp) => (emp.isMedical || false) || (emp.isPWD || false);
+  const isSpecialNeedsUser = (emp) =>
+    (emp.isMedical || false) || (emp.isPWD || false);
 
   let globalRemainingEmployees = [...validEmployees].map((emp) => ({
     ...emp,
     distToFacility: haversineDistance(
       [emp.location.lat, emp.location.lng],
-      [facility.geoY, facility.geoX],
+      [facility.geoY, facility.geoX]
     ),
     isMedical: emp.isMedical || false,
     isPWD: emp.isPWD || false,
@@ -730,7 +768,7 @@ async function processEmployeeBatch(
   globalRemainingEmployees.sort((a, b) =>
     isDropoff
       ? a.distToFacility - b.distToFacility
-      : b.distToFacility - a.distToFacility,
+      : b.distToFacility - a.distToFacility
   );
 
   const facilityLocation = { lat: facility.geoY, lng: facility.geoX };
@@ -754,67 +792,117 @@ async function processEmployeeBatch(
     const firstEmployeeForThisRoute = globalRemainingEmployees.shift();
     if (!firstEmployeeForThisRoute) break;
 
-    const currentAttemptRouteEmployees = [firstEmployeeForThisRoute];
-    // Create a true copy of the remaining employees for this attempt's pool
-    let tempRemainingEmployeesForThisAttempt = globalRemainingEmployees.map(e => ({...e}));
+    // Validate first employee with OSRM
+    const firstEmpCoords = [firstEmployeeForThisRoute.location.lat, firstEmployeeForThisRoute.location.lng];
+    const firstRouteCoords = isDropoff 
+      ? [facilityCoordinates, firstEmpCoords]
+      : [firstEmpCoords, facilityCoordinates];
+    
+    const firstRouteDetails = await calculateRouteDetails(
+      firstRouteCoords,
+      [firstEmployeeForThisRoute],
+      pickupTimePerEmployee,
+      tripType
+    );
 
+    if (firstRouteDetails.error) {
+      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} failed OSRM validation. Adding to deferred.`);
+      deferredEmployees.push(firstEmployeeForThisRoute);
+      continue;
+    }
+
+    // Create initial route object with OSRM details
+    const currentRoute = {
+      employees: [firstEmployeeForThisRoute],
+      routeNumber: heuristicRouteCounter,
+      vehicleCapacity: originalPhysicalCapacity,
+      guardNeeded: false,
+      uniqueKey: `${firstEmployeeForThisRoute.zone}_${heuristicRouteCounter}_${uuidv4()}`,
+      zone: firstEmployeeForThisRoute.zone,
+      tripType: isDropoff ? "dropoff" : "pickup",
+      isSpecialNeedsRoute: isSpecialNeedsUser(firstEmployeeForThisRoute),
+      routeDetails: firstRouteDetails
+    };
+
+    // Check deviation and duration for first employee
+    const deviationOkay = checkRouteDeviation(currentRoute, facility, facility.profile);
+    if (!deviationOkay) {
+      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} failed deviation check. Adding to deferred.`);
+      deferredEmployees.push(firstEmployeeForThisRoute);
+      continue;
+    }
+
+    if (maxDuration && firstRouteDetails.totalDuration > maxDuration) {
+      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} exceeds max duration. Adding to deferred.`);
+      deferredEmployees.push(firstEmployeeForThisRoute);
+      continue;
+    }
 
     if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
       routeIsCurrentlySpecialNeeds = true;
       currentRouteMaxAllowedOccupancy = 2;
-      // console.log(`Route ${heuristicRouteCounter}: Started with special needs emp ${firstEmployeeForThisRoute.empCode}. Max cap 2.`);
-    } else {
-      // console.log(`Route ${heuristicRouteCounter}: Started with regular emp ${firstEmployeeForThisRoute.empCode}. Max cap ${originalPhysicalCapacity}.`);
     }
 
-    // Inner loop to add more employees
+    let tempRemainingEmployeesForThisAttempt = globalRemainingEmployees.map(
+      (e) => ({ ...e })
+    );
+
     while (
-      currentAttemptRouteEmployees.length < currentRouteMaxAllowedOccupancy &&
+      currentRoute.employees.length < currentRouteMaxAllowedOccupancy &&
       tempRemainingEmployeesForThisAttempt.length > 0
     ) {
-      const currentLastEmployeeInRoute = currentAttemptRouteEmployees[currentAttemptRouteEmployees.length - 1];
+      const currentLastEmployeeInRoute = currentRoute.employees[currentRoute.employees.length - 1];
       const currentLoc = currentLastEmployeeInRoute.location;
 
-      let candidateIndexToRemove = -1; // To remove from tempRemainingEmployeesForThisAttempt
-
       let scoredCandidates = tempRemainingEmployeesForThisAttempt
-        .map((candidateEmp, candidateIdx) => { // Keep track of index for removal
+        .map((candidateEmp, candidateIdx) => {
           const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
 
           if (routeIsCurrentlySpecialNeeds) {
-            if (!candidateIsSpecial) {
-              // console.log(`  Route ${heuristicRouteCounter} (Special): Skip regular cand ${candidateEmp.empCode}.`);
-              return null;
-            }
-          } else { // Route is currently REGULAR
+            if (!candidateIsSpecial) return null;
+          } else {
             if (candidateIsSpecial) {
-              // If first emp was regular, cannot add a special needs person to make a mixed special route.
-              // The rule is "both employees should be either PWD/medical cab user" for a special route.
-              if (currentAttemptRouteEmployees.length > 0 && !isSpecialNeedsUser(currentAttemptRouteEmployees[0])) {
-                // console.log(`  Route ${heuristicRouteCounter} (Regular): Skip special cand ${candidateEmp.empCode} as first emp ${currentAttemptRouteEmployees[0].empCode} is regular.`);
+              if (currentRoute.employees.length > 0 && !isSpecialNeedsUser(currentRoute.employees[0])) {
                 return null;
               }
             }
           }
 
-          const distanceToLastHaversine = haversineDistance([currentLoc.lat, currentLoc.lng], [candidateEmp.location.lat, candidateEmp.location.lng]);
+          const distanceToLastHaversine = haversineDistance(
+            [currentLoc.lat, currentLoc.lng],
+            [candidateEmp.location.lat, candidateEmp.location.lng]
+          );
           if (distanceToLastHaversine > MAX_NEXT_STOP_DISTANCE_KM) return null;
 
           let progressScore = 0;
           if (isDropoff) {
             const d = candidateEmp.distToFacility - currentLastEmployeeInRoute.distToFacility;
-            progressScore = d * PROGRESS_WEIGHT * (candidateEmp.distToFacility >= currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_DROPOFF ? 1 : PROGRESS_PENALTY_SCALAR);
+            progressScore = d * PROGRESS_WEIGHT * (
+              candidateEmp.distToFacility >= currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_DROPOFF
+                ? 1
+                : PROGRESS_PENALTY_SCALAR
+            );
           } else {
             const d = currentLastEmployeeInRoute.distToFacility - candidateEmp.distToFacility;
-            progressScore = d * PROGRESS_WEIGHT * (candidateEmp.distToFacility < currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_PICKUP ? 1 : PROGRESS_PENALTY_SCALAR);
+            progressScore = d * PROGRESS_WEIGHT * (
+              candidateEmp.distToFacility < currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_PICKUP
+                ? 1
+                : PROGRESS_PENALTY_SCALAR
+            );
           }
           const distanceScoreVal = (1 / (1 + distanceToLastHaversine)) * DISTANCE_WEIGHT * DISTANCE_SCORE_SCALAR;
-          return { emp: candidateEmp, score: progressScore + distanceScoreVal, distanceToLast: distanceToLastHaversine, originalIndex: candidateIdx };
+          return {
+            emp: candidateEmp,
+            score: progressScore + distanceScoreVal,
+            distanceToLast: distanceToLastHaversine,
+            originalIndex: candidateIdx,
+          };
         })
-        .filter(item => item != null && item.score > -Infinity);
+        .filter((item) => item != null && item.score > -Infinity);
 
       scoredCandidates.sort((a, b) => {
-        if (Math.abs(b.score - a.score) > SCORE_DIFFERENCE_TOLERANCE) return b.score - a.score;
+        if (Math.abs(b.score - a.score) > SCORE_DIFFERENCE_TOLERANCE)
+          return b.score - a.score;
         return a.distanceToLast - b.distanceToLast;
       });
 
@@ -823,144 +911,140 @@ async function processEmployeeBatch(
       let nextEmployeeToPickData = scoredCandidates[0];
       let nextEmployeeToPick = nextEmployeeToPickData?.emp;
 
-      if (OSRM_PROBE_COUNT_HEURISTIC > 0 && scoredCandidates.length > 0) {
-        // OSRM Probe Logic would go here, potentially re-assigning nextEmployeeToPickData
-      }
-
       if (!nextEmployeeToPick) break;
 
-      // Final check based on strict homogeneity for special needs routes
-      if (routeIsCurrentlySpecialNeeds && !isSpecialNeedsUser(nextEmployeeToPick)) {
-          // This should ideally be caught by the map filter, but as a safeguard.
-          // console.log(`  Route ${heuristicRouteCounter} (Special): FINAL CHECK - Skip regular cand ${nextEmployeeToPick.empCode}.`);
-          tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1); // Remove from consideration
-          continue; // Try next best candidate from scoredCandidates (if any)
-      }
-      if (!routeIsCurrentlySpecialNeeds && isSpecialNeedsUser(nextEmployeeToPick)) {
-          // If current route is regular and we are about to add a special needs person,
-          // all existing people in the route must also be special needs (which means the first one had to be).
-          const allExistingAreSpecial = currentAttemptRouteEmployees.every(isSpecialNeedsUser);
-          if (!allExistingAreSpecial) {
-            // console.log(`  Route ${heuristicRouteCounter} (Regular): FINAL CHECK - Skip special cand ${nextEmployeeToPick.empCode} as existing are not all special.`);
-            tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
-            continue; // Try next best candidate
-          }
+      // Try adding the candidate and validate with OSRM
+      const tentativeRoute = {
+        ...currentRoute,
+        employees: [...currentRoute.employees, nextEmployeeToPick]
+      };
+
+      const tentativeCoords = tentativeRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
+      const allCoords = isDropoff 
+        ? [facilityCoordinates, ...tentativeCoords]
+        : [...tentativeCoords, facilityCoordinates];
+
+      const tentativeDetails = await calculateRouteDetails(
+        allCoords,
+        tentativeRoute.employees,
+        pickupTimePerEmployee,
+        tripType
+      );
+
+      if (tentativeDetails.error) {
+        console.warn(`Candidate ${nextEmployeeToPick.empCode} failed OSRM validation. Skipping.`);
+        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
+        continue;
       }
 
-      currentAttemptRouteEmployees.push(nextEmployeeToPick);
+      // Check deviation and duration for tentative route
+      const tentativeDeviationOkay = checkRouteDeviation(tentativeRoute, facility, facility.profile);
+      if (!tentativeDeviationOkay) {
+        console.warn(`Candidate ${nextEmployeeToPick.empCode} failed deviation check. Skipping.`);
+        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
+        continue;
+      }
+
+      if (maxDuration && tentativeDetails.totalDuration > maxDuration) {
+        console.warn(`Candidate ${nextEmployeeToPick.empCode} exceeds max duration. Skipping.`);
+        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
+        continue;
+      }
+
+      // Candidate passed all checks - add to route
+      currentRoute.employees.push(nextEmployeeToPick);
+      currentRoute.routeDetails = tentativeDetails;
+
       if (isSpecialNeedsUser(nextEmployeeToPick) && !routeIsCurrentlySpecialNeeds) {
         routeIsCurrentlySpecialNeeds = true;
         currentRouteMaxAllowedOccupancy = 2;
-        // console.log(`    Route ${heuristicRouteCounter}: Became special needs due to ${nextEmployeeToPick.empCode}. MaxAllowedOcc now 2.`);
+        currentRoute.isSpecialNeedsRoute = true;
       }
-      // Remove the picked employee from tempRemainingEmployeesForThisAttempt using its originalIndex from the map
-      // Need to re-find index if list was mutated by 'continue'
-      const actualPickedIndexInTemp = tempRemainingEmployeesForThisAttempt.findIndex(e => e.empCode === nextEmployeeToPick.empCode);
+
+      const actualPickedIndexInTemp = tempRemainingEmployeesForThisAttempt.findIndex(
+        (e) => e.empCode === nextEmployeeToPick.empCode
+      );
       if (actualPickedIndexInTemp > -1) {
-          tempRemainingEmployeesForThisAttempt.splice(actualPickedIndexInTemp, 1);
+        tempRemainingEmployeesForThisAttempt.splice(actualPickedIndexInTemp, 1);
       }
     }
 
-    // --- GUARD LOGIC and FINAL CAPACITY DETERMINATION ---
     let routeNeedsGuard = false;
     let finalRouteSpecialNeedsStatusAfterGuard = routeIsCurrentlySpecialNeeds;
 
-    if (guard && currentAttemptRouteEmployees.length > 0) {
-      const critIdx = isDropoff ? currentAttemptRouteEmployees.length - 1 : 0;
+    if (guard && currentRoute.employees.length > 0) {
+      const critIdx = isDropoff ? currentRoute.employees.length - 1 : 0;
       if (
-        currentAttemptRouteEmployees[critIdx].gender === "F" &&
-        !currentAttemptRouteEmployees.some((e) => e.gender === "M")
+        currentRoute.employees[critIdx].gender === "F" &&
+        !currentRoute.employees.some((e) => e.gender === "M")
       ) {
         routeNeedsGuard = true;
         let capacityTargetForGuardTrim = finalRouteSpecialNeedsStatusAfterGuard
           ? 2
           : Math.max(1, originalPhysicalCapacity - 1);
 
-        while (currentAttemptRouteEmployees.length > capacityTargetForGuardTrim) {
-          const removed = currentAttemptRouteEmployees.pop();
+        while (currentRoute.employees.length > capacityTargetForGuardTrim) {
+          const removed = currentRoute.employees.pop();
           if (removed) {
-            tempRemainingEmployeesForThisAttempt.unshift(removed); // Put back to this attempt's remaining pool
-            if (isSpecialNeedsUser(removed) && !currentAttemptRouteEmployees.some(isSpecialNeedsUser)) {
+            tempRemainingEmployeesForThisAttempt.unshift(removed);
+            if (
+              isSpecialNeedsUser(removed) &&
+              !currentRoute.employees.some(isSpecialNeedsUser)
+            ) {
               finalRouteSpecialNeedsStatusAfterGuard = false;
               capacityTargetForGuardTrim = routeNeedsGuard
                 ? Math.max(1, originalPhysicalCapacity - 1)
                 : originalPhysicalCapacity;
             }
-          } else { break; }
+          } else {
+            break;
+          }
         }
-      }
-    }
 
-    // --- FINAL DECISION TO PUSH ROUTE OR DISCARD ---
-    let successfullyFormedRoute = false;
-    if (currentAttemptRouteEmployees.length > 0) {
-      let isValidForPush = true;
-      // Final check for the strict "both/all must be special if route is special"
-      if (finalRouteSpecialNeedsStatusAfterGuard) {
-        if (!currentAttemptRouteEmployees.every(isSpecialNeedsUser)) {
-          isValidForPush = false;
-          // console.error(`Route ${heuristicRouteCounter} marked special but not all emps are special: ${currentAttemptRouteEmployees.map(e=>e.empCode + "(M:"+e.isMedical+",P:"+e.isPWD)+")"}. Discarding this attempt.`);
-          // Employees (except firstEmployeeForThisRoute which was already shifted from global) go back.
-          const othersToPutBack = currentAttemptRouteEmployees.slice(1);
-          if (othersToPutBack.length > 0) {
-            // Add to the front of tempRemaining, so they are considered soon by a *different* firstEmployee
-            tempRemainingEmployeesForThisAttempt.unshift(...othersToPutBack);
+        // Recalculate route details after guard removal
+        if (currentRoute.employees.length > 0) {
+          const newCoords = currentRoute.employees.map(e => [e.location.lat, e.location.lng]);
+          const newAllCoords = isDropoff 
+            ? [facilityCoordinates, ...newCoords]
+            : [...newCoords, facilityCoordinates];
+          
+          const recalcDetails = await calculateRouteDetails(
+            newAllCoords,
+            currentRoute.employees,
+            pickupTimePerEmployee,
+            tripType
+          );
+
+          if (!recalcDetails.error) {
+            currentRoute.routeDetails = recalcDetails;
           }
         }
       }
-
-      if (isValidForPush) {
-        const capacityToStoreOnRouteObject = finalRouteSpecialNeedsStatusAfterGuard
-          ? 2
-          : (routeNeedsGuard ? Math.max(1, originalPhysicalCapacity - 1) : originalPhysicalCapacity);
-
-        if (currentAttemptRouteEmployees.length <= capacityToStoreOnRouteObject) {
-          // console.log(`Route ${heuristicRouteCounter}: Pushing. Emps:${currentAttemptRouteEmployees.length}. Special:${finalRouteSpecialNeedsStatusAfterGuard}. StoredCap:${capacityToStoreOnRouteObject}. Guard:${routeNeedsGuard}`);
-          routes.push({
-            employees: [...currentAttemptRouteEmployees],
-            routeNumber: heuristicRouteCounter,
-            vehicleCapacity: capacityToStoreOnRouteObject,
-            guardNeeded: routeNeedsGuard,
-            uniqueKey: `${firstEmployeeForThisRoute.zone}_${heuristicRouteCounter}_${uuidv4()}`,
-            zone: firstEmployeeForThisRoute.zone,
-            tripType: isDropoff ? "dropoff" : "pickup",
-            isSpecialNeedsRoute: finalRouteSpecialNeedsStatusAfterGuard, // Using the new flag
-          });
-          successfullyFormedRoute = true;
-        } else {
-            // This case means the route is oversized even for its determined type.
-            // Should be rare if logic is correct. Put back employees other than first.
-            // console.error(`Route ${heuristicRouteCounter} (Special:${finalRouteSpecialNeedsStatusAfterGuard}, Guard:${routeNeedsGuard}) OVERSIZED for final cap. Emps: ${currentAttemptRouteEmployees.length}, TargetCap: ${capacityToStoreOnRouteObject}. Discarding.`);
-            const othersToPutBack = currentAttemptRouteEmployees.slice(1);
-            if (othersToPutBack.length > 0) {
-                tempRemainingEmployeesForThisAttempt.unshift(...othersToPutBack);
-            }
-        }
-      }
     }
 
-    // Update globalRemainingEmployees based on the outcome of this attempt
-    if (successfullyFormedRoute) {
-      // If successful, globalRemainingEmployees becomes what's left in tempRemainingEmployeesForThisAttempt
-      // (which had employees removed for the current successful route).
-      globalRemainingEmployees = tempRemainingEmployeesForThisAttempt;
-    } else {
-      // If failed, firstEmployeeForThisRoute is consumed.
-      // The rest of the employees that were in tempRemainingEmployeesForThisAttempt
-      // (including any unshifted during guard logic of this failed attempt,
-      // and any from currentAttemptRouteEmployees that were put back)
-      // should form the new globalRemainingEmployees.
-      globalRemainingEmployees = tempRemainingEmployeesForThisAttempt;
+    if (currentRoute.employees.length > 0) {
+      currentRoute.guardNeeded = routeNeedsGuard;
+      currentRoute.isSpecialNeedsRoute = finalRouteSpecialNeedsStatusAfterGuard;
+      currentRoute.vehicleCapacity = finalRouteSpecialNeedsStatusAfterGuard
+        ? 2
+        : routeNeedsGuard
+        ? Math.max(1, originalPhysicalCapacity - 1)
+        : originalPhysicalCapacity;
+
+      routes.push(currentRoute);
     }
-  } // End mainLoop
+
+    globalRemainingEmployees = tempRemainingEmployeesForThisAttempt;
+  }
+
+  // Add deferred employees back to global pool
+  if (deferredEmployees.length > 0) {
+    globalRemainingEmployees.push(...deferredEmployees);
+  }
+
   return { routes };
 }
 
-
-
-// ... (rest of the file: solveZoneWithORTools, generateRoutes, etc.)
-
-// --- OR-TOOLS RELATED FUNCTIONS ---
 async function generateDistanceDurationMatrix(
   locationsForMatrix,
   facilityLocation
@@ -977,7 +1061,6 @@ async function generateDistanceDurationMatrix(
     .join(";");
   const matrixTimeout = OSRM_PROBE_TIMEOUT + allPointsCoords.length * 200;
   const osrmTableUrl = `http://localhost:5000/table/v1/driving/${coordinatesString}?annotations=duration,distance`;
-  // console.log(`[MatrixGen] OSRM Table URL for matrix (${allPointsCoords.length} points)`);
 
   try {
     const response = await fetchApi(osrmTableUrl, { timeout: matrixTimeout });
@@ -1014,7 +1097,7 @@ async function generateDistanceDurationMatrix(
       "[MatrixGen] Failed to generate distance/duration matrix:",
       error
     );
-    throw error; // Re-throw to be caught by caller
+    throw error;
   }
 }
 
@@ -1026,7 +1109,6 @@ async function solveZoneWithORTools(
   pickupTimePerEmployee,
   tripType,
   zoneName,
-  // New parameter to control num_vehicles for single route optimization
   forceSingleVehicleOptimization = false
 ) {
   const currentZoneNameForLogging =
@@ -1061,7 +1143,7 @@ async function solveZoneWithORTools(
       console.warn(
         `[OR-TOOLS SOLVER] Empty/invalid distance matrix for zone "${currentZoneNameForLogging}".`
       );
-      return { routes: [], droppedEmployees: zoneEmployees }; // Return all as dropped
+      return { routes: [], droppedEmployees: zoneEmployees };
     }
     if (pointMapForCurrentZone.length !== distanceMatrix.length) {
       console.error(
@@ -1078,7 +1160,7 @@ async function solveZoneWithORTools(
         `[OR-TOOLS SOLVER] Optimizing pre-formed route for zone "${currentZoneNameForLogging}", using numVehiclesForSolver: 1`
       );
     } else {
-      numVehiclesForSolver = numCustomers > 0 ? numCustomers : 1; // Ample vehicles for initial zone solve
+      numVehiclesForSolver = numCustomers > 0 ? numCustomers : 1;
       console.log(
         `[OR-TOOLS SOLVER] Solving for zone "${currentZoneNameForLogging}", using numVehiclesForSolver: ${numVehiclesForSolver}`
       );
@@ -1097,17 +1179,16 @@ async function solveZoneWithORTools(
       max_route_duration: maxRouteDurationSeconds,
       service_times: serviceTimes,
       allow_dropping_visits:
-        facilityData.profile?.allowDroppingVisitsForProblematicZones || true, // Default to true
-      drop_visit_penalty: facilityData.profile?.dropPenalty || 36000, // e.g., 10 hours in seconds,
-      facility_coords: [facilityLocation.lat, facilityLocation.lng], // Pass lat, lng
-      trip_type: tripType.toUpperCase(), // Pass 'PICKUP' or 'DROPOFF'
-      // Optional: Add a weight for the penalty
+        facilityData.profile?.allowDroppingVisitsForProblematicZones || true,
+      drop_visit_penalty: facilityData.profile?.dropPenalty || 36000,
+      facility_coords: [facilityLocation.lat, facilityLocation.lng],
+      trip_type: tripType.toUpperCase(),
       direction_penalty_weight:
-        facilityData.profile?.directionPenaltyWeight || 2.0, // Default to 1.0, tune this!
+        facilityData.profile?.directionPenaltyWeight || 2.0,
     };
 
     const pythonExecutable = "python";
-    const scriptPath = path.join(__dirname, "or_tools_vrp_solver.py"); // Corrected path
+    const scriptPath = path.join(__dirname, "or_tools_vrp_solver.py");
 
     if (!fs.existsSync(scriptPath)) {
       console.error(
@@ -1117,9 +1198,6 @@ async function solveZoneWithORTools(
     }
 
     const pythonProcess = spawn(pythonExecutable, [scriptPath]);
-    // ... (rest of spawn, stdout/stderr, Promise logic as in your last correct version) ...
-    // Ensure the parsing of solution.dropped_node_indices is present
-    // and that you map these indices back to employee objects.
     let scriptOutput = "";
     let scriptError = "";
 
@@ -1264,7 +1342,7 @@ async function solveZoneWithORTools(
         console.log(
           `[OR-TOOLS SOLVER] Processed ${orRoutes.length} routes, ${droppedEmployees.length} dropped for zone: "${currentZoneNameForLogging}".`
         );
-        resolve({ routes: orRoutes, droppedEmployees }); // Return dropped employees
+        resolve({ routes: orRoutes, droppedEmployees });
       });
       pythonProcess.on("error", (err) => {
         console.error(
@@ -1279,28 +1357,9 @@ async function solveZoneWithORTools(
       `[OR-TOOLS SOLVER] Critical error in solveZoneWithORTools for zone "${currentZoneNameForLogging}":`,
       error
     );
-    return { routes: [], droppedEmployees: [...zoneEmployees] }; // All employees dropped on critical error
+    return { routes: [], droppedEmployees: [...zoneEmployees] };
   }
 }
-
-// routeGenerationService.js
-
-// ... (all other existing helper functions: isOsrmAvailable, decodePolyline, etc.)
-// ... (isNightShiftForGuard - ensure this is defined as previously discussed)
-// ... (processEmployeeBatch - ensure this is the latest version we worked on)
-// ... (solveZoneWithORTools, reOptimizeSwappedRouteWithORTools)
-// ... (calculateRouteDetails, updateRouteWithDetails, assignErrorState, etc.)
-
-// routeGenerationService.js
-
-// Make sure all your helper functions are defined above this:
-// isOsrmAvailable, decodePolyline, encodePolyline, toRadians, calculateDistance,
-// haversineDistance, isPointInPolygon, calculateAngle, angleDifference,
-// loadZonesData, assignEmployeesToZones, findZoneGroups, getZoneCapacity,
-// isNightShiftForGuard, calculateRouteDetails, reOptimizeSwappedRouteWithORTools,
-// processEmployeeBatch, solveZoneWithORTools, handleGuardRequirements,
-// validateSwap, findComplexSwap, assignErrorState, updateRouteWithDetails,
-// calculatePickupTimes, calculateRouteStatistics, createSimplifiedResponse, createEmptyResponse
 
 async function generateRoutes(data) {
   try {
@@ -1318,34 +1377,50 @@ async function generateRoutes(data) {
     } = data;
 
     if (!employees?.length) throw new Error("Employee data is required");
-    if (!facility?.geoX || !facility?.geoY) throw new Error("Valid facility data required");
-    if (!date || !shiftTime || !profile) throw new Error("Missing required parameters");
+    if (!facility?.geoX || !facility?.geoY)
+      throw new Error("Valid facility data required");
+    if (!date || !shiftTime || !profile)
+      throw new Error("Missing required parameters");
 
     const osrmAvailable = await isOsrmAvailable();
     if (!osrmAvailable) throw new Error("OSRM routing service unavailable");
 
-    const useZones = profile.zoneBasedRouting !== undefined ? !!profile.zoneBasedRouting : true;
+    const useZones =
+      profile.zoneBasedRouting !== undefined
+        ? !!profile.zoneBasedRouting
+        : true;
     let employeesByZone = {};
     const removedForGuardByZone = {};
 
     const ensureSpecialFlags = (emp) => ({
-        ...emp,
-        isMedical: emp.isMedical || false,
-        isPWD: emp.isPWD || false,
+      ...emp,
+      isMedical: emp.isMedical || false,
+      isPWD: emp.isPWD || false,
     });
 
     if (useZones) {
       let zones = data.zones || [];
       if (!zones.length && ZONES_DATA_FILE) {
-        try { zones = await loadZonesData(); if (!zones.length) console.warn("No zones data loaded."); }
-        catch (err) { console.error(`Failed to load zones: ${err.message}.`); }
+        try {
+          zones = await loadZonesData();
+          if (!zones.length) console.warn("No zones data loaded.");
+        } catch (err) {
+          console.error(`Failed to load zones: ${err.message}.`);
+        }
       }
-      // Ensure employees passed to assignEmployeesToZones have the flags
-      employeesByZone = assignEmployeesToZones(employees.map(ensureSpecialFlags), zones);
+      employeesByZone = assignEmployeesToZones(
+        employees.map(ensureSpecialFlags),
+        zones
+      );
       if (Object.keys(employeesByZone).length === 0 && employees.length > 0) {
-        if (!employeesByZone["DEFAULT_ZONE"]) employeesByZone["DEFAULT_ZONE"] = [];
+        if (!employeesByZone["DEFAULT_ZONE"])
+          employeesByZone["DEFAULT_ZONE"] = [];
         employees.forEach((emp) => {
-          if (!Object.values(employeesByZone).flat().find((e) => e.empCode === emp.empCode)) {
+          if (
+            !Object.values(employeesByZone)
+              .flat()
+              .find((e) => e.empCode === emp.empCode)
+          ) {
             employeesByZone["DEFAULT_ZONE"].push({
               ...ensureSpecialFlags(emp),
               zone: "DEFAULT_ZONE",
@@ -1353,7 +1428,6 @@ async function generateRoutes(data) {
             });
           }
         });
-        // if (employeesByZone["DEFAULT_ZONE"].length > 0) console.log("Some employees assigned to DEFAULT_ZONE.");
       }
     } else {
       employeesByZone = {
@@ -1366,25 +1440,42 @@ async function generateRoutes(data) {
     }
 
     const routeData = {
-      uuid: data.uuid || uuidv4(), date, shift: shiftTime, tripType: tripType.toUpperCase(),
-      facility, profile, employeeData: employees, routeData: [],
+      uuid: data.uuid || uuidv4(),
+      date,
+      shift: shiftTime,
+      tripType: tripType.toUpperCase(),
+      facility,
+      profile,
+      employeeData: employees,
+      routeData: [],
     };
 
     const processedZones = new Set();
-    const { zonePairingMatrix = {}, maxDuration: profileMaxDuration = 7200 } = profile;
+    const { zonePairingMatrix = {}, maxDuration: profileMaxDuration = 7200 } =
+      profile;
     let totalRouteCount = 0;
     let finalTotalSwappedRoutes = 0;
     const allInitiallyFormedRoutes = [];
     let unroutedByOrTools = [];
+    let unroutableDueToDeviation = [];
 
     const isDropoff = tripType.toLowerCase() === "dropoff";
     const facilityCoordinates = [facility.geoY, facility.geoX];
 
-    const processZoneOrGroup = async (empsInScope, zoneIdentifier, effectiveMaxCapacity) => {
+    const processZoneOrGroup = async (
+      empsInScope,
+      zoneIdentifier,
+      effectiveMaxCapacity
+    ) => {
       if (empsInScope.length === 0) return;
       const { routes: batchRoutes } = await processEmployeeBatch(
-        empsInScope, effectiveMaxCapacity, facility, tripType,
-        profileMaxDuration, pickupTimePerEmployee, guard,
+        empsInScope,
+        effectiveMaxCapacity,
+        facility,
+        tripType,
+        profileMaxDuration,
+        pickupTimePerEmployee,
+        guard
       );
       batchRoutes.forEach((route) => {
         route.zone = zoneIdentifier;
@@ -1396,37 +1487,56 @@ async function generateRoutes(data) {
       const zoneGroups = findZoneGroups(zonePairingMatrix);
       for (const group of zoneGroups) {
         const clubbedZoneName = group.join("-");
-        const combinedEmployees = group.flatMap((zn) => employeesByZone[zn] || []).filter((e) => e.location);
-        const maxCap = Math.max(...group.map((z) => getZoneCapacity(z, profile)), 1);
+        const combinedEmployees = group
+          .flatMap((zn) => employeesByZone[zn] || [])
+          .filter((e) => e.location);
+        const maxCap = Math.max(
+          ...group.map((z) => getZoneCapacity(z, profile)),
+          1
+        );
         await processZoneOrGroup(combinedEmployees, clubbedZoneName, maxCap);
         group.forEach((z) => processedZones.add(z));
       }
     }
     for (const [zoneName, zoneEmpList] of Object.entries(employeesByZone)) {
       if (processedZones.has(zoneName)) continue;
-      const currentZoneEmployees = (zoneEmpList || []).filter((e) => e.location);
+      const currentZoneEmployees = (zoneEmpList || []).filter(
+        (e) => e.location
+      );
       const maxCap = getZoneCapacity(zoneName, profile);
       await processZoneOrGroup(currentZoneEmployees, zoneName, maxCap);
     }
 
     const allOptimizedOrToolsRoutes = [];
     for (const initialRoute of allInitiallyFormedRoutes) {
-      if (!initialRoute.employees || initialRoute.employees.length === 0) continue;
+      if (!initialRoute.employees || initialRoute.employees.length === 0)
+        continue;
       try {
         const { routes: orToolsSolvedRouteList, droppedEmployees } =
           await solveZoneWithORTools(
-            initialRoute.employees, facility, initialRoute.vehicleCapacity,
-            profileMaxDuration, pickupTimePerEmployee, tripType,
-            initialRoute.zone, true,
+            initialRoute.employees,
+            facility,
+            initialRoute.vehicleCapacity,
+            profileMaxDuration,
+            pickupTimePerEmployee,
+            tripType,
+            initialRoute.zone,
+            true
           );
-        if (droppedEmployees && droppedEmployees.length > 0) unroutedByOrTools.push(...droppedEmployees);
+        if (droppedEmployees && droppedEmployees.length > 0)
+          unroutedByOrTools.push(...droppedEmployees);
         if (orToolsSolvedRouteList && orToolsSolvedRouteList.length > 0) {
-          allOptimizedOrToolsRoutes.push({ ...initialRoute, employees: orToolsSolvedRouteList[0].employees });
+          allOptimizedOrToolsRoutes.push({
+            ...initialRoute,
+            employees: orToolsSolvedRouteList[0].employees,
+          });
         } else {
           allOptimizedOrToolsRoutes.push(initialRoute);
         }
       } catch (error) {
-        console.error(`  [OR-Tools Stage] Error optimizing route for zone ${initialRoute.zone}: ${error.message}. Using original order.`);
+        console.error(
+          `  [OR-Tools Stage] Error optimizing route for zone ${initialRoute.zone}: ${error.message}. Using original order.`
+        );
         allOptimizedOrToolsRoutes.push(initialRoute);
       }
     }
@@ -1440,33 +1550,49 @@ async function generateRoutes(data) {
         route.guardNeeded = false;
 
         if (!route.employees || route.employees.length === 0) {
-          assignErrorState(route, "Route empty before OSRM in post-processing");
-          continue; // Don't add to finalProcessedRoutes
+          continue;
         }
 
-        const routeCoordinates = route.employees.map((emp) => [emp.location.lat, emp.location.lng]);
+        const routeCoordinates = route.employees.map((emp) => [
+          emp.location.lat,
+          emp.location.lng,
+        ]);
         const currentAllCoordinates = isDropoff
           ? [facilityCoordinates, ...routeCoordinates]
           : [...routeCoordinates, facilityCoordinates];
         let currentRouteDetails = await calculateRouteDetails(
-          currentAllCoordinates, route.employees, pickupTimePerEmployee, tripType,
+          currentAllCoordinates,
+          route.employees,
+          pickupTimePerEmployee,
+          tripType
         );
 
         if (currentRouteDetails.error) {
-          assignErrorState(route, `OSRM /trip failed: ${currentRouteDetails.error}`);
-          continue; // Don't add to finalProcessedRoutes
+          unroutedByOrTools.push(...route.employees);
+          continue;
         }
         updateRouteWithDetails(route, currentRouteDetails);
 
         let routeActuallyNeedsExternalGuard = false;
         let performReOptimization = false;
-        const nightShiftActive = isNightShiftForGuard(shiftTime, tripType, profile);
+        const nightShiftActive = isNightShiftForGuard(
+          shiftTime,
+          tripType,
+          profile
+        );
 
         if (guard && route.employees.length > 0 && nightShiftActive) {
           const guardSwapResult = await handleGuardRequirements(
-            route, isDropoff, facility, pickupTimePerEmployee,
+            route,
+            isDropoff,
+            facility,
+            pickupTimePerEmployee
           );
-          if (guardSwapResult.swapped && guardSwapResult.routeDetails && !guardSwapResult.routeDetails.error) {
+          if (
+            guardSwapResult.swapped &&
+            guardSwapResult.routeDetails &&
+            !guardSwapResult.routeDetails.error
+          ) {
             routeModifiedByGuardSwap = true;
             finalTotalSwappedRoutes++;
             route.guardNeeded = false;
@@ -1478,7 +1604,11 @@ async function generateRoutes(data) {
             route.guardNeeded = true;
           } else {
             const critIdx = isDropoff ? route.employees.length - 1 : 0;
-            if (route.employees.length > 0 && route.employees[critIdx].gender === "F" && !route.employees.some(e => e.gender === "M")) {
+            if (
+              route.employees.length > 0 &&
+              route.employees[critIdx].gender === "F" &&
+              !route.employees.some((e) => e.gender === "M")
+            ) {
               routeActuallyNeedsExternalGuard = true;
               route.guardNeeded = true;
             } else {
@@ -1490,29 +1620,47 @@ async function generateRoutes(data) {
         }
 
         if (performReOptimization) {
-          const capacityForReOpt = route.isSpecialNeedsRoute ? 2 : route.vehicleCapacity;
+          const capacityForReOpt = route.isSpecialNeedsRoute
+            ? 2
+            : route.vehicleCapacity;
           const reOptResult = await reOptimizeSwappedRouteWithORTools(
             { ...route, vehicleCapacity: capacityForReOpt },
-            facility, pickupTimePerEmployee,
+            facility,
+            pickupTimePerEmployee
           );
           if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
             route.employees = reOptResult.employees;
-            const reOptRouteCoordinates = route.employees.map(emp => [emp.location.lat, emp.location.lng]);
-            const reOptAllCoordinates = isDropoff ? [facilityCoordinates, ...reOptRouteCoordinates] : [...reOptRouteCoordinates, facilityCoordinates];
-            currentRouteDetails = await calculateRouteDetails(reOptAllCoordinates, route.employees, pickupTimePerEmployee, tripType);
+            const reOptRouteCoordinates = route.employees.map((emp) => [
+              emp.location.lat,
+              emp.location.lng,
+            ]);
+            const reOptAllCoordinates = isDropoff
+              ? [facilityCoordinates, ...reOptRouteCoordinates]
+              : [...reOptRouteCoordinates, facilityCoordinates];
+            currentRouteDetails = await calculateRouteDetails(
+              reOptAllCoordinates,
+              route.employees,
+              pickupTimePerEmployee,
+              tripType
+            );
             if (currentRouteDetails.error) {
-              assignErrorState(route, `OSRM /trip failed after re-optimization: ${currentRouteDetails.error}`);
+              assignErrorState(
+                route,
+                `OSRM /trip failed after re-optimization: ${currentRouteDetails.error}`
+              );
+              unroutableDueToDeviation.push(...route.employees);
+              continue;
             } else {
               updateRouteWithDetails(route, currentRouteDetails);
             }
           }
         }
 
+        let tempRemovedForGuardThisRouteIteration = [];
         if (routeActuallyNeedsExternalGuard) {
           let passengerCapacity;
           const capacityBasisForGuardLogic = route.vehicleCapacity;
-
-          if (route.isSpecialNeedsRoute) { // Using the correct flag
+          if (route.isSpecialNeedsRoute) {
             passengerCapacity = 1;
           } else {
             passengerCapacity = Math.max(1, capacityBasisForGuardLogic - 1);
@@ -1522,57 +1670,126 @@ async function generateRoutes(data) {
             const numToRemove = route.employees.length - passengerCapacity;
             for (let i = 0; i < numToRemove; i++) {
               if (route.employees.length === 0) break;
-              const removedEmp = isDropoff ? route.employees.shift() : route.employees.pop();
+              const removedEmp = isDropoff
+                ? route.employees.shift()
+                : route.employees.pop();
               if (removedEmp) {
-                if (!removedForGuardByZone[route.zone]) removedForGuardByZone[route.zone] = [];
-                removedForGuardByZone[route.zone].push(removedEmp);
-                // Use the module-level isSpecialNeedsUser here
-                if (isSpecialNeedsUser(removedEmp) && !route.employees.some(isSpecialNeedsUser)) {
-                  route.isSpecialNeedsRoute = false; // Update the correct flag
+                tempRemovedForGuardThisRouteIteration.push(removedEmp);
+                if (
+                  isSpecialNeedsUser(removedEmp) &&
+                  !route.employees.some(isSpecialNeedsUser)
+                ) {
+                  route.isSpecialNeedsRoute = false;
                 }
               }
             }
             if (route.employees.length > 0) {
-                const newCoords = route.employees.map(e => [e.location.lat, e.location.lng]);
-                const newAllCoordsForGuardTrim = isDropoff ? [facilityCoordinates, ...newCoords] : [...newCoords, facilityCoordinates];
-                const recalcDetailsAfterGuardTrim = await calculateRouteDetails(newAllCoordsForGuardTrim, route.employees, pickupTimePerEmployee, tripType);
-                if (!recalcDetailsAfterGuardTrim.error) {
-                    updateRouteWithDetails(route, recalcDetailsAfterGuardTrim);
-                    currentRouteDetails = recalcDetailsAfterGuardTrim;
-                } else {
-                    assignErrorState(route, `OSRM failed after guard removal: ${recalcDetailsAfterGuardTrim.error}`);
-                }
+              const newCoords = route.employees.map((e) => [
+                e.location.lat,
+                e.location.lng,
+              ]);
+              const newAllCoordsForGuardTrim = isDropoff
+                ? [facilityCoordinates, ...newCoords]
+                : [...newCoords, facilityCoordinates];
+              const recalcDetailsAfterGuardTrim = await calculateRouteDetails(
+                newAllCoordsForGuardTrim,
+                route.employees,
+                pickupTimePerEmployee,
+                tripType
+              );
+              if (!recalcDetailsAfterGuardTrim.error) {
+                updateRouteWithDetails(route, recalcDetailsAfterGuardTrim);
+                currentRouteDetails = recalcDetailsAfterGuardTrim;
+              } else {
+                assignErrorState(
+                  route,
+                  `OSRM failed after guard removal: ${recalcDetailsAfterGuardTrim.error}`
+                );
+                unroutableDueToDeviation.push(
+                  ...route.employees,
+                  ...tempRemovedForGuardThisRouteIteration
+                );
+                continue;
+              }
             } else {
-                assignErrorState(route, "No employees after guard removal");
+              assignErrorState(route, "No employees after guard removal");
+              removedForGuardByZone[route.zone] = (
+                removedForGuardByZone[route.zone] || []
+              ).concat(tempRemovedForGuardThisRouteIteration);
+              continue;
             }
           }
           route.vehicleCapacity = passengerCapacity;
         }
-
-        if (route.employees.length > 0 && !route.error) {
-          calculatePickupTimes(route, shiftTime, pickupTimePerEmployee, reportingTime);
-          if (profileMaxDuration && route.routeDetails && route.routeDetails.duration > profileMaxDuration) {
-            route.durationExceeded = true;
-          }
-        } else if (!route.error && route.employees.length === 0) {
-           assignErrorState(route, "Route became empty after post-processing");
+        if (tempRemovedForGuardThisRouteIteration.length > 0) {
+          removedForGuardByZone[route.zone] = (
+            removedForGuardByZone[route.zone] || []
+          ).concat(tempRemovedForGuardThisRouteIteration);
         }
 
+        if (route.employees.length === 0) {
+          if (!route.error)
+            assignErrorState(
+              route,
+              "Route became empty after guard/other processing"
+            );
+          continue;
+        }
+        if (route.error) {
+          unroutableDueToDeviation.push(...route.employees);
+          continue;
+        }
+
+        const deviationOkay = checkRouteDeviation(route, facility, profile);
+        if (!deviationOkay) {
+          console.warn(
+            `Route ${
+              route.routeNumber
+            } (Emps: ${route.employees
+              .map((e) => e.empCode)
+              .join(",")}) FAILED acceptable route deviation. Adding employees to unroutable list.`
+          );
+          unroutableDueToDeviation.push(...route.employees);
+          continue;
+        }
+
+        calculatePickupTimes(
+          route,
+          shiftTime,
+          pickupTimePerEmployee,
+          reportingTime
+        );
+        if (
+          profileMaxDuration &&
+          route.routeDetails &&
+          route.routeDetails.totalDuration > profileMaxDuration // Check totalDuration
+        ) {
+          route.durationExceeded = true;
+          // console.warn(`Route ${route.routeNumber} exceeds max duration. Adding to unroutable.`);
+          // unroutableDueToDeviation.push(...route.employees);
+          // continue;
+        }
         route.swapped = routeModifiedByGuardSwap;
-        if (!route.error && route.employees.length > 0) {
-            finalProcessedRoutes.push(route);
-        }
+        finalProcessedRoutes.push(route);
       } catch (error) {
-        console.error(`Critical error in post-processing loop for route ${route?.routeNumber || 'UNKNOWN'}:`, error);
-        if (route) {
-          assignErrorState(route, `Post-processing loop critical error: ${error.message}`);
+        console.error(
+          `Critical error in post-processing loop for route ${
+            route?.routeNumber || "UNKNOWN"
+          }:`,
+          error
+        );
+        if (route && route.employees && route.employees.length > 0) {
+          unroutableDueToDeviation.push(...route.employees);
         }
       }
     }
 
     routeData.routeData = [...finalProcessedRoutes];
 
-    let collectedUnroutedForReinsertion = [...unroutedByOrTools];
+    let collectedUnroutedForReinsertion = [
+      ...unroutedByOrTools,
+      ...unroutableDueToDeviation,
+    ];
     for (const empList of Object.values(removedForGuardByZone)) {
       collectedUnroutedForReinsertion.push(...empList);
     }
@@ -1580,93 +1797,395 @@ async function generateRoutes(data) {
       collectedUnroutedForReinsertion.map((emp) => [emp.empCode, emp])
     );
     const successfullyRoutedEmpCodesInMainPass = new Set();
-    finalProcessedRoutes.forEach(route => {
-        if (!route.error && route.employees) {
-            route.employees.forEach(emp => successfullyRoutedEmpCodesInMainPass.add(emp.empCode));
-        }
+    finalProcessedRoutes.forEach((route) => {
+      if (!route.error && route.employees) {
+        route.employees.forEach((emp) =>
+          successfullyRoutedEmpCodesInMainPass.add(emp.empCode)
+        );
+      }
     });
-    const finalUnroutedEmployees = Array.from(potentiallyUnroutedMap.values()).filter(
-        emp => !successfullyRoutedEmpCodesInMainPass.has(emp.empCode)
-    );
+    const finalUnroutedEmployees = Array.from(
+      potentiallyUnroutedMap.values()
+    ).filter((emp) => !successfullyRoutedEmpCodesInMainPass.has(emp.empCode));
 
-    // console.log(`DEBUG: Employees TRULY unrouted and going into re-insertion: ${finalUnroutedEmployees.length} - ${finalUnroutedEmployees.map(e=>e.empCode).join(',')}`);
     if (finalUnroutedEmployees.length > 0) {
-      const { routes: newRoutesForUnrouted } = await processEmployeeBatch(
-        finalUnroutedEmployees, getZoneCapacity("DEFAULT_ZONE", profile),
-        facility, tripType, profileMaxDuration, pickupTimePerEmployee, guard,
-      );
-      for (const newRoute of newRoutesForUnrouted) {
-          totalRouteCount++;
-          newRoute.routeNumber = totalRouteCount;
-          newRoute.zone = newRoute.zone || "UNROUTED_REINSERTED";
-          if (newRoute.employees.length > 0) {
-              const newRouteCoords = newRoute.employees.map((e) => [e.location.lat, e.location.lng]);
-              const newAllCoords = isDropoff ? [facilityCoordinates, ...newRouteCoords] : [...newRouteCoords, facilityCoordinates];
-              const finalDetails = await calculateRouteDetails(newAllCoords, newRoute.employees, pickupTimePerEmployee, tripType);
-              if (!finalDetails.error) {
-                  updateRouteWithDetails(newRoute, finalDetails);
-                  calculatePickupTimes(newRoute, shiftTime, pickupTimePerEmployee, reportingTime);
-                  if (profileMaxDuration && newRoute.routeDetails && newRoute.routeDetails.duration > profileMaxDuration) {
-                      newRoute.durationExceeded = true;
-                  }
-              } else {
-                  assignErrorState(newRoute, `OSRM failed for re-inserted unrouted: ${finalDetails.error}`);
+      console.log(`\n[UNROUTED HANDLING] Processing ${finalUnroutedEmployees.length} unrouted employees...`);
+      
+      // Enforce max capacity for unrouted grouping
+      const maxCapacity = getZoneCapacity("GLOBAL", profile);
+      const groupedUnrouted = [];
+      const remainingUnrouted = [...finalUnroutedEmployees];
+      
+      while (remainingUnrouted.length > 0) {
+        const currentGroup = [];
+        const firstEmp = remainingUnrouted.shift();
+        currentGroup.push(firstEmp);
+        
+        for (let i = remainingUnrouted.length - 1; i >= 0; i--) {
+          if (currentGroup.length >= maxCapacity) break;
+          const candidateEmp = remainingUnrouted[i];
+          const tentativeRoute = {
+            employees: [...currentGroup, candidateEmp],
+            vehicleCapacity: maxCapacity,
+            guardNeeded: false,
+            isSpecialNeedsRoute: currentGroup.some(isSpecialNeedsUser) || isSpecialNeedsUser(candidateEmp),
+            tripType: tripType
+          };
+          const routeCoords = tentativeRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
+          const allCoords = isDropoff
+            ? [facilityCoordinates, ...routeCoords]
+            : [...routeCoords, facilityCoordinates];
+          const routeDetails = await calculateRouteDetails(
+            allCoords,
+            tentativeRoute.employees,
+            pickupTimePerEmployee,
+            tripType
+          );
+          if (!routeDetails.error) {
+            updateRouteWithDetails(tentativeRoute, routeDetails);
+            const deviationOkay = checkRouteDeviation(tentativeRoute, facility, profile);
+            if (deviationOkay) {
+              if (!profileMaxDuration || routeDetails.totalDuration <= profileMaxDuration) {
+                currentGroup.push(candidateEmp);
+                remainingUnrouted.splice(i, 1);
               }
+            }
+          }
+        }
+        if (currentGroup.length > 0) {
+          groupedUnrouted.push(currentGroup);
+        }
+      }
+      // Process grouped unrouted employees
+      for (const group of groupedUnrouted) {
+        totalRouteCount++;
+        let groupRoute = {
+          routeNumber: totalRouteCount,
+          employees: group,
+          zone: group[0].zone || "UNROUTED_GROUP",
+          vehicleCapacity: maxCapacity,
+          guardNeeded: false,
+          isSpecialNeedsRoute: group.some(isSpecialNeedsUser),
+          uniqueKey: `${group[0].zone}_${totalRouteCount}_${uuidv4()}`,
+          tripType: tripType
+        };
+        // OR-Tools optimization for the group
+        try {
+          const { routes: orToolsRoutes } = await solveZoneWithORTools(
+            group,
+            facility,
+            maxCapacity,
+            profileMaxDuration,
+            pickupTimePerEmployee,
+            tripType,
+            groupRoute.zone,
+            true
+          );
+          if (orToolsRoutes && orToolsRoutes.length > 0) {
+            groupRoute.employees = orToolsRoutes[0].employees;
+          }
+        } catch (e) {
+          console.warn(`OR-Tools failed for unrouted group: ${e.message}`);
+        }
+        // Validate group route with OSRM
+        const routeCoords = groupRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
+        const allCoords = isDropoff
+          ? [facilityCoordinates, ...routeCoords]
+          : [...routeCoords, facilityCoordinates];
+        const routeDetails = await calculateRouteDetails(
+          allCoords,
+          groupRoute.employees,
+          pickupTimePerEmployee,
+          tripType
+        );
+        if (routeDetails.error) {
+          console.warn(`Group route failed OSRM validation: ${routeDetails.error}`);
+          assignErrorState(groupRoute, `OSRM validation failed: ${routeDetails.error}`);
+          routeData.routeData.push(groupRoute);
+          continue;
+        }
+        updateRouteWithDetails(groupRoute, routeDetails);
+        // Check deviation for group route
+        const deviationOkay = checkRouteDeviation(groupRoute, facility, profile);
+        if (!deviationOkay) {
+          console.warn(`Group route failed deviation check`);
+          assignErrorState(groupRoute, "Exceeded acceptable route deviation");
+          routeData.routeData.push(groupRoute);
+          continue;
+        }
+        // Guard logic and swapping for unrouted group
+        let routeActuallyNeedsExternalGuard = false;
+        let performReOptimization = false;
+        const nightShiftActive = isNightShiftForGuard(
+          shiftTime,
+          tripType,
+          profile
+        );
+        if (guard && groupRoute.employees.length > 0 && nightShiftActive) {
+          const guardSwapResult = await handleGuardRequirements(
+            groupRoute,
+            isDropoff,
+            facility,
+            pickupTimePerEmployee
+          );
+          if (
+            guardSwapResult.swapped &&
+            guardSwapResult.routeDetails &&
+            !guardSwapResult.routeDetails.error
+          ) {
+            groupRoute.guardNeeded = false;
+            updateRouteWithDetails(groupRoute, guardSwapResult.routeDetails);
+            performReOptimization = true;
+          } else if (guardSwapResult.guardNeeded) {
+            routeActuallyNeedsExternalGuard = true;
+            groupRoute.guardNeeded = true;
           } else {
-              assignErrorState(newRoute, "Re-inserted unrouted route has no employees");
+            const critIdx = isDropoff ? groupRoute.employees.length - 1 : 0;
+            if (
+              groupRoute.employees.length > 0 &&
+              groupRoute.employees[critIdx].gender === "F" &&
+              !groupRoute.employees.some((e) => e.gender === "M")
+            ) {
+              routeActuallyNeedsExternalGuard = true;
+              groupRoute.guardNeeded = true;
+            } else {
+              groupRoute.guardNeeded = false;
+            }
           }
-          if (!newRoute.error && newRoute.employees.length > 0) {
-            routeData.routeData.push(newRoute);
+        } else if (guard && groupRoute.employees.length > 0 && !nightShiftActive) {
+          groupRoute.guardNeeded = false;
+        }
+        if (performReOptimization) {
+          const capacityForReOpt = groupRoute.isSpecialNeedsRoute
+            ? 2
+            : groupRoute.vehicleCapacity;
+          const reOptResult = await reOptimizeSwappedRouteWithORTools(
+            { ...groupRoute, vehicleCapacity: capacityForReOpt },
+            facility,
+            pickupTimePerEmployee
+          );
+          if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
+            groupRoute.employees = reOptResult.employees;
+            const reOptRouteCoordinates = groupRoute.employees.map((emp) => [
+              emp.location.lat,
+              emp.location.lng,
+            ]);
+            const reOptAllCoordinates = isDropoff
+              ? [facilityCoordinates, ...reOptRouteCoordinates]
+              : [...reOptRouteCoordinates, facilityCoordinates];
+            const currentRouteDetails = await calculateRouteDetails(
+              reOptAllCoordinates,
+              groupRoute.employees,
+              pickupTimePerEmployee,
+              tripType
+            );
+            if (!currentRouteDetails.error) {
+              updateRouteWithDetails(groupRoute, currentRouteDetails);
+            }
           }
+        }
+        // Calculate pickup times
+        calculatePickupTimes(
+          groupRoute,
+          shiftTime,
+          pickupTimePerEmployee,
+          reportingTime
+        );
+        // Check duration
+        if (profileMaxDuration && groupRoute.routeDetails.totalDuration > profileMaxDuration) {
+          groupRoute.durationExceeded = true;
+        }
+        routeData.routeData.push(groupRoute);
+      }
+      // Create singleton routes for any remaining unrouted employees
+      for (const unroutedEmp of remainingUnrouted) {
+        totalRouteCount++;
+        let singletonRoute = {
+          routeNumber: totalRouteCount,
+          employees: [unroutedEmp],
+          zone: unroutedEmp.zone || "UNROUTED_SINGLETON",
+          vehicleCapacity: 1,
+          guardNeeded: false,
+          isSpecialNeedsRoute: isSpecialNeedsUser(unroutedEmp),
+          uniqueKey: `${unroutedEmp.zone}_${totalRouteCount}_${uuidv4()}`,
+          tripType: tripType
+        };
+        // OR-Tools optimization for singleton
+        try {
+          const { routes: orToolsRoutes } = await solveZoneWithORTools(
+            [unroutedEmp],
+            facility,
+            1,
+            profileMaxDuration,
+            pickupTimePerEmployee,
+            tripType,
+            singletonRoute.zone,
+            true
+          );
+          if (orToolsRoutes && orToolsRoutes.length > 0) {
+            singletonRoute.employees = orToolsRoutes[0].employees;
+          }
+        } catch (e) {
+          console.warn(`OR-Tools failed for singleton unrouted: ${e.message}`);
+        }
+        // Validate singleton route with OSRM
+        const routeCoords = singletonRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
+        const allCoords = isDropoff
+          ? [facilityCoordinates, ...routeCoords]
+          : [...routeCoords, facilityCoordinates];
+        const routeDetails = await calculateRouteDetails(
+          allCoords,
+          singletonRoute.employees,
+          pickupTimePerEmployee,
+          tripType
+        );
+        if (routeDetails.error) {
+          console.warn(`Singleton route for ${unroutedEmp.empCode} failed OSRM validation: ${routeDetails.error}`);
+          assignErrorState(singletonRoute, `OSRM validation failed: ${routeDetails.error}`);
+          routeData.routeData.push(singletonRoute);
+          continue;
+        }
+        updateRouteWithDetails(singletonRoute, routeDetails);
+        // Check deviation for singleton route
+        const deviationOkay = checkRouteDeviation(singletonRoute, facility, profile);
+        if (!deviationOkay) {
+          console.warn(`Singleton route for ${unroutedEmp.empCode} failed deviation check`);
+          assignErrorState(singletonRoute, "Exceeded acceptable route deviation");
+          routeData.routeData.push(singletonRoute);
+          continue;
+        }
+        // Guard logic and swapping for singleton
+        let routeActuallyNeedsExternalGuard = false;
+        let performReOptimization = false;
+        const nightShiftActive = isNightShiftForGuard(
+          shiftTime,
+          tripType,
+          profile
+        );
+        if (guard && singletonRoute.employees.length > 0 && nightShiftActive) {
+          const guardSwapResult = await handleGuardRequirements(
+            singletonRoute,
+            isDropoff,
+            facility,
+            pickupTimePerEmployee
+          );
+          if (
+            guardSwapResult.swapped &&
+            guardSwapResult.routeDetails &&
+            !guardSwapResult.routeDetails.error
+          ) {
+            singletonRoute.guardNeeded = false;
+            updateRouteWithDetails(singletonRoute, guardSwapResult.routeDetails);
+            performReOptimization = true;
+          } else if (guardSwapResult.guardNeeded) {
+            routeActuallyNeedsExternalGuard = true;
+            singletonRoute.guardNeeded = true;
+          } else {
+            const critIdx = isDropoff ? singletonRoute.employees.length - 1 : 0;
+            if (
+              singletonRoute.employees.length > 0 &&
+              singletonRoute.employees[critIdx].gender === "F" &&
+              !singletonRoute.employees.some((e) => e.gender === "M")
+            ) {
+              routeActuallyNeedsExternalGuard = true;
+              singletonRoute.guardNeeded = true;
+            } else {
+              singletonRoute.guardNeeded = false;
+            }
+          }
+        } else if (guard && singletonRoute.employees.length > 0 && !nightShiftActive) {
+          singletonRoute.guardNeeded = false;
+        }
+        if (performReOptimization) {
+          const capacityForReOpt = singletonRoute.isSpecialNeedsRoute
+            ? 2
+            : singletonRoute.vehicleCapacity;
+          const reOptResult = await reOptimizeSwappedRouteWithORTools(
+            { ...singletonRoute, vehicleCapacity: capacityForReOpt },
+            facility,
+            pickupTimePerEmployee
+          );
+          if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
+            singletonRoute.employees = reOptResult.employees;
+            const reOptRouteCoordinates = singletonRoute.employees.map((emp) => [
+              emp.location.lat,
+              emp.location.lng,
+            ]);
+            const reOptAllCoordinates = isDropoff
+              ? [facilityCoordinates, ...reOptRouteCoordinates]
+              : [...reOptRouteCoordinates, facilityCoordinates];
+            const currentRouteDetails = await calculateRouteDetails(
+              reOptAllCoordinates,
+              singletonRoute.employees,
+              pickupTimePerEmployee,
+              tripType
+            );
+            if (!currentRouteDetails.error) {
+              updateRouteWithDetails(singletonRoute, currentRouteDetails);
+            }
+          }
+        }
+        // Calculate pickup times
+        calculatePickupTimes(
+          singletonRoute,
+          shiftTime,
+          pickupTimePerEmployee,
+          reportingTime
+        );
+        // Check duration
+        if (profileMaxDuration && singletonRoute.routeDetails.totalDuration > profileMaxDuration) {
+          singletonRoute.durationExceeded = true;
+        }
+        routeData.routeData.push(singletonRoute);
       }
     }
 
-    // Debugging block for duplicates (can be removed after fixing)
-    // const allRoutedEmployeeCodes = [];
-    // routeData.routeData.forEach(route => {
-    //     if (!route.error && route.employees) {
-    //         route.employees.forEach(emp => { allRoutedEmployeeCodes.push(emp.empCode); });
-    //     }
-    // });
-    // const codeCounts = {};
-    // let duplicatesFound = false;
-    // allRoutedEmployeeCodes.forEach(code => {
-    //     codeCounts[code] = (codeCounts[code] || 0) + 1;
-    //     if (codeCounts[code] > 1) {
-    //         console.error(`DUPLICATE ROUTED (after re-insertion): Employee ${code} is in ${codeCounts[code]} routes!`);
-    //         duplicatesFound = true;
-    //     }
-    // });
-    // if (duplicatesFound) console.error("ERROR: Duplicate employee assignments found in final routes after re-insertion.");
-    // else console.log("INFO: No duplicate employee assignments found in final routes after re-insertion.");
-    // const uniqueRoutedEmployees = new Set(allRoutedEmployeeCodes);
-    // console.log(`DEBUG: Unique routed employee count from final routes (after re-insertion): ${uniqueRoutedEmployees.size}`);
+    // After all routing and singleton/group handling
+    // Collect all routed employee codes
+    const routedEmpCodes = new Set();
+    routeData.routeData.forEach(route => {
+      if (!route.error && route.employees) {
+        route.employees.forEach(emp => routedEmpCodes.add(emp.empCode));
+      }
+    });
+    // Find unrouted employees
+    const unroutedEmployees = employees.filter(emp => !routedEmpCodes.has(emp.empCode));
 
     const stats = calculateRouteStatistics(routeData, employees.length);
     const response = createSimplifiedResponse({
-      ...routeData, ...stats, totalSwappedRoutes: finalTotalSwappedRoutes,
+      ...routeData,
+      ...stats,
+      totalSwappedRoutes: finalTotalSwappedRoutes,
     });
+    // Add unrouted employees to the response
+    response.unroutedEmployees = unroutedEmployees.map(emp => ({
+      empCode: emp.empCode,
+      geoX: emp.geoX,
+      geoY: emp.geoY,
+      gender: emp.gender,
+      isMedical: emp.isMedical || false,
+      isPWD: emp.isPWD || false
+    }));
 
-    if (saveToDatabase) { /* console.log("Simulating save to database"); */ }
+    if (saveToDatabase) {
+      /* console.log("Simulating save to database"); */
+    }
     return response;
-
   } catch (error) {
     console.error("Top-level generateRoutes error:", error);
     const inputData = typeof data === "object" && data !== null ? data : {};
     return createEmptyResponse({
-        uuid: inputData.uuid, date: inputData.date, shiftTime: inputData.shiftTime,
-        tripType: inputData.tripType, employees: inputData.employees,
+      uuid: inputData.uuid,
+      date: inputData.date,
+      shiftTime: inputData.shiftTime,
+      tripType: inputData.tripType,
+      employees: inputData.employees,
     });
   }
 }
 
-// Node.js: routeGenerationService.js
-
-// ... (other existing imports and helper functions like isOsrmAvailable, decodePolyline, etc.)
-
 function formatTime(date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
-    // More robust date validation
     console.error("formatTime: Invalid date object received", date);
     return "Invalid Time";
   }
@@ -1681,7 +2200,7 @@ function calculatePickupTimes(
   route,
   shiftTime,
   pickupTimePerEmployee,
-  reportingTimeSeconds = 0 // This parameter is present, ensure it's used if intended
+  reportingTimeSeconds = 0
 ) {
   try {
     if (!route || !route.employees || !route.employees.length || !shiftTime) {
@@ -1711,22 +2230,10 @@ function calculatePickupTimes(
     const facilityTargetTime = new Date();
     facilityTargetTime.setHours(hours, minutes, 0, 0);
 
-    // Adjust for reporting time if it's a pickup scenario and reporting time is significant
-    // For pickups, the vehicle should arrive at the facility *at* shiftTime.
-    // If reportingTimeSeconds means employees need to be at facility *before* shiftTime,
-    // then facilityTargetTime should be shiftTime - reportingTimeSeconds.
-    // For now, assuming facilityTargetTime is the actual shift start.
-    // If reportingTime is for employees to be ready *before* pickup, it's handled by their availability.
-
     const isDropoff = route.tripType?.toLowerCase() === "dropoff";
     let currentTime = new Date(facilityTargetTime);
 
     if (!isDropoff) {
-      // For PICKUP:
-      // The time the vehicle arrives at the facility with all employees.
-      // If reportingTimeSeconds means employees must be at facility X seconds *before* shiftTime,
-      // then the target arrival at facility is shiftTime - reportingTimeSeconds.
-      // Let's assume shiftTime is the target arrival at facility for now.
       let targetFacilityArrivalTime = new Date(facilityTargetTime);
       if (reportingTimeSeconds > 0) {
         targetFacilityArrivalTime.setSeconds(
@@ -1734,65 +2241,36 @@ function calculatePickupTimes(
         );
       }
       route.facilityArrivalTime = formatTime(targetFacilityArrivalTime);
-      currentTime = new Date(targetFacilityArrivalTime); // Start calculations from this target arrival
+      currentTime = new Date(targetFacilityArrivalTime);
 
       for (let i = route.employees.length - 1; i >= 0; i--) {
         const employee = route.employees[i];
-        // Leg duration is from previous stop (or facility for the last picked employee) to this employee
-        // The OSRM trip /trip API returns legs where legs[i] is the travel from waypoint[i] to waypoint[i+1]
-        // For pickup, employees are waypoints 0 to N-1, facility is N.
-        // So, route.routeDetails.legs[i] is travel from employee i to employee i+1 (or employee N-1 to facility)
-        // When calculating backwards:
-        // currentTime is arrival at (i+1) or facility.
-        // Subtract travel from i to (i+1) -> this is employee[i]'s dropoff time at point (i+1)
-        // Subtract service time at i -> this is employee[i]'s pickup time.
-
-        // Leg from employee i to employee i+1 (or facility if i is the last employee)
-        const legToNextStopOrFacility = route.routeDetails?.legs?.[i]; // leg[i] is from emp[i] to emp[i+1] or facility
+        const legToNextStopOrFacility = route.routeDetails?.legs?.[i];
         const legDuration =
           (legToNextStopOrFacility?.duration || 0) *
           (1 + TRAFFIC_BUFFER_PERCENTAGE);
 
-        // CurrentTime is arrival at stop i+1 (or facility)
-        // Subtract travel time from emp i to emp i+1
         currentTime.setSeconds(currentTime.getSeconds() - legDuration);
-        // CurrentTime is now arrival time at emp i's location (if they were dropped off)
-        // or departure time from emp i's location after pickup.
-
-        // Subtract service time (pickupTimePerEmployee)
         currentTime.setSeconds(
           currentTime.getSeconds() - pickupTimePerEmployee
         );
-        // CurrentTime is now the actual pickup time for employee i
         employee.pickupTime = formatTime(currentTime);
       }
     } else {
-      // For DROPOFF:
-      // currentTime is facility departure time.
-      // If reportingTimeSeconds has a meaning for dropoff (e.g. buffer before first drop), adjust here.
       route.facilityDepartureTime = formatTime(currentTime);
 
       for (let i = 0; i < route.employees.length; i++) {
         const employee = route.employees[i];
-        // Leg from previous stop (or facility for the first dropped employee) to this employee
-        // For dropoff, facility is waypoint 0, employees are 1 to N.
-        // route.routeDetails.legs[i] is travel from facility to emp[0] (if i=0)
-        // or from emp[i-1] to emp[i] (if i>0)
         const legToThisEmployee = route.routeDetails?.legs?.[i];
         const legDuration =
           (legToThisEmployee?.duration || 0) * (1 + TRAFFIC_BUFFER_PERCENTAGE);
 
-        // Add travel time to current employee
         currentTime.setSeconds(currentTime.getSeconds() + legDuration);
-        // CurrentTime is now arrival time at emp i's location
-
-        // Add service time (dropoff time)
         currentTime.setSeconds(
           currentTime.getSeconds() + pickupTimePerEmployee
-        ); // Assuming pickupTimePerEmployee is also dropoff service time
-        // CurrentTime is now the departure time from emp i's location (or final dropoff time)
+        );
         employee.dropoffTime = formatTime(currentTime);
-        employee.pickupTime = employee.dropoffTime; // For consistency in ETA field
+        employee.pickupTime = employee.dropoffTime;
       }
     }
   } catch (error) {
@@ -1813,11 +2291,11 @@ function calculatePickupTimes(
 async function handleGuardRequirements(
   route,
   isDropoff,
-  facility, // Not directly used for this distance check, but good to have
-  pickupTimePerEmployee, // Not directly used for this distance check
+  facility,
+  pickupTimePerEmployee
 ) {
   try {
-    if (!route?.employees?.length || route.employees.length < 2) { // Need at least 2 to swap
+    if (!route?.employees?.length || route.employees.length < 2) {
       return { guardNeeded: false, swapped: false };
     }
 
@@ -1833,83 +2311,86 @@ async function handleGuardRequirements(
     );
 
     if (potentialMaleCandidates.length === 0) {
-      // console.log(`Guard needed for route ${route.routeNumber}: No male employees in route to consider for swap.`);
       return { guardNeeded: true, swapped: false };
     }
 
-    // Prepare coordinates for OSRM table request
-    // Source will be the criticalEmployee
-    // Destinations will be all potentialMaleCandidates
     const osrmCoordinates = [
-      `${criticalEmployee.location.lng},${criticalEmployee.location.lat}`, // Source 0
+      `${criticalEmployee.location.lng},${criticalEmployee.location.lat}`,
       ...potentialMaleCandidates.map(
-        (emp) => `${emp.location.lng},${emp.location.lat}` // Destinations 1 to N
+        (emp) => `${emp.location.lng},${emp.location.lat}`
       ),
     ];
 
-    const sources = "0"; // Index of criticalEmployee in osrmCoordinates
+    const sources = "0";
     const destinations = potentialMaleCandidates
-      .map((_, i) => i + 1) // Indices of male candidates in osrmCoordinates
+      .map((_, i) => i + 1)
       .join(";");
 
     const osrmTableUrl = `http://localhost:5000/table/v1/driving/${osrmCoordinates.join(
       ";"
-    )}?sources=${sources}&destinations=${destinations}&annotations=distance`; // We only need distance for this check
+    )}?sources=${sources}&destinations=${destinations}&annotations=distance`;
 
     let osrmDistances = [];
     try {
-      const response = await fetchApi(osrmTableUrl, { timeout: OSRM_PROBE_TIMEOUT_HEURISTIC }); // Use a reasonable timeout
+      const response = await fetchApi(osrmTableUrl, {
+        timeout: OSRM_PROBE_TIMEOUT_HEURISTIC,
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.code === "Ok" && data.distances && data.distances.length > 0) {
-          osrmDistances = data.distances[0]; // Distances from source 0 to all destinations
+          osrmDistances = data.distances[0];
         } else {
-          console.warn(`[handleGuardRequirements] OSRM /table error or no distances for route ${route.routeNumber}: ${data.code} - ${data.message || ''}`);
-          // Fallback or error: if OSRM fails, we can't use road distance.
-          // Option: Fallback to Haversine, or consider it a failure to find swappable candidate.
-          // For now, let's treat OSRM failure as "no swappable candidate by road distance".
+          console.warn(
+            `[handleGuardRequirements] OSRM /table error or no distances for route ${
+              route.routeNumber
+            }: ${data.code} - ${data.message || ""}`
+          );
           return { guardNeeded: true, swapped: false };
         }
       } else {
-        console.warn(`[handleGuardRequirements] OSRM /table HTTP error ${response.status} for route ${route.routeNumber}`);
+        console.warn(
+          `[handleGuardRequirements] OSRM /table HTTP error ${response.status} for route ${route.routeNumber}`
+        );
         return { guardNeeded: true, swapped: false };
       }
     } catch (error) {
-      console.error(`[handleGuardRequirements] OSRM /table fetch error for route ${route.routeNumber}:`, error);
+      console.error(
+        `[handleGuardRequirements] OSRM /table fetch error for route ${route.routeNumber}:`,
+        error
+      );
       return { guardNeeded: true, swapped: false };
     }
 
     const validCandidates = [];
     potentialMaleCandidates.forEach((maleEmp, idx) => {
-      const roadDistanceMeters = osrmDistances[idx]; // OSRM distances are in meters
-      if (roadDistanceMeters != null) { // Check if OSRM could route between them
+      const roadDistanceMeters = osrmDistances[idx];
+      if (roadDistanceMeters != null) {
         const roadDistanceKm = roadDistanceMeters / 1000;
         if (roadDistanceKm <= MAX_SWAP_DISTANCE_KM) {
           validCandidates.push({
             employee: maleEmp,
-            // Find original index in route.employees for the swap
-            index: route.employees.findIndex(e => e.empCode === maleEmp.empCode),
-            distance: roadDistanceKm, // Store road distance
+            index: route.employees.findIndex(
+              (e) => e.empCode === maleEmp.empCode
+            ),
+            distance: roadDistanceKm,
           });
         }
       }
     });
 
     if (validCandidates.length === 0) {
-      // console.log(`Guard needed for route ${route.routeNumber}: No suitable male swap candidates found within ${MAX_SWAP_DISTANCE_KM}km road distance.`);
       return { guardNeeded: true, swapped: false };
     }
 
-    // Sort by actual road distance
     validCandidates.sort((a, b) => a.distance - b.distance);
     const bestCandidate = validCandidates[0];
 
-    // Perform the swap
     const newEmployees = [...route.employees];
-    // Ensure bestCandidate.index is valid and different from checkIndex
     if (bestCandidate.index === -1 || bestCandidate.index === checkIndex) {
-        console.error(`[handleGuardRequirements] Error finding original index for best candidate or candidate is the critical employee.`);
-        return { guardNeeded: true, swapped: false };
+      console.error(
+        `[handleGuardRequirements] Error finding original index for best candidate or candidate is the critical employee.`
+      );
+      return { guardNeeded: true, swapped: false };
     }
 
     [newEmployees[checkIndex], newEmployees[bestCandidate.index]] = [
@@ -1917,39 +2398,42 @@ async function handleGuardRequirements(
       newEmployees[checkIndex],
     ];
 
-    // Recalculate full route details with OSRM /trip for the swapped sequence
-    const newRouteCoordinates = newEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
-    const facilityCoordsArray = [facility.geoY, facility.geoX]; // Assuming facility is passed correctly
+    const newRouteCoordinates = newEmployees.map((emp) => [
+      emp.location.lat,
+      emp.location.lng,
+    ]);
+    const facilityCoordsArray = [facility.geoY, facility.geoX];
     const allCoordinatesForTrip = isDropoff
       ? [facilityCoordsArray, ...newRouteCoordinates]
       : [...newRouteCoordinates, facilityCoordsArray];
 
     const routeDetailsAfterSwap = await calculateRouteDetails(
       allCoordinatesForTrip,
-      newEmployees, // Pass the swapped employee list
-      pickupTimePerEmployee, // This is for service time in calculateRouteDetails, not travel
-      route.tripType,
+      newEmployees,
+      pickupTimePerEmployee,
+      route.tripType
     );
 
     if (routeDetailsAfterSwap.error) {
-      console.warn(`Swap validation (OSRM /trip) failed for route ${route.routeNumber} after road distance swap: ${routeDetailsAfterSwap.error}`);
-      // If the new sequence is unroutable by OSRM /trip, the swap is not viable.
+      console.warn(
+        `Swap validation (OSRM /trip) failed for route ${route.routeNumber} after road distance swap: ${routeDetailsAfterSwap.error}`
+      );
       return { guardNeeded: true, swapped: false };
     }
 
-    // console.log(`Successfully identified swap for route ${route.routeNumber} using road distance: ${criticalEmployee.empCode} with ${bestCandidate.employee.empCode}. Road Distance: ${bestCandidate.distance.toFixed(2)}km`);
     return {
       guardNeeded: false,
       swapped: true,
       routeDetails: routeDetailsAfterSwap,
     };
-
   } catch (error) {
-    console.error(`Error in handleGuardRequirements (road distance) for route ${route?.routeNumber}:`, error);
-    return { guardNeeded: true, swapped: false }; // Default to needing a guard on error
+    console.error(
+      `Error in handleGuardRequirements (road distance) for route ${route?.routeNumber}:`,
+      error
+    );
+    return { guardNeeded: true, swapped: false };
   }
 }
-
 
 async function validateSwap(
   route,
@@ -1985,10 +2469,10 @@ async function validateSwap(
     );
 
     if (routeDetails.error) {
-      return { viable: false, routeDetails }; // Return details even on error for logging
+      return { viable: false, routeDetails };
     }
 
-    const originalDuration = route.routeDetails?.duration || Infinity; // Use current route's duration
+    const originalDuration = route.routeDetails?.totalDuration || Infinity; // Use totalDuration
     const newDuration = routeDetails.totalDuration;
     const durationIncrease =
       newDuration > originalDuration
@@ -1996,9 +2480,8 @@ async function validateSwap(
         : 0;
 
     return {
-      viable: durationIncrease <= 0.2, // Allow up to 20% increase
+      viable: durationIncrease <= 0.2,
       routeDetails,
-      // newCoordinates: allCoordinates, // Not strictly needed by caller
     };
   } catch (error) {
     console.error("Swap validation error:", error);
@@ -2012,7 +2495,6 @@ async function findComplexSwap(
   facility,
   pickupTimePerEmployee
 ) {
-  // Placeholder for more complex swap logic (e.g., 3-way swaps, or considering multiple male candidates)
   return null;
 }
 
@@ -2030,7 +2512,7 @@ function assignErrorState(route, message = "Unknown error") {
     dropoffTime: "Error",
   }));
   route.encodedPolyline = "error_polyline";
-  route.routeDetails = { distance: 0, duration: 0, legs: [] };
+  route.routeDetails = { totalDistance: 0, totalDuration: 0, legs: [] }; // Use totalDistance/totalDuration
   route.swapped = false;
   route.error = true;
   route.errorMessage = message;
@@ -2051,8 +2533,8 @@ function updateRouteWithDetails(route, routeDetails) {
   route.employees = routeDetails.employees;
   route.encodedPolyline = routeDetails.encodedPolyline;
   route.routeDetails = {
-    distance: routeDetails.totalDistance,
-    duration: routeDetails.totalDuration,
+    totalDistance: routeDetails.totalDistance,
+    totalDuration: routeDetails.totalDuration,
     legs: routeDetails.legs,
     geometry: routeDetails.geometry,
   };
@@ -2077,12 +2559,13 @@ function calculateRouteStatistics(routeData, totalEmployeesInput) {
   let totalDurationSum = 0;
 
   validRoutes.forEach((route) => {
-    if (
-      route.routeDetails?.duration !== Infinity &&
-      route.routeDetails?.distance !== Infinity
-    ) {
-      totalDistanceSum += route.routeDetails?.distance || 0;
-      totalDurationSum += route.routeDetails?.duration || 0;
+    // Access totalDistance and totalDuration from route.routeDetails
+    const routeDist = route.routeDetails?.totalDistance;
+    const routeDur = route.routeDetails?.totalDuration;
+
+    if (routeDur !== Infinity && routeDist !== Infinity) {
+      totalDistanceSum += routeDist || 0;
+      totalDurationSum += routeDur || 0;
     }
   });
 
@@ -2091,72 +2574,68 @@ function calculateRouteStatistics(routeData, totalEmployeesInput) {
     totalRoutedEmployees,
     totalRoutes: totalValidRoutes,
     averageOccupancy: parseFloat(averageOccupancy.toFixed(2)),
-    routeDetails: {
+    routeDetails: { // This becomes overallRouteDetails in the response
       totalDistance: parseFloat((totalDistanceSum / 1000).toFixed(2)), // km
       totalDuration: parseFloat(totalDurationSum.toFixed(2)), // seconds
     },
   };
 }
 
-// In routeGenerationService.js
-
 function createSimplifiedResponse(routeData) {
   return {
     uuid: routeData.uuid,
     date: routeData.date,
     shift: routeData.shift,
-    tripType: routeData.tripType === "PICKUP" ? "P" : "D", // Already good
+    tripType: routeData.tripType === "PICKUP" ? "P" : "D",
     totalEmployees: routeData.totalEmployees,
     totalRoutedEmployees: routeData.totalRoutedEmployees,
     totalRoutes: routeData.totalRoutes,
     averageOccupancy: routeData.averageOccupancy,
-    overallRouteDetails: routeData.routeDetails,
+    overallRouteDetails: routeData.routeDetails, // This now comes from calculateRouteStatistics
     totalSwappedRoutes: routeData.totalSwappedRoutes,
     routes: routeData.routeData
-        .filter(route => !route.error && route.employees?.length > 0)
-        .map((route) => {
-            // route.guardNeeded is now the definitive flag for whether an external guard is assigned
-            const guardAssigned = route.guardNeeded || false;
+      .filter((route) => !route.error && route.employees?.length > 0)
+      .map((route) => {
+        const guardAssigned = route.guardNeeded || false;
+        const occupancy = (route.employees?.length || 0) + (guardAssigned ? 1 : 0);
+        const reportedVehicleCapacity = route.vehicleCapacity;
 
-            // Occupancy calculation: number of employees + 1 if a guard is assigned
-            // (assuming guard is not already an employee object)
-            const occupancy = (route.employees?.length || 0) + (guardAssigned ? 1 : 0);
-
-            // vehicleCapacity on the route object should be the *effective passenger capacity*
-            // after medical and guard rules have been applied by processEmployeeBatch and generateRoutes.
-            // For a special needs route, this would be 2 (or 1 if guard is also present).
-            // For a regular route, it's physical_capacity (or physical_capacity - 1 if guard is present).
-            const reportedVehicleCapacity = route.vehicleCapacity;
-
-            return {
-                routeNumber: route.routeNumber,
-                zone: route.zone,
-                vehicleCapacity: reportedVehicleCapacity, // This should be the final effective passenger capacity
-                guard: guardAssigned,
-                swapped: route.swapped || false,
-                durationExceeded: route.durationExceeded || false,
-                uniqueKey: route.uniqueKey,
-                isSpecialNeedsRoute: route.isSpecialNeedsRoute || false, // <<< USE THE NEW FLAG
-                // isMedicalRoute: route.isMedicalRoute, // <<< REMOVE OR RENAME if isSpecialNeedsRoute replaces it
-                distance: parseFloat(((route.routeDetails?.distance || 0) / 1000).toFixed(2)),
-                duration: parseFloat((route.routeDetails?.duration || 0).toFixed(2)),
-                occupancy,
-                encodedPolyline: route.encodedPolyline || "no_polyline",
-                employees: (route.employees || []).map((emp, index) => ({
-                    empCode: emp.empCode,
-                    gender: emp.gender,
-                    isMedical: emp.isMedical || false, // Include if useful for consumer
-                    isPWD: emp.isPWD || false,       // Include if useful for consumer
-                    eta: route.tripType?.toUpperCase() === "DROPOFF" ? emp.dropoffTime : emp.pickupTime,
-                    order: emp.order !== undefined && emp.order >= 1 ? emp.order : index + 1,
-                    geoX: emp.geoX,
-                    geoY: emp.geoY,
-                })),
-            };
-    }),
+        return {
+          routeNumber: route.routeNumber,
+          zone: route.zone,
+          vehicleCapacity: reportedVehicleCapacity,
+          guard: guardAssigned,
+          swapped: route.swapped || false,
+          durationExceeded: route.durationExceeded || false,
+          uniqueKey: route.uniqueKey,
+          isSpecialNeedsRoute: route.isSpecialNeedsRoute || false,
+          // Access totalDistance and totalDuration for individual routes
+          distance: parseFloat(
+            ((route.routeDetails?.totalDistance || 0) / 1000).toFixed(2)
+          ),
+          duration: parseFloat(
+            (route.routeDetails?.totalDuration || 0).toFixed(2)
+          ),
+          occupancy,
+          encodedPolyline: route.encodedPolyline || "no_polyline",
+          employees: (route.employees || []).map((emp, index) => ({
+            empCode: emp.empCode,
+            gender: emp.gender,
+            isMedical: emp.isMedical || false,
+            isPWD: emp.isPWD || false,
+            eta:
+              route.tripType?.toUpperCase() === "DROPOFF"
+                ? emp.dropoffTime
+                : emp.pickupTime,
+            order:
+              emp.order !== undefined && emp.order >= 1 ? emp.order : index + 1,
+            geoX: emp.geoX,
+            geoY: emp.geoY,
+          })),
+        };
+      }),
   };
 }
-
 
 function createEmptyResponse(data) {
   return {

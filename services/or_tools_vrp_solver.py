@@ -326,13 +326,13 @@ def solve_cvrptw(data_model):
             # Do not allow dropping for fixed start/end nodes if they are set
             is_fixed_node = (fixed_start_node_orig_idx is not None and node_idx_in_model == fixed_start_node_orig_idx) or \
                             (fixed_end_node_orig_idx is not None and node_idx_in_model == fixed_end_node_orig_idx)
-            
+
             # Also, for dropoff re-optimization, other customers in the route should not be dropped.
             is_other_fixed_customer = False
             if fixed_end_node_orig_idx is not None and data_model.get("other_customer_node_indices_in_matrix"):
                 if node_idx_in_model in data_model["other_customer_node_indices_in_matrix"]:
                     is_other_fixed_customer = True
-            
+
             current_penalty = 0 if (is_fixed_node or is_other_fixed_customer) else penalty_value
             if is_fixed_node or is_other_fixed_customer:
                  print_debug(f"    Node {node_idx_in_model} is part of a fixed re-optimization, making it mandatory (penalty 0 if dropping allowed).")
@@ -412,10 +412,10 @@ def solve_cvrptw(data_model):
                 # We want the sequence of *customer* visits.
                 if node_original_idx != depot_original_idx:
                     route_for_vehicle_original_indices.append(node_original_idx)
-                
+
                 previous_index = index
                 index = solution.Value(routing.NextVar(index)) # Get manager index of next stop
-                
+
                 # Calculate route distance using the solver's cost, not just raw matrix
                 # This includes penalties if the cost callback has them.
                 # cost_eval_idx = routing.GetArcCostForVehicle(previous_index, index, vehicle_id) # This is not directly available
@@ -457,14 +457,14 @@ def solve_cvrptw(data_model):
                     # However, the most robust way is to check its disjunction status if AddDisjunction was used.
                     # For AddDisjunction([node], penalty), if penalty > 0 and node is dropped, ActiveVar(node) is 0.
                     # If penalty is 0 (mandatory), ActiveVar(node) should be 1.
-                    
+
                     # Check if the node is in any of the output_routes
                     is_in_a_route = False
                     for r_nodes in output_routes:
                         if node_original_idx in r_nodes:
                             is_in_a_route = True
                             break
-                    
+
                     if not is_in_a_route:
                         # If allow_dropping_visits was true, and it's not in a route, it was likely dropped.
                         # The AddDisjunction call handles this. We can verify by checking ActiveVar if needed,
@@ -492,7 +492,7 @@ def solve_cvrptw(data_model):
 
             if dropped_node_indices:
                 print_debug(f"    Dropped node original indices (depot is {depot_original_idx}): {dropped_node_indices}")
-        
+
         if not output_routes and num_locations > 1 and data_model["num_vehicles"] > 0 :
             # Check if there were customers (num_locations > 1 if depot is one location)
             # And if no nodes were dropped (when dropping is not allowed or all were mandatory)
@@ -562,4 +562,3 @@ if __name__ == "__main__":
         print(json.dumps(error_response), file=sys.stderr)
         print(json.dumps(error_response))
         sys.exit(1)
-

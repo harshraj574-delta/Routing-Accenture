@@ -3,26 +3,79 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { spawn } = require("child_process"); // For calling Python
 
-const TRAFFIC_BUFFER_PERCENTAGE = 0.4; // 40% buffer for traffic
+// const TRAFFIC_BUFFER_PERCENTAGE = 0.4; // 40% buffer for traffic
 const MAX_SWAP_DISTANCE_KM = 1.5; // or your business threshold
 
-// Constants for processEmployeeBatch (your original heuristic)
-const OSRM_PROBE_COUNT_HEURISTIC = 5; // Can be different from OR-Tools related OSRM_PROBE_COUNT
 const OSRM_PROBE_TIMEOUT_HEURISTIC = 3000;
 const OSRM_PROBE_TIMEOUT = 8000;
+
+/**
+ * Calculate traffic buffer percentage based on shift time
+ * @param {string|number} shiftTime - Time in format "0930" or 930
+ * @returns {number} Traffic buffer percentage (0.0 to 1.0)
+ */
+function getTrafficBufferForShiftTime(shiftTime) {
+  if (!shiftTime) {
+    return 0.4; // Default 40% buffer
+  }
+
+  // Convert to 24-hour format number
+  const timeStr = shiftTime.toString().padStart(4, "0");
+  const hours = parseInt(timeStr.substring(0, 2), 10);
+  const minutes = parseInt(timeStr.substring(2, 4), 10);
+  
+  if (isNaN(hours) || isNaN(minutes)) {
+    console.warn(`[Traffic Buffer] Invalid shift time: ${shiftTime}. Using default buffer.`);
+    return 0.4;
+  }
+
+  // Convert to decimal hours for easier comparison
+  const decimalTime = hours + (minutes / 60);
+
+  // Define traffic patterns based on time of day
+  if (decimalTime >= 7.0 && decimalTime < 10.0) {
+    // Morning rush hour: 7:00 AM - 10:00 AM (High traffic)
+    return 0.6; // 60% buffer
+  } else if (decimalTime >= 10.0 && decimalTime < 16.0) {
+    // Afternoon: 10:00 AM - 4:00 PM (Moderate traffic)
+    return 0.4; // 30% buffer
+  } else if (decimalTime >= 16.0 && decimalTime < 20.0) {
+    // Evening rush hour: 4:00 PM - 8:00 PM (High traffic)
+    return 0.6; // 60% buffer
+  } else {
+    // Night time: 8:00 PM - 7:00 AM (Low traffic)
+    return 0.4; // 20% buffer
+  }
+}
+
 
 const fetchApi = (...args) => {
   return import("node-fetch").then(({ default: fetch }) => fetch(...args));
 };
 
-// const ZONES_DATA_FILE = path.join(__dirname, "../data/delhi_ncr_zones.json");
-const ZONES_DATA_FILE = path.join(__dirname, "../data/bengaluru_zones.json");
+const ZONES_DATA_FILE = path.join(__dirname, "../data/bengaluru_zones.json"); // Ensure this path is correct
 
-// --- All your existing helper functions (isOsrmAvailable, decode/encodePolyline, etc.) ---
-async function isOsrmAvailable() {
+function getOsrmBaseUrl(city) {
+  const normalizedCity = city?.toLowerCase();
+  if (normalizedCity === "ncr") {
+    return "http://3.108.58.254:5000";
+  } else if (normalizedCity === "chennai") {
+    return "http://13.235.89.143:5000";
+  } else if (normalizedCity === "bengaluru") {
+    return "http://localhost:5000";
+  }
+  console.warn(
+    `[OSRM URL] Unknown or unconfigured city: '${city}'. Falling back to localhost.`
+  );
+  return "http://localhost:5000";
+}
+
+async function isOsrmAvailable(profile) {
+  const city = profile?.name;
+  const osrmBaseUrl = getOsrmBaseUrl(city);
   try {
-    const osrmUrl =
-      "http://localhost:5000/route/v1/driving/77.1025,28.7041;77.1026,28.7042";
+    const testCoordinates = "77.1025,28.7041;77.1026,28.7042";
+    const osrmUrl = `${osrmBaseUrl}/route/v1/driving/${testCoordinates}?overview=false&steps=false`;
     const response = await fetchApi(osrmUrl, {
       method: "GET",
       timeout: 8000,
@@ -31,9 +84,15 @@ async function isOsrmAvailable() {
       const data = await response.json();
       return data && data.code === "Ok";
     }
+    console.warn(
+      `[isOsrmAvailable] OSRM check failed for ${osrmBaseUrl}. Status: ${response.status}`
+    );
     return false;
   } catch (error) {
-    console.error("Error checking OSRM availability:", error);
+    console.error(
+      `Error checking OSRM availability for ${osrmBaseUrl}:`,
+      error.message
+    );
     return false;
   }
 }
@@ -97,26 +156,6 @@ function encodeNumber(num) {
   return output;
 }
 
-function toRadians(degrees) {
-  return degrees * (Math.PI / 180);
-}
-
-async function calculateDistance(point1, point2) {
-  const [lat1, lng1] = point1;
-  const [lat2, lng2] = point2;
-  const R = 6371;
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 function haversineDistance([lat1, lon1], [lat2, lon2]) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const R = 6371; // km
@@ -129,7 +168,8 @@ function haversineDistance([lat1, lon1], [lat2, lon2]) {
 }
 
 function isPointInPolygon(point, polygon) {
-  if (!point || !polygon || !Array.isArray(polygon)) return false;
+  if (!point || !polygon || !Array.isArray(polygon) || polygon.length < 3)
+    return false;
   const [lat, lng] = point;
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -143,18 +183,6 @@ function isPointInPolygon(point, polygon) {
   return inside;
 }
 
-function calculateAngle(point1, point2) {
-  return Math.atan2(point2.lat - point1.lat, point2.lng - point1.lng);
-}
-
-function angleDifference(angle1, angle2) {
-  let diff = Math.abs(angle1 - angle2);
-  if (diff > Math.PI) {
-    diff = 2 * Math.PI - diff;
-  }
-  return diff;
-}
-
 async function loadZonesData() {
   const data = await fs.promises.readFile(ZONES_DATA_FILE, "utf8");
   const zonesData = JSON.parse(data);
@@ -164,34 +192,45 @@ async function loadZonesData() {
 function assignEmployeesToZones(employees, zones) {
   const employeesByZone = {};
   const assignedEmployees = new Set();
-  for (let i = 0; i < zones.length; i++) {
-    const zone = zones[i];
-    const zoneName = zone.properties?.Name || "Unknown Zone";
-    const zonePolygon = zone.geometry.coordinates[0];
-    const zoneEmployees = employees
-      .filter((emp) => {
-        if (!emp.geoX || !emp.geoY) return false;
-        const isInZone = isPointInPolygon([emp.geoY, emp.geoX], zonePolygon);
-        if (isInZone) assignedEmployees.add(emp.empCode);
-        return isInZone;
-      })
-      .map((emp) => ({
-        ...emp,
-        zone: zoneName,
-        location: { lat: emp.geoY, lng: emp.geoX },
-      }));
-    if (zoneEmployees.length > 0) employeesByZone[zoneName] = zoneEmployees;
+  if (!zones || zones.length === 0) {
+     console.warn("[assignEmployeesToZones] No zones provided. All employees will be in DEFAULT_ZONE.");
+  } else {
+    for (let i = 0; i < zones.length; i++) {
+        const zone = zones[i];
+        if (!zone?.properties || !zone.geometry?.coordinates?.[0]) {
+            console.warn(`[assignEmployeesToZones] Invalid zone structure at index ${i}`, zone);
+            continue;
+        }
+        const zoneName = zone.properties?.Name || `Unknown Zone ${i}`;
+        const zonePolygon = zone.geometry.coordinates[0];
+        const zoneEmployees = employees
+        .filter((emp) => {
+            if (!emp.geoX || !emp.geoY) return false;
+            const isInZone = isPointInPolygon([emp.geoY, emp.geoX], zonePolygon);
+            if (isInZone) assignedEmployees.add(emp.empCode);
+            return isInZone;
+        })
+        .map((emp) => ({
+            ...emp,
+            zone: zoneName,
+            location: { lat: emp.geoY, lng: emp.geoX },
+        }));
+        if (zoneEmployees.length > 0) employeesByZone[zoneName] = zoneEmployees;
+    }
   }
   const unassignedEmployees = employees.filter(
     (emp) => !assignedEmployees.has(emp.empCode) && emp.geoX && emp.geoY
   );
   if (unassignedEmployees.length > 0) {
     const defaultZoneName = "DEFAULT_ZONE";
-    employeesByZone[defaultZoneName] = unassignedEmployees.map((emp) => ({
-      ...emp,
-      zone: defaultZoneName,
-      location: { lat: emp.geoY, lng: emp.geoX },
-    }));
+    if (!employeesByZone[defaultZoneName]) employeesByZone[defaultZoneName] = [];
+    employeesByZone[defaultZoneName].push(
+        ...unassignedEmployees.map((emp) => ({
+        ...emp,
+        zone: defaultZoneName,
+        location: { lat: emp.geoY, lng: emp.geoX },
+        }))
+    );
   }
   return employeesByZone;
 }
@@ -227,24 +266,12 @@ function getZoneCapacity(zoneName, profile) {
   return 6;
 }
 
-/**
- * Checks if the given shift time and trip type fall within the night shift
- * requiring a guard for female employees.
- * @param {string|number} shiftTime - The shift time (e.g., "0900", "2330", or 900, 2330).
- * @param {string} tripType - "PICKUP" or "DROPOFF".
- * @param {object} profile - The profile object, potentially containing night shift timings.
- * @returns {boolean}
- */
+// isNightShiftForGuard is kept for potential other uses or future logic changes,
+// but not primary for guard assignment if global 'guard' flag is the main driver.
 function isNightShiftForGuard(shiftTime, tripType, profile) {
-  if (!shiftTime || !tripType) {
-    return false;
-  }
-
-  const st = parseInt(shiftTime.toString(), 10);
-  if (isNaN(st)) {
-    return false;
-  }
-
+  if (!shiftTime || !tripType) return false;
+  const st = parseInt(shiftTime.toString().replace(":", ""), 10);
+  if (isNaN(st)) return false;
   let nightShiftConfig = profile?.nightShiftGuardTimings;
   if (!nightShiftConfig) {
     nightShiftConfig = {
@@ -252,35 +279,14 @@ function isNightShiftForGuard(shiftTime, tripType, profile) {
       DROPOFF: { start: 1900, end: 530 },
     };
   }
-
   const facilityTypePrefix = (profile?.facilityType || "CDC").toUpperCase();
   const typeConfigKeyWithFacility = `${facilityTypePrefix}_${tripType.toUpperCase()}`;
-  let config = nightShiftConfig[typeConfigKeyWithFacility];
-
-  if (!config) {
-    config = nightShiftConfig[tripType.toUpperCase()];
-  }
-
-  if (!config) {
-    return false;
-  }
-
+  let config = nightShiftConfig[typeConfigKeyWithFacility] || nightShiftConfig[tripType.toUpperCase()];
+  if (!config) return false;
   const { start, end } = config;
-
-  if (start > end) {
-    if (st >= start || st <= end) {
-      return true;
-    }
-  } else if (start < end) {
-    if (st >= start && st <= end) {
-      return true;
-    }
-  } else {
-    if (st === start) {
-      return true;
-    }
-  }
-  return false;
+  if (start > end) return st >= start || st <= end;
+  if (start < end) return st >= start && st <= end;
+  return st === start;
 }
 
 const isSpecialNeedsUser = (emp) => {
@@ -288,162 +294,346 @@ const isSpecialNeedsUser = (emp) => {
   return (emp.isMedical || false) || (emp.isPWD || false);
 };
 
-function checkRouteDeviation(route, facility, profile) {
-  // console.log(`[Route ${route.routeNumber}] checkRouteDeviation called.`);
-  if (!profile) {
-    // console.warn(`[Route ${route.routeNumber}] No profile object provided to checkRouteDeviation. Returning true.`);
-    return true;
-  }
-  if (!profile.routeDeviationRules) {
-    // console.warn(`[Route ${route.routeNumber}] profile.routeDeviationRules is missing. Returning true.`);
-    return true;
-  }
-  if (
-    !route?.routeDetails?.totalDistance || // Check for totalDistance
-    !route?.employees?.length
-  ) {
-    // console.warn(`[Route ${route.routeNumber}] Missing routeDetails, totalDistance, or employees. Returning true.`);
+async function checkRouteDeviation(route, facility, profile) {
+  const city = profile?.name;
+  const osrmBaseUrl = getOsrmBaseUrl(city);
+
+  if (!profile?.routeDeviationRules) return true;
+  if (!route?.routeDetails || !route?.employees || route.employees.length === 0) return true;
+
+  const ruleKeys = Object.keys(profile.routeDeviationRules);
+  if (ruleKeys.length === 0) return true;
+
+  let effectiveRuleKey = profile.facilityType && profile.routeDeviationRules[profile.facilityType]
+    ? profile.facilityType
+    : ruleKeys[0];
+  let rules = profile.routeDeviationRules[effectiveRuleKey];
+
+  if (!rules || !Array.isArray(rules) || rules.length === 0) {
+    console.warn(`[checkRouteDeviation] Route ${route.uniqueKey || route.routeNumber}: No valid deviation rules for key "${effectiveRuleKey}". Returning true (lenient).`);
     return true;
   }
 
-  const facilityType = profile.facilityType || "CDC";
-  // console.log(`[Route ${route.routeNumber}] Using facilityType: ${facilityType}`);
-  const rules =
-    profile.routeDeviationRules[facilityType] ||
-    profile.routeDeviationRules["DEFAULT"];
+  // CORRECTED: Calculate farthest employee distance using same logic as response
+  let farthestEmployeeDistanceKm = 0;
+  const isDropoffRoute = route.tripType?.toLowerCase() === "dropoff";
+  
+  if (route.employees.length > 0) {
+    // Get the farthest employee (same logic as response generation)
+    const farthestEmployee = isDropoffRoute 
+      ? route.employees[route.employees.length - 1]  // Last dropoff
+      : route.employees[0];                          // First pickup
 
-  if (!rules || rules.length === 0) {
-    // console.warn(`[Route ${route.routeNumber}] No deviation rules found for facilityType: ${facilityType}. Returning true.`);
-    return true;
-  }
-
-  let maxHaversineDistKm = 0;
-  for (const emp of route.employees) {
-    if (emp.location) {
-      const dist = haversineDistance(
-        [facility.geoY, facility.geoX],
-        [emp.location.lat, emp.location.lng]
-      );
-      if (dist > maxHaversineDistKm) {
-        maxHaversineDistKm = dist;
+    if (farthestEmployee?.location?.lng != null && farthestEmployee?.location?.lat != null) {
+      try {
+        const facilityCoords = `${facility.geoX},${facility.geoY}`;
+        const employeeCoords = `${farthestEmployee.location.lng},${farthestEmployee.location.lat}`;
+        
+        // Same direction calculation as response
+        const coordsString = isDropoffRoute 
+          ? `${facilityCoords};${employeeCoords}`     // Dropoff: Facility → Employee
+          : `${employeeCoords};${facilityCoords}`;    // Pickup: Employee → Facility
+        
+        const url = `${osrmBaseUrl}/route/v1/driving/${coordsString}?alternatives=false&steps=false&annotations=distance`;
+        const response = await fetchApi(url, { method: "GET", timeout: OSRM_PROBE_TIMEOUT });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.code === "Ok" && data.routes?.[0]?.distance != null) {
+            farthestEmployeeDistanceKm = data.routes[0].distance / 1000;
+          }
+        }
+      } catch (err) {
+        console.warn(`[checkRouteDeviation] OSRM error for farthest employee distance: ${err.message}`);
       }
     }
   }
-  // console.log(`[Route ${route.routeNumber}] Max Haversine distance to furthest employee: ${maxHaversineDistKm.toFixed(2)} km`);
 
-  if (maxHaversineDistKm === 0 && route.employees.length > 0) {
-    // console.warn(`[Route ${route.routeNumber}] maxHaversineDistKm is 0 with employees present. Returning true (cannot determine rule).`);
-    return true;
-  }
-
+  // Find applicable rule based on farthest employee distance
+  const EPSILON = 0.001;
   let applicableRule = rules.find(
     (rule) =>
-      maxHaversineDistKm >= rule.minDistKm &&
-      maxHaversineDistKm <= rule.maxDistKm
+      farthestEmployeeDistanceKm >= rule.minDistKm - EPSILON &&
+      farthestEmployeeDistanceKm <= rule.maxDistKm + EPSILON
   );
-
+  
   if (!applicableRule) {
     const sortedRules = [...rules].sort((a, b) => a.maxDistKm - b.maxDistKm);
-    const lastRule = sortedRules[sortedRules.length - 1];
-    if (lastRule && maxHaversineDistKm > lastRule.maxDistKm) {
-      // console.log(`[Route ${route.routeNumber}] Furthest emp ${maxHaversineDistKm.toFixed(2)}km is beyond last rule's max (${lastRule.maxDistKm}km). Applying last rule's limit.`);
-      applicableRule = lastRule;
-    } else {
-      // console.warn(`[Route ${route.routeNumber}] No specific deviation rule for furthest distance ${maxHaversineDistKm.toFixed(2)}km. Assuming okay.`);
-      return true;
+    if (sortedRules.length > 0 && farthestEmployeeDistanceKm > sortedRules[sortedRules.length - 1].maxDistKm) {
+      applicableRule = sortedRules[sortedRules.length - 1];
+    } else if (sortedRules.length > 0) {
+      let closestRule = sortedRules[0];
+      for(const rule of sortedRules) {
+        if (farthestEmployeeDistanceKm <= rule.maxDistKm + EPSILON) {
+          closestRule = rule; break;
+        }
+      }
+      applicableRule = closestRule;
     }
   }
 
-  if (!applicableRule || applicableRule.maxTotalOneWayKm == null) {
-    // console.error(`[Route ${route.routeNumber}] Could not determine applicable rule or rule is malformed (missing maxTotalOneWayKm). Furthest: ${maxHaversineDistKm.toFixed(2)}km. Assuming okay to prevent error.`);
-    return true;
-  }
-
-  // console.log(`[Route ${route.routeNumber}] Applicable rule: min ${applicableRule.minDistKm}km, max ${applicableRule.maxDistKm}km, maxTotalOneWay ${applicableRule.maxTotalOneWayKm}km`);
-
-  const actualOneWayKm = route.routeDetails.totalDistance / 1000; // Use totalDistance
-  const maxAllowedKm = applicableRule.maxTotalOneWayKm;
-
-  // console.log(`[Route ${route.routeNumber}] Actual OSRM one-way: ${actualOneWayKm.toFixed(2)} km. Max allowed by rule: ${maxAllowedKm.toFixed(2)} km.`);
-
-  if (actualOneWayKm > maxAllowedKm) {
-    // console.warn(`  [Route ${route.routeNumber}] DEVIATION EXCEEDED. Allowed: ${maxAllowedKm.toFixed(2)}km, Actual: ${actualOneWayKm.toFixed(2)}km. Returning false.`);
+  if (!applicableRule?.maxTotalOneWayKm) {
+    console.warn(`[checkRouteDeviation] Could not determine applicable rule for Route ${route.uniqueKey || route.routeNumber}. Farthest emp dist: ${farthestEmployeeDistanceKm.toFixed(3)}km. Rules: ${JSON.stringify(rules)}. Returning FALSE.`);
     return false;
   }
 
-  // console.log(`  [Route ${route.routeNumber}] Deviation OK. Returning true.`);
+  const relevantRouteDistanceKm = (route.routeDetails.totalDistance || 0) / 1000;
+  
+  if (relevantRouteDistanceKm > applicableRule.maxTotalOneWayKm) {
+    console.warn(`[checkRouteDeviation] Route ${route.uniqueKey || route.routeNumber}: DEVIATION EXCEEDED. Rule: ${applicableRule.minDistKm}-${applicableRule.maxDistKm}km (maxTotal: ${applicableRule.maxTotalOneWayKm}km). FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(3)}km. ActualRouteDist: ${relevantRouteDistanceKm.toFixed(3)}km. Returning false.`);
+    return false;
+  }
+
+  console.log(`[checkRouteDeviation] Route ${route.uniqueKey || route.routeNumber}: PASSED. Rule: ${applicableRule.minDistKm}-${applicableRule.maxDistKm}km (maxTotal: ${applicableRule.maxTotalOneWayKm}km). FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(3)}km. ActualRouteDist: ${relevantRouteDistanceKm.toFixed(3)}km.`);
   return true;
 }
 
-async function calculateRouteDetails(
-  routeCoordinates,
-  employees,
-  pickupTimePerEmployee,
-  tripType = "pickup"
-) {
-  try {
-    if (!routeCoordinates?.length || !employees?.length) {
-      throw new Error("Invalid input parameters for calculateRouteDetails");
-    }
-    const coordinatesString = routeCoordinates
-      .map((c) => `${c[1]},${c[0]}`)
-      .join(";");
-    const url = `http://localhost:5000/trip/v1/driving/${coordinatesString}?source=first&destination=last&roundtrip=false&steps=true&geometries=polyline&overview=full`;
-    const response = await fetchApi(url);
-    if (!response.ok) throw new Error(`OSRM /trip error: ${response.status}`);
-    const data = await response.json();
-    if (data.code !== "Ok" || !data.trips?.[0])
-      throw new Error("Invalid OSRM /trip response");
 
-    const trip = data.trips[0];
-    const waypoints = data.waypoints;
-    let fullRoadPolyline = trip.geometry || "";
-    if (!fullRoadPolyline && trip.legs) {
+async function calculateRouteDetails(
+  routeCoordinates, // Expects [[lat, lng], ...] from your JS code
+  employees, // Already in the desired sequence (from heuristic or OR-Tools)
+  pickupTimePerEmployee, // This parameter is not used in the provided snippet, but kept for signature consistency
+  tripType = "pickup",
+  city,
+  shiftTime = null
+) {
+  let osrmBaseUrl;
+  if (city === "ncr") {
+    osrmBaseUrl = "http://3.108.58.254:5000";
+  } else if (city === "chennai") {
+    osrmBaseUrl = "http://13.235.89.143:5000";
+  } else {
+    console.error(
+      `[calculateRouteDetails] Unknown city: ${city}. Cannot determine OSRM base URL.`
+    );
+    const errorEmployees = employees
+      ? employees.map((e, i) => ({ ...e, order: i + 1 }))
+      : [];
+    return {
+      employees: errorEmployees,
+      totalDistance: 0,
+      totalDuration: 0,
+      encodedPolyline: "",
+      legs: [],
+      geometry: null,
+      error: `Unknown city for OSRM URL: ${city}`,
+    };
+  }
+
+  // Get dynamic traffic buffer based on shift time
+  const TRAFFIC_BUFFER_PERCENTAGE = getTrafficBufferForShiftTime(shiftTime);
+  console.log(`[Traffic Buffer] Using ${(TRAFFIC_BUFFER_PERCENTAGE * 100).toFixed(1)}% buffer for shift time: ${shiftTime}`);
+
+  try {
+    if (!routeCoordinates || routeCoordinates.length === 0) {
+      // ... (your existing validation for empty routeCoordinates)
+      // No changes needed here
+      if (
+        (!employees || employees.length === 0) &&
+        routeCoordinates &&
+        routeCoordinates.length > 1
+      ) {
+        throw new Error(
+          "Invalid input: routeCoordinates has multiple points but employees array is empty/null for /route call."
+        );
+      } else if (
+        !employees &&
+        (!routeCoordinates || routeCoordinates.length === 0)
+      ) {
+        throw new Error(
+          "Invalid input: Both routeCoordinates and employees are empty/null for /route call."
+        );
+      }
+      if (
+        (!routeCoordinates || routeCoordinates.length === 0) &&
+        employees &&
+        employees.length > 0
+      ) {
+        throw new Error(
+          "Invalid input: routeCoordinates is empty but employees array is not."
+        );
+      }
+      if (routeCoordinates && routeCoordinates.length < 2) {
+        throw new Error(
+          "Invalid input: routeCoordinates must contain at least two points for an OSRM /route call."
+        );
+      }
+    }
+
+    const coordinatesString = routeCoordinates
+      .map((c) => {
+        if (
+          typeof c[1] !== "number" ||
+          typeof c[0] !== "number" ||
+          isNaN(c[1]) ||
+          isNaN(c[0])
+        ) {
+          console.error(
+            "Invalid coordinate pair in routeCoordinates for /route:",
+            c
+          );
+          throw new Error(
+            "Invalid coordinate pair found in routeCoordinates for /route."
+          );
+        }
+        return `${c[1]},${c[0]}`; // lng,lat
+      })
+      .join(";");
+
+    const queryParams = "steps=true&geometries=polyline&overview=full";
+    const url = `${osrmBaseUrl}/route/v1/driving/${coordinatesString}?${queryParams}`;
+
+    // console.log(`[OSRM /route] Requesting: ${url}`);
+
+    const response = await fetchApi(url, { method: "GET" });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[OSRM /route] HTTP error: ${response.status} for URL: ${url}. Body: ${errorText}`
+      );
+      throw new Error(`OSRM /route error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
+      console.error(
+        "[OSRM /route] API returned non-Ok code or no routes:",
+        data,
+        ` for URL: ${url}`
+      );
+      throw new Error(
+        `Invalid OSRM /route response: ${data.code || "Unknown code"}, Message: ${data.message || "No routes found"}`
+      );
+    }
+
+    const routeObject = data.routes[0];
+    const waypointsFromApi = data.waypoints;
+    let fullRoadPolyline = routeObject.geometry || "";
+
+    if (!fullRoadPolyline && routeObject.legs) {
       let fullCoords = [];
-      for (const leg of trip.legs) {
-        for (const step of leg.steps) {
-          const coords = decodePolyline(step.geometry);
-          if (fullCoords.length > 0 && coords.length > 0) {
-            const lastPt = fullCoords[fullCoords.length - 1];
-            if (lastPt[0] === coords[0][0] && lastPt[1] === coords[0][1])
-              fullCoords.pop();
+      for (const leg of routeObject.legs) {
+        if (leg.steps) {
+          for (const step of leg.steps) {
+            const coords = decodePolyline(step.geometry);
+            if (fullCoords.length > 0 && coords.length > 0) {
+              const lastPt = fullCoords[fullCoords.length - 1];
+              if (
+                lastPt &&
+                coords[0] &&
+                lastPt[0] === coords[0][0] &&
+                lastPt[1] === coords[0][1]
+              )
+                fullCoords.pop();
+            }
+            fullCoords = fullCoords.concat(coords);
           }
-          fullCoords = fullCoords.concat(coords);
         }
       }
       fullRoadPolyline = encodePolyline(fullCoords);
     }
 
-    let orderedEmployees;
-    if (tripType.toLowerCase() === "pickup") {
-      orderedEmployees = waypoints
-        .slice(0, -1)
-        .sort((a, b) => a.trips_index - b.trips_index)
-        .map((wp, i) => ({ ...employees[wp.waypoint_index], order: i + 1 }));
-    } else {
-      orderedEmployees = waypoints
-        .slice(1)
-        .sort((a, b) => a.trips_index - b.trips_index)
-        .map((wp, i) => ({
-          ...employees[wp.waypoint_index - 1],
-          order: i + 1,
+    let orderedEmployees = [];
+    const inputEmployeesOriginal = employees ? [...employees] : [];
+
+    if (waypointsFromApi && inputEmployeesOriginal.length > 0) {
+      const inputCoordIndexToEmployeeMap = new Map();
+      let employeeIndexTracker = 0;
+
+      for (let i = 0; i < routeCoordinates.length; i++) {
+        let isFacilityInRouteCoords = false;
+        if (tripType.toLowerCase() === "dropoff" && i === 0)
+          isFacilityInRouteCoords = true;
+        if (
+          tripType.toLowerCase() === "pickup" &&
+          i === routeCoordinates.length - 1
+        )
+          isFacilityInRouteCoords = true;
+
+        if (
+          !isFacilityInRouteCoords &&
+          employeeIndexTracker < inputEmployeesOriginal.length
+        ) {
+          inputCoordIndexToEmployeeMap.set(
+            i,
+            inputEmployeesOriginal[employeeIndexTracker]
+          );
+          employeeIndexTracker++;
+        }
+      }
+
+      // console.log(`[DEBUG calculateRouteDetails] TripType: ${tripType}`);
+      // console.log(`[DEBUG calculateRouteDetails] inputEmployeesOriginal.length: ${inputEmployeesOriginal.length}`);
+      // console.log(`[DEBUG calculateRouteDetails] routeCoordinates:`, JSON.stringify(routeCoordinates));
+      // console.log(`[DEBUG calculateRouteDetails] inputCoordIndexToEmployeeMap:`, JSON.stringify(Array.from(inputCoordIndexToEmployeeMap.entries())));
+      // console.log(`[DEBUG calculateRouteDetails] waypointsFromApi:`, JSON.stringify(waypointsFromApi));
+
+      // --- MODIFIED WAYPOINT MAPPING ---
+      for (let i = 0; i < waypointsFromApi.length; i++) {
+        // const wp = waypointsFromApi[i]; // Not needed if not accessing other wp properties
+        // Use the current loop index 'i' as the originalInputCoordIndex
+        // This assumes OSRM returns waypoints in the same order as input coordinates
+        const originalInputCoordIndex = i;
+
+        const employeeForThisWaypoint = inputCoordIndexToEmployeeMap.get(
+          originalInputCoordIndex
+        );
+
+        // console.log(`[DEBUG calculateRouteDetails] Mapping OSRM waypoint at API index ${i} (used as originalInputCoordIndex), Found employee: ${!!employeeForThisWaypoint}`);
+
+        if (employeeForThisWaypoint) {
+          orderedEmployees.push({
+            ...employeeForThisWaypoint,
+            order: orderedEmployees.length + 1,
+          });
+        }
+      }
+      // --- END OF MODIFIED WAYPOINT MAPPING ---
+
+      if (orderedEmployees.length !== inputEmployeesOriginal.length) {
+        console.warn(
+          `[calculateRouteDetails OSRM /route] Mismatch after mapping waypoints. Expected ${inputEmployeesOriginal.length}, got ${orderedEmployees.length}. Using original employee order.`
+        );
+        orderedEmployees = inputEmployeesOriginal.map((emp, idx) => ({
+          ...emp,
+          order: idx + 1,
         }));
+      }
+    } else if (inputEmployeesOriginal.length > 0) {
+      console.warn(
+        "[calculateRouteDetails OSRM /route] Waypoints array missing or no employees to map. Using input employee order."
+      );
+      orderedEmployees = inputEmployeesOriginal.map((emp, idx) => ({
+        ...emp,
+        order: idx + 1,
+      }));
     }
+
     return {
       employees: orderedEmployees,
-      totalDistance: trip.distance,
-      totalDuration: trip.duration * (1 + TRAFFIC_BUFFER_PERCENTAGE),
+      totalDistance: routeObject.distance,
+      // --- USE THE PASSED trafficBuffer PARAMETER ---
+      totalDuration: routeObject.duration * (1 + TRAFFIC_BUFFER_PERCENTAGE),
       encodedPolyline: fullRoadPolyline,
-      legs: trip.legs || [],
+      legs: routeObject.legs || [],
       geometry: {
         type: "LineString",
         coordinates: decodePolyline(fullRoadPolyline).map((c) => [c[1], c[0]]),
       },
     };
   } catch (error) {
-    console.error("calculateRouteDetails error:", error);
+    console.error(
+      "calculateRouteDetails (OSRM GET /route) error:",
+      error.message,
+      error.stack
+    );
+    const errorEmployees = employees
+      ? employees.map((e, i) => ({ ...e, order: i + 1 }))
+      : [];
     return {
-      employees: employees.map((e, i) => ({ ...e, order: i + 1 })),
+      employees: errorEmployees,
       totalDistance: 0,
       totalDuration: 0,
       encodedPolyline: "",
@@ -454,113 +644,397 @@ async function calculateRouteDetails(
   }
 }
 
+async function generateDistanceDurationMatrix(
+  locationsForMatrix,
+  facilityLocation,
+  city
+) {
+  const osrmBaseUrl = getOsrmBaseUrl(city);
+  const allPointsCoords = [
+    facilityLocation,
+    ...locationsForMatrix.map((emp) => emp.location),
+  ];
+  if (allPointsCoords.length <= 1) {
+    return { distanceMatrix: [[]], durationMatrix: [[]], pointMap: [] };
+  }
+  const coordinatesString = allPointsCoords
+    .map((p) => `${p.lng},${p.lat}`)
+    .join(";");
+  const matrixTimeout = OSRM_PROBE_TIMEOUT + allPointsCoords.length * 200;
+  const osrmTableUrl = `${osrmBaseUrl}/table/v1/driving/${coordinatesString}?annotations=duration,distance`;
+
+  try {
+    const response = await fetchApi(osrmTableUrl, { timeout: matrixTimeout });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OSRM table service error for matrix: ${response.status}. Body: ${errorText.substring(0,200)}`);
+    }
+    const data = await response.json();
+    if (data.code !== "Ok" || !data.durations || !data.distances) {
+      throw new Error("Invalid OSRM table response for matrix (structure or code)");
+    }
+    const pointMap = [
+      { empCode: "FACILITY", isFacility: true, ...facilityLocation },
+      ...locationsForMatrix,
+    ];
+    return {
+      distanceMatrix: data.distances,
+      durationMatrix: data.durations,
+      pointMap: pointMap,
+    };
+  } catch (error) {
+    console.error("[MatrixGen] Failed to generate matrix:", error.message);
+    throw error;
+  }
+}
+
+async function assignVehicleAndFinalizeGroup(
+  routeShell,
+  preliminaryEmployeesInGroup,
+  profile,
+  availableFleetCounts,
+  shiftTime, // Kept for consistency, not used for guard decision here
+  tripType,
+  activateGuardSystem // This is the 'guard: true/false' from input JSON
+) {
+  let currentEmployeesForRoute = [...preliminaryEmployeesInGroup];
+  let employeesTrimmedOff = [];
+
+  routeShell.employees = [];
+  routeShell.error = false;
+  routeShell.errorMessage = "";
+  routeShell.afterFleetExhaustion = false;
+  routeShell.assignedVehicleType = "NONE";
+  routeShell.vehicleCapacity = 0;
+  let preliminaryGuardNeeded = false; // Default to no guard
+
+  if (!currentEmployeesForRoute || currentEmployeesForRoute.length === 0) {
+    routeShell.guardNeeded = false;
+    return { employeesTrimmedOff };
+  }
+
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+
+  // CORRECTED: Guard needed if critical position is Female (regardless of other males)
+  if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
+    const critIdx = isDropoff ? currentEmployeesForRoute.length - 1 : 0;
+    if (currentEmployeesForRoute[critIdx]?.gender === "F") {
+      preliminaryGuardNeeded = true;
+    }
+  }
+  routeShell.guardNeeded = preliminaryGuardNeeded;
+
+  let requiredVehicleOccupancy = currentEmployeesForRoute.length + (preliminaryGuardNeeded? 1 : 0) ;
+
+  const sortedFleet = [...(profile.fleet || [])].sort((a, b) => a.capacity - b.capacity);
+  let assignedVehicleConfig = null;
+
+  if (sortedFleet.length > 0) {
+    for (const vehicleOption of sortedFleet) {
+      if (
+        vehicleOption.capacity >= requiredVehicleOccupancy &&
+        availableFleetCounts[vehicleOption.type] > 0
+      ) {
+        assignedVehicleConfig = vehicleOption;
+        break;
+      }
+    }
+  }
+
+  if (assignedVehicleConfig) {
+    availableFleetCounts[assignedVehicleConfig.type]--;
+    routeShell.afterFleetExhaustion = false;
+  } else {
+    routeShell.afterFleetExhaustion = true;
+    const mediumFallbackConfig = sortedFleet.find((v) => v.type === "m");
+
+    if (!mediumFallbackConfig) {
+      const errorMsg = `Fallback 'm' type vehicle not defined. Cannot route group.`;
+      routeShell.error = true;
+      routeShell.errorMessage = errorMsg;
+      employeesTrimmedOff.push(...currentEmployeesForRoute);
+      assignedVehicleConfig = { type: "NONE_M_MISSING", capacity: 0 };
+    } else {
+      assignedVehicleConfig = mediumFallbackConfig;
+      if (assignedVehicleConfig.capacity < requiredVehicleOccupancy) {
+        console.warn(`[Fleet] Route ${routeShell.uniqueKey} (Req Occupancy: ${requiredVehicleOccupancy}) assigned fallback 'm' (Cap: ${assignedVehicleConfig.capacity}) which is smaller. Trimming will occur.`);
+      }
+    }
+  }
+
+  routeShell.assignedVehicleType = assignedVehicleConfig.type;
+  routeShell.vehicleCapacity = assignedVehicleConfig.capacity;
+
+  if (routeShell.error) {
+    routeShell.employees = [];
+    return { employeesTrimmedOff };
+  }
+
+  let finalIsSpecial = false;
+  let maxPassengersAllowedInVehicle = routeShell.vehicleCapacity - (routeShell.guardNeeded ? 1 : 0);
+
+  let trimmingIteration = 0;
+  const MAX_TRIMMING_ITERATIONS = currentEmployeesForRoute.length + 3;
+
+  while (trimmingIteration++ < MAX_TRIMMING_ITERATIONS && currentEmployeesForRoute.length > 0) {
+    finalIsSpecial = currentEmployeesForRoute.some(isSpecialNeedsUser);
+    let currentMaxPassengers = maxPassengersAllowedInVehicle;
+
+    if (finalIsSpecial) {
+      currentMaxPassengers = Math.min(maxPassengersAllowedInVehicle, routeShell.guardNeeded ? 1 : 2);
+    }
+    currentMaxPassengers = Math.max(0, currentMaxPassengers);
+
+    if (currentEmployeesForRoute.length > currentMaxPassengers) {
+      const empToTrim = isDropoff ? currentEmployeesForRoute.shift() : currentEmployeesForRoute.pop();
+      if (empToTrim) employeesTrimmedOff.push(empToTrim);
+
+      // CORRECTED: Re-check guard needed after trimming
+      if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
+          const critIdxRecheck = isDropoff ? currentEmployeesForRoute.length - 1 : 0;
+          const newGuardNeededStatus = (currentEmployeesForRoute[critIdxRecheck]?.gender === "F");
+          if (routeShell.guardNeeded !== newGuardNeededStatus) {
+              routeShell.guardNeeded = newGuardNeededStatus;
+              maxPassengersAllowedInVehicle = routeShell.vehicleCapacity - (routeShell.guardNeeded ? 1 : 0);
+          }
+      } else if (currentEmployeesForRoute.length === 0 && routeShell.guardNeeded) {
+          routeShell.guardNeeded = false;
+          maxPassengersAllowedInVehicle = routeShell.vehicleCapacity;
+      }
+    } else {
+      break;
+    }
+  }
+  if (trimmingIteration >= MAX_TRIMMING_ITERATIONS) console.warn(`[Fleet Trim] Max iterations reached for ${routeShell.uniqueKey}`);
+
+  routeShell.employees = [...currentEmployeesForRoute];
+  routeShell.isSpecialNeedsRoute = routeShell.employees.some(isSpecialNeedsUser);
+
+  if (routeShell.employees.length === 0 && preliminaryEmployeesInGroup.length > 0 && !routeShell.error) {
+    routeShell.error = true;
+    routeShell.errorMessage = `Route became empty after vehicle assignment and guard trimming (Vehicle: ${routeShell.assignedVehicleType})`;
+  }
+  if (employeesTrimmedOff.length > 0) {
+    console.log(`[Fleet] Route ${routeShell.uniqueKey} (Type: ${routeShell.assignedVehicleType}, Final Emps: ${routeShell.employees.length}) trimmed ${employeesTrimmedOff.length} employees.`);
+  }
+  return { employeesTrimmedOff };
+}
+
+
+async function processEmployeeBatch(
+  employees,
+  targetGroupSizeForHeuristic,
+  facility,
+  tripType,
+  maxDuration,
+  pickupTimePerEmployee,
+  activateGuardSystem,
+  profile,
+  availableFleetCounts,
+  city,
+  shiftTime
+) {
+  const routes = [];
+  let employeesAddedToMasterUnroutedThisBatch = [];
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const facilityCoordinates = [facility.geoY, facility.geoX];
+  const deferredForInitialOSRM = [];
+
+  const validEmployees = employees.filter(
+    (emp) => emp.location?.lat != null && emp.location?.lng != null
+  );
+  if (validEmployees.length === 0) {
+    return { routes, employeesAddedToMasterUnrouted: [] };
+  }
+
+  let globalRemainingEmployees = [...validEmployees].map((emp) => ({
+    ...emp,
+    distToFacility: haversineDistance(
+      [emp.location.lat, emp.location.lng],
+      [facility.geoY, facility.geoX]
+    ),
+    isMedical: emp.isMedical || false,
+    isPWD: emp.isPWD || false,
+  })).sort((a, b) => isDropoff ? a.distToFacility - b.distToFacility : b.distToFacility - a.distToFacility);
+
+  let batchRouteCounter = 0;
+
+  mainLoop: while (globalRemainingEmployees.length > 0) {
+    batchRouteCounter++;
+    let currentHeuristicRouteMaxOccupancy = targetGroupSizeForHeuristic;
+    let routeIsCurrentlySpecialNeedsHeuristic = false;
+
+    const firstEmployeeForThisRoute = globalRemainingEmployees.shift();
+    if (!firstEmployeeForThisRoute) break;
+
+    const firstEmpCoords = [firstEmployeeForThisRoute.location.lat, firstEmployeeForThisRoute.location.lng];
+    const firstRouteCoordsOSRM = isDropoff ? [facilityCoordinates, firstEmpCoords] : [firstEmpCoords, facilityCoordinates];
+    const firstRouteDetailsOSRM = await calculateRouteDetails(firstRouteCoordsOSRM, [firstEmployeeForThisRoute], pickupTimePerEmployee, tripType, city,shiftTime);
+
+    if (firstRouteDetailsOSRM.error) {
+      deferredForInitialOSRM.push(firstEmployeeForThisRoute);
+      continue;
+    }
+
+    const tempHeuristicRouteForValidation = { employees: [firstEmployeeForThisRoute], routeDetails: firstRouteDetailsOSRM, uniqueKey: `temp_val_${batchRouteCounter}` };
+    if (!await checkRouteDeviation(tempHeuristicRouteForValidation, facility, profile) || (maxDuration && firstRouteDetailsOSRM.totalDuration > maxDuration)) {
+      deferredForInitialOSRM.push(firstEmployeeForThisRoute);
+      continue;
+    }
+
+    let preliminaryEmployeesForCurrentRoute = [firstEmployeeForThisRoute];
+    if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
+      routeIsCurrentlySpecialNeedsHeuristic = true;
+      currentHeuristicRouteMaxOccupancy = 2;
+    }
+
+    let tempRemainingForThisHeuristicAttempt = globalRemainingEmployees.filter(e => e.empCode !== firstEmployeeForThisRoute.empCode);
+    const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 2.0;
+
+    while (
+      preliminaryEmployeesForCurrentRoute.length < currentHeuristicRouteMaxOccupancy &&
+      tempRemainingForThisHeuristicAttempt.length > 0
+    ) {
+      const currentLastEmpInPrelim = preliminaryEmployeesForCurrentRoute[preliminaryEmployeesForCurrentRoute.length - 1];
+      let bestCandidate = null;
+      let bestScore = -Infinity;
+      let bestCandidateIndex = -1;
+
+      tempRemainingForThisHeuristicAttempt.forEach((candidateEmp, idx) => {
+          const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
+          if (routeIsCurrentlySpecialNeedsHeuristic && !candidateIsSpecial) return;
+          if (!routeIsCurrentlySpecialNeedsHeuristic && candidateIsSpecial && preliminaryEmployeesForCurrentRoute.length > 0 && !isSpecialNeedsUser(preliminaryEmployeesForCurrentRoute[0])) return;
+
+          const distToLast = haversineDistance([currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng], [candidateEmp.location.lat, candidateEmp.location.lng]);
+          if (distToLast > MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC) return;
+          const score = 1 / (1 + distToLast);
+          if (score > bestScore) {
+              bestScore = score;
+              bestCandidate = candidateEmp;
+              bestCandidateIndex = idx;
+          }
+      });
+
+      if (!bestCandidate) break;
+      const nextEmployeeToPick = bestCandidate;
+
+      const tentativePrelimEmployees = [...preliminaryEmployeesForCurrentRoute, nextEmployeeToPick];
+      const tentativeCoords = tentativePrelimEmployees.map(emp => [emp.location.lat, emp.location.lng]);
+      const allTentativeCoords = isDropoff ? [facilityCoordinates, ...tentativeCoords] : [...tentativeCoords, facilityCoordinates];
+      const tentativeDetails = await calculateRouteDetails(allTentativeCoords, tentativePrelimEmployees, pickupTimePerEmployee, tripType, city,shiftTime);
+
+      if (tentativeDetails.error) {
+        tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
+        continue;
+      }
+      const tempRouteForValidation = { employees: tentativePrelimEmployees, routeDetails: tentativeDetails, uniqueKey: `temp_val_add_${batchRouteCounter}` };
+      if (!await checkRouteDeviation(tempRouteForValidation, facility, profile) || (maxDuration && tentativeDetails.totalDuration > maxDuration)) {
+        tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
+        continue;
+      }
+
+      preliminaryEmployeesForCurrentRoute.push(nextEmployeeToPick);
+      tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
+
+      if (isSpecialNeedsUser(nextEmployeeToPick) && !routeIsCurrentlySpecialNeedsHeuristic) {
+        routeIsCurrentlySpecialNeedsHeuristic = true;
+        currentHeuristicRouteMaxOccupancy = 2;
+      }
+    }
+
+    const routeShellForVehicleAssignment = {
+      zone: firstEmployeeForThisRoute.zone,
+      tripType: tripType,
+      uniqueKey: `${firstEmployeeForThisRoute.zone}_batch_${batchRouteCounter}_${uuidv4()}`,
+    };
+
+    const { employeesTrimmedOff } = await assignVehicleAndFinalizeGroup(
+      routeShellForVehicleAssignment,
+      preliminaryEmployeesForCurrentRoute,
+      profile,
+      availableFleetCounts,
+      shiftTime,
+      tripType,
+      activateGuardSystem
+    );
+
+    if (employeesTrimmedOff.length > 0) {
+      employeesAddedToMasterUnroutedThisBatch.push(...employeesTrimmedOff);
+    }
+
+    if (routeShellForVehicleAssignment.error || routeShellForVehicleAssignment.employees.length === 0) {
+      // Handled
+    } else {
+      const finalRouteCoords = routeShellForVehicleAssignment.employees.map(emp => [emp.location.lat, emp.location.lng]);
+      const finalAllCoords = isDropoff ? [facilityCoordinates, ...finalRouteCoords] : [...finalRouteCoords, facilityCoordinates];
+      const finalRouteDetailsOSRM = await calculateRouteDetails(finalAllCoords, routeShellForVehicleAssignment.employees, pickupTimePerEmployee, tripType, city,shiftTime);
+
+      if (finalRouteDetailsOSRM.error) {
+        employeesAddedToMasterUnroutedThisBatch.push(...routeShellForVehicleAssignment.employees);
+      } else {
+        updateRouteWithDetails(routeShellForVehicleAssignment, finalRouteDetailsOSRM);
+        if (!await checkRouteDeviation(routeShellForVehicleAssignment, facility, profile) || (maxDuration && routeShellForVehicleAssignment.routeDetails.totalDuration > maxDuration)) {
+          employeesAddedToMasterUnroutedThisBatch.push(...routeShellForVehicleAssignment.employees);
+        } else {
+          routes.push(routeShellForVehicleAssignment);
+        }
+      }
+    }
+    const processedEmpCodesThisIteration = new Set([
+        ...(routeShellForVehicleAssignment.employees?.map(e => e.empCode) || []),
+        ...employeesTrimmedOff.map(e => e.empCode)
+    ]);
+    globalRemainingEmployees = globalRemainingEmployees.filter(emp => !processedEmpCodesThisIteration.has(emp.empCode));
+  }
+
+  if (deferredForInitialOSRM.length > 0) {
+    employeesAddedToMasterUnroutedThisBatch.push(...deferredForInitialOSRM);
+  }
+  return { routes, employeesAddedToMasterUnrouted: employeesAddedToMasterUnroutedThisBatch };
+}
+
 async function reOptimizeSwappedRouteWithORTools(
   routeToReOptimize,
   facilityData,
-  pickupTimePerEmployee
+  pickupTimePerEmployee,
+  city
 ) {
-  const {
-    employees: swappedEmployees,
-    tripType,
-    zone,
-    vehicleCapacity,
-    isMedicalRoute,
-  } = routeToReOptimize;
+  const { employees: swappedEmployees, tripType, zone, vehicleCapacity } = routeToReOptimize;
   const profileMaxDuration = facilityData.profile?.maxDuration || 7200;
 
   if (!swappedEmployees || swappedEmployees.length === 0) {
-    console.warn(
-      `[RE-OPTIMIZE] Route for zone ${zone} has no employees after swap. Skipping re-optimization.`
-    );
-    return {
-      reOptimized: false,
-      employees: swappedEmployees,
-      error: "No employees for re-optimization",
-    };
+    return { reOptimized: false, employees: swappedEmployees, error: "No employees for re-optimization" };
   }
 
-  console.log(
-    `\n[RE-OPTIMIZE OR-TOOLS] Re-optimizing swapped route for zone: "${zone}" with ${swappedEmployees.length} employees.`
-  );
-
-  const facilityLocation = {
-    lat: facilityData.geoY,
-    lng: facilityData.geoX,
-  };
-  let pinnedEmployee;
-  let otherEmployeesInRoute;
-  let fixedNodeParam = {};
+  const facilityLocation = { lat: facilityData.geoY, lng: facilityData.geoX };
+  let pinnedEmployee, otherEmployeesInRoute, fixedNodeParam = {};
 
   if (tripType.toLowerCase() === "pickup") {
     pinnedEmployee = swappedEmployees[0];
     otherEmployeesInRoute = swappedEmployees.slice(1);
+    fixedNodeParam = { fixed_start_node_index_in_matrix: 1 };
   } else {
     pinnedEmployee = swappedEmployees[swappedEmployees.length - 1];
-    otherEmployeesInRoute = swappedEmployees.slice(
-      0,
-      swappedEmployees.length - 1
-    );
+    otherEmployeesInRoute = swappedEmployees.slice(0, -1);
+    fixedNodeParam = { fixed_end_node_index_in_matrix: 1 };
   }
 
-  if (!pinnedEmployee) {
-    console.error(
-      `[RE-OPTIMIZE] Could not identify pinned employee for zone ${zone}.`
-    );
-    return { reOptimized: false, employees: swappedEmployees };
-  }
+  if (!pinnedEmployee) return { reOptimized: false, employees: swappedEmployees, error: "Could not identify pinned employee" };
 
   const employeesForThisOrRun = [pinnedEmployee, ...otherEmployeesInRoute];
-  const pointMapForReSolve = [
-    { empCode: "FACILITY", isFacility: true, ...facilityLocation },
-    ...employeesForThisOrRun.map((emp) => ({ ...emp })),
-  ];
-
-  const pinnedNodeIndexInMatrix = 1;
-  const otherCustomerIndicesInMatrix = otherEmployeesInRoute.map(
-    (_, i) => i + 2
-  );
-
-  if (tripType.toLowerCase() === "pickup") {
-    fixedNodeParam = {
-      fixed_start_node_index_in_matrix: pinnedNodeIndexInMatrix,
-    };
-  } else {
-    fixedNodeParam = {
-      fixed_end_node_index_in_matrix: pinnedNodeIndexInMatrix,
-      other_customer_node_indices_in_matrix: otherCustomerIndicesInMatrix,
-    };
-  }
-
   try {
-    const matrixData = await generateDistanceDurationMatrix(
-      employeesForThisOrRun,
-      facilityLocation
-    );
+    const matrixData = await generateDistanceDurationMatrix(employeesForThisOrRun, facilityLocation, city);
     const { distanceMatrix, durationMatrix } = matrixData;
-
-    if (
-      !distanceMatrix ||
-      distanceMatrix.length === 0 ||
-      (distanceMatrix.length > 0 && distanceMatrix[0].length === 0)
-    ) {
-      console.warn(
-        `[RE-OPTIMIZE] Empty/invalid distance matrix for re-optimizing zone "${zone}".`
-      );
-      return { reOptimized: false, employees: swappedEmployees };
+     if (!distanceMatrix || distanceMatrix.length === 0 || (distanceMatrix.length > 0 && distanceMatrix[0].length === 0)) {
+      return { reOptimized: false, employees: swappedEmployees, error: "Empty distance matrix" };
     }
+    const pointMapForReSolve = matrixData.pointMap;
     if (pointMapForReSolve.length !== distanceMatrix.length) {
-      console.error(
-        `[RE-OPTIMIZE] Mismatch pointMap length and matrix dimensions for re-optimizing zone "${zone}"!`
-      );
-      return { reOptimized: false, employees: swappedEmployees };
+       return { reOptimized: false, employees: swappedEmployees, error: "Matrix-PointMap mismatch" };
     }
 
     const demands = [0, ...employeesForThisOrRun.map(() => 1)];
-    const serviceTimes = [
-      0,
-      ...employeesForThisOrRun.map(() => pickupTimePerEmployee),
-    ];
-
+    const serviceTimes = [0, ...employeesForThisOrRun.map(() => pickupTimePerEmployee)];
     const orToolsInput = {
       distance_matrix: distanceMatrix,
       duration_matrix: durationMatrix,
@@ -573,531 +1047,58 @@ async function reOptimizeSwappedRouteWithORTools(
       allow_dropping_visits: false,
       facility_coords: [facilityLocation.lat, facilityLocation.lng],
       trip_type: tripType.toUpperCase(),
-      direction_penalty_weight:
-        facilityData.profile?.directionPenaltyWeight || 0.5,
+      direction_penalty_weight: facilityData.profile?.directionPenaltyWeight || 0.5,
       ...fixedNodeParam,
     };
 
-    const pythonExecutable = "python";
+    const pythonExecutable = process.env.PYTHON_EXECUTABLE || "python";
     const scriptPath = path.join(__dirname, "or_tools_vrp_solver.py");
-    if (!fs.existsSync(scriptPath)) {
-      throw new Error(`Solver script not found: ${scriptPath}`);
-    }
+    if (!fs.existsSync(scriptPath)) throw new Error(`Solver script not found: ${scriptPath}`);
 
     const pythonProcess = spawn(pythonExecutable, [scriptPath]);
     let scriptOutput = "";
     let scriptError = "";
-
     pythonProcess.stdin.write(JSON.stringify(orToolsInput));
     pythonProcess.stdin.end();
-    pythonProcess.stdout.on("data", (data) => {
-      scriptOutput += data.toString();
-    });
-    pythonProcess.stderr.on("data", (data) => {
-      const errData = data.toString();
-      console.error(`[RE-OPTIMIZE Python stderr FOR ZONE ${zone}]: ${errData}`);
-      scriptError += errData;
-    });
+    pythonProcess.stdout.on("data", (data) => scriptOutput += data.toString());
+    pythonProcess.stderr.on("data", (data) => scriptError += data.toString());
 
-    return new Promise((resolve, reject) => {
-      pythonProcess.on("close", (code) => {
-        let solution = null;
-        let parsedSuccessfully = false;
-        try {
-          const lines = scriptOutput.trim().split("\n");
-          const lastLine = lines[lines.length - 1].trim();
-          if (lastLine.startsWith("{") && lastLine.endsWith("}")) {
-            solution = JSON.parse(lastLine);
-            parsedSuccessfully = true;
-          } else {
-            throw new Error("Last line not valid JSON for re-opt.");
-          }
-        } catch (e) {
-          console.error(
-            `[RE-OPTIMIZE] Error parsing Python stdout for re-optimizing zone "${zone}":`,
-            e,
-            "\nRaw stdout:\n",
-            scriptOutput
-          );
-          return resolve({
-            reOptimized: false,
-            employees: swappedEmployees,
-            error: "Parse error",
-          });
-        }
+    return new Promise((resolve) => {
+        pythonProcess.on("close", (code) => {
+            if (code !== 0) {
+                console.error(`[RE-OPTIMIZE Python stderr FOR ZONE ${zone}]: ${scriptError}`);
+                return resolve({ reOptimized: false, employees: swappedEmployees, error: `Python exit ${code}: ${scriptError.substring(0,100)}` });
+            }
+            try {
+                let solution = null;
+                const lines = scriptOutput.trim().split('\n');
+                for (let i = lines.length - 1; i >= 0; i--) {
+                    try { solution = JSON.parse(lines[i]); if (typeof solution === 'object' && solution !== null) break; } catch (e) { /* not this line */ }
+                }
+                if (!solution) throw new Error("No valid JSON solution from Python for re-opt.");
 
-        if (code !== 0) {
-          console.error(
-            `[RE-OPTIMIZE] Python script (zone "${zone}") exit ${code}. Stderr: ${scriptError}`
-          );
-          return resolve({
-            reOptimized: false,
-            employees: swappedEmployees,
-            error: `Python exit ${code}`,
-          });
-        }
-        if (!parsedSuccessfully || !solution || solution.error) {
-          console.error(
-            `[RE-OPTIMIZE] Failed to get valid OR-Tools solution for zone "${zone}". Solution: ${JSON.stringify(
-              solution
-            )}`
-          );
-          return resolve({
-            reOptimized: false,
-            employees: swappedEmployees,
-            error: solution?.error || "No solution",
-          });
-        }
-        if (
-          solution.dropped_node_indices &&
-          solution.dropped_node_indices.length > 0
-        ) {
-          console.warn(
-            `[RE-OPTIMIZE] OR-Tools dropped nodes during re-optimization for zone ${zone}, which should not happen. Using original swapped order.`
-          );
-          return resolve({
-            reOptimized: false,
-            employees: swappedEmployees,
-            error: "Nodes dropped in re-opt",
-          });
-        }
-
-        if (
-          solution.routes &&
-          Array.isArray(solution.routes) &&
-          solution.routes.length > 0 &&
-          solution.routes[0].length > 0
-        ) {
-          const routeNodeIndices = solution.routes[0];
-          const reOptimizedEmployeeList = routeNodeIndices
-            .map((nodeIndex) => {
-              if (nodeIndex === 0) return null;
-              if (nodeIndex >= pointMapForReSolve.length) {
-                console.error(
-                  `[RE-OPTIMIZE] Route nodeIndex ${nodeIndex} out of bounds for pointMap length ${pointMapForReSolve.length}`
-                );
-                return null;
-              }
-              return pointMapForReSolve[nodeIndex];
-            })
-            .filter((emp) => emp != null && !emp.isFacility);
-
-          console.log(
-            `[RE-OPTIMIZE] Successfully re-optimized route for zone ${zone}. New order length: ${reOptimizedEmployeeList.length}`
-          );
-          resolve({
-            reOptimized: true,
-            employees: reOptimizedEmployeeList,
-          });
-        } else {
-          console.warn(
-            `[RE-OPTIMIZE] OR-Tools returned no valid route for re-optimization in zone ${zone}. Using original swapped order.`
-          );
-          resolve({
-            reOptimized: false,
-            employees: swappedEmployees,
-            error: "No route from re-opt",
-          });
-        }
-      });
-      pythonProcess.on("error", (err) => {
-        console.error(
-          `[RE-OPTIMIZE] Failed to start Python subprocess for zone "${zone}".`,
-          err
-        );
-        resolve({
-          reOptimized: false,
-          employees: swappedEmployees,
-          error: "Python spawn error",
+                if (solution.error || (solution.dropped_node_indices && solution.dropped_node_indices.length > 0)) {
+                    return resolve({ reOptimized: false, employees: swappedEmployees, error: solution.error || "Nodes dropped in re-opt" });
+                }
+                if (solution.routes?.[0]?.length > 0) {
+                    const routeNodeIndices = solution.routes[0];
+                    const reOptimizedEmployeeList = routeNodeIndices
+                        .map(nodeIndex => (nodeIndex === 0 || nodeIndex >= pointMapForReSolve.length) ? null : pointMapForReSolve[nodeIndex])
+                        .filter(emp => emp != null && !emp.isFacility);
+                    resolve({ reOptimized: true, employees: reOptimizedEmployeeList });
+                } else {
+                    resolve({ reOptimized: false, employees: swappedEmployees, error: "No route from re-opt" });
+                }
+            } catch (e) {
+                resolve({ reOptimized: false, employees: swappedEmployees, error: `Parse error re-opt: ${e.message}` });
+            }
         });
-      });
+        pythonProcess.on("error", (err) => resolve({ reOptimized: false, employees: swappedEmployees, error: `Python spawn error re-opt: ${err.message}` }));
     });
+
   } catch (error) {
-    console.error(
-      `[RE-OPTIMIZE] Critical error in reOptimizeSwappedRouteWithORTools for zone "${zone}":`,
-      error
-    );
-    return {
-      reOptimized: false,
-      employees: swappedEmployees,
-      error: error.message,
-    };
-  }
-}
-
-async function processEmployeeBatch(
-  employees,
-  maxCapacity,
-  facility,
-  tripType = "pickup",
-  maxDuration,
-  pickupTimePerEmployee,
-  guard = false
-) {
-  const routes = [];
-  const isDropoff = tripType.toLowerCase() === "dropoff";
-  const facilityCoordinates = [facility.geoY, facility.geoX];
-  const deferredEmployees = []; // Track employees that couldn't be added to current route
-
-  const validEmployees = employees.filter(
-    (emp) =>
-      emp.location &&
-      typeof emp.location.lat === "number" &&
-      typeof emp.location.lng === "number" &&
-      !isNaN(emp.location.lat) &&
-      !isNaN(emp.location.lng)
-  );
-
-  if (validEmployees.length === 0) {
-    return { routes: [] };
-  }
-
-  const isSpecialNeedsUser = (emp) =>
-    (emp.isMedical || false) || (emp.isPWD || false);
-
-  let globalRemainingEmployees = [...validEmployees].map((emp) => ({
-    ...emp,
-    distToFacility: haversineDistance(
-      [emp.location.lat, emp.location.lng],
-      [facility.geoY, facility.geoX]
-    ),
-    isMedical: emp.isMedical || false,
-    isPWD: emp.isPWD || false,
-  }));
-
-  globalRemainingEmployees.sort((a, b) =>
-    isDropoff
-      ? a.distToFacility - b.distToFacility
-      : b.distToFacility - a.distToFacility
-  );
-
-  const facilityLocation = { lat: facility.geoY, lng: facility.geoX };
-  const MAX_NEXT_STOP_DISTANCE_KM = MAX_SWAP_DISTANCE_KM * 1.5;
-  const SCORE_DIFFERENCE_TOLERANCE = 0.1;
-  const DISTANCE_SCORE_SCALAR = 10;
-  const PROGRESS_WEIGHT = 1.0;
-  const DISTANCE_WEIGHT = 0.8;
-  const ACCEPTABLE_PROGRESS_FACTOR_PICKUP = 2.5;
-  const ACCEPTABLE_PROGRESS_FACTOR_DROPOFF = 0.95;
-  const PROGRESS_PENALTY_SCALAR = 20;
-
-  let heuristicRouteCounter = 0;
-
-  mainLoop: while (globalRemainingEmployees.length > 0) {
-    heuristicRouteCounter++;
-    const originalPhysicalCapacity = maxCapacity;
-    let routeIsCurrentlySpecialNeeds = false;
-    let currentRouteMaxAllowedOccupancy = originalPhysicalCapacity;
-
-    const firstEmployeeForThisRoute = globalRemainingEmployees.shift();
-    if (!firstEmployeeForThisRoute) break;
-
-    // Validate first employee with OSRM
-    const firstEmpCoords = [firstEmployeeForThisRoute.location.lat, firstEmployeeForThisRoute.location.lng];
-    const firstRouteCoords = isDropoff 
-      ? [facilityCoordinates, firstEmpCoords]
-      : [firstEmpCoords, facilityCoordinates];
-    
-    const firstRouteDetails = await calculateRouteDetails(
-      firstRouteCoords,
-      [firstEmployeeForThisRoute],
-      pickupTimePerEmployee,
-      tripType
-    );
-
-    if (firstRouteDetails.error) {
-      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} failed OSRM validation. Adding to deferred.`);
-      deferredEmployees.push(firstEmployeeForThisRoute);
-      continue;
-    }
-
-    // Create initial route object with OSRM details
-    const currentRoute = {
-      employees: [firstEmployeeForThisRoute],
-      routeNumber: heuristicRouteCounter,
-      vehicleCapacity: originalPhysicalCapacity,
-      guardNeeded: false,
-      uniqueKey: `${firstEmployeeForThisRoute.zone}_${heuristicRouteCounter}_${uuidv4()}`,
-      zone: firstEmployeeForThisRoute.zone,
-      tripType: isDropoff ? "dropoff" : "pickup",
-      isSpecialNeedsRoute: isSpecialNeedsUser(firstEmployeeForThisRoute),
-      routeDetails: firstRouteDetails
-    };
-
-    // Check deviation and duration for first employee
-    const deviationOkay = checkRouteDeviation(currentRoute, facility, facility.profile);
-    if (!deviationOkay) {
-      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} failed deviation check. Adding to deferred.`);
-      deferredEmployees.push(firstEmployeeForThisRoute);
-      continue;
-    }
-
-    if (maxDuration && firstRouteDetails.totalDuration > maxDuration) {
-      console.warn(`First employee ${firstEmployeeForThisRoute.empCode} exceeds max duration. Adding to deferred.`);
-      deferredEmployees.push(firstEmployeeForThisRoute);
-      continue;
-    }
-
-    if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
-      routeIsCurrentlySpecialNeeds = true;
-      currentRouteMaxAllowedOccupancy = 2;
-    }
-
-    let tempRemainingEmployeesForThisAttempt = globalRemainingEmployees.map(
-      (e) => ({ ...e })
-    );
-
-    while (
-      currentRoute.employees.length < currentRouteMaxAllowedOccupancy &&
-      tempRemainingEmployeesForThisAttempt.length > 0
-    ) {
-      const currentLastEmployeeInRoute = currentRoute.employees[currentRoute.employees.length - 1];
-      const currentLoc = currentLastEmployeeInRoute.location;
-
-      let scoredCandidates = tempRemainingEmployeesForThisAttempt
-        .map((candidateEmp, candidateIdx) => {
-          const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
-
-          if (routeIsCurrentlySpecialNeeds) {
-            if (!candidateIsSpecial) return null;
-          } else {
-            if (candidateIsSpecial) {
-              if (currentRoute.employees.length > 0 && !isSpecialNeedsUser(currentRoute.employees[0])) {
-                return null;
-              }
-            }
-          }
-
-          const distanceToLastHaversine = haversineDistance(
-            [currentLoc.lat, currentLoc.lng],
-            [candidateEmp.location.lat, candidateEmp.location.lng]
-          );
-          if (distanceToLastHaversine > MAX_NEXT_STOP_DISTANCE_KM) return null;
-
-          let progressScore = 0;
-          if (isDropoff) {
-            const d = candidateEmp.distToFacility - currentLastEmployeeInRoute.distToFacility;
-            progressScore = d * PROGRESS_WEIGHT * (
-              candidateEmp.distToFacility >= currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_DROPOFF
-                ? 1
-                : PROGRESS_PENALTY_SCALAR
-            );
-          } else {
-            const d = currentLastEmployeeInRoute.distToFacility - candidateEmp.distToFacility;
-            progressScore = d * PROGRESS_WEIGHT * (
-              candidateEmp.distToFacility < currentLastEmployeeInRoute.distToFacility * ACCEPTABLE_PROGRESS_FACTOR_PICKUP
-                ? 1
-                : PROGRESS_PENALTY_SCALAR
-            );
-          }
-          const distanceScoreVal = (1 / (1 + distanceToLastHaversine)) * DISTANCE_WEIGHT * DISTANCE_SCORE_SCALAR;
-          return {
-            emp: candidateEmp,
-            score: progressScore + distanceScoreVal,
-            distanceToLast: distanceToLastHaversine,
-            originalIndex: candidateIdx,
-          };
-        })
-        .filter((item) => item != null && item.score > -Infinity);
-
-      scoredCandidates.sort((a, b) => {
-        if (Math.abs(b.score - a.score) > SCORE_DIFFERENCE_TOLERANCE)
-          return b.score - a.score;
-        return a.distanceToLast - b.distanceToLast;
-      });
-
-      if (scoredCandidates.length === 0) break;
-
-      let nextEmployeeToPickData = scoredCandidates[0];
-      let nextEmployeeToPick = nextEmployeeToPickData?.emp;
-
-      if (!nextEmployeeToPick) break;
-
-      // Try adding the candidate and validate with OSRM
-      const tentativeRoute = {
-        ...currentRoute,
-        employees: [...currentRoute.employees, nextEmployeeToPick]
-      };
-
-      const tentativeCoords = tentativeRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
-      const allCoords = isDropoff 
-        ? [facilityCoordinates, ...tentativeCoords]
-        : [...tentativeCoords, facilityCoordinates];
-
-      const tentativeDetails = await calculateRouteDetails(
-        allCoords,
-        tentativeRoute.employees,
-        pickupTimePerEmployee,
-        tripType
-      );
-
-      if (tentativeDetails.error) {
-        console.warn(`Candidate ${nextEmployeeToPick.empCode} failed OSRM validation. Skipping.`);
-        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
-        continue;
-      }
-
-      // Check deviation and duration for tentative route
-      const tentativeDeviationOkay = checkRouteDeviation(tentativeRoute, facility, facility.profile);
-      if (!tentativeDeviationOkay) {
-        console.warn(`Candidate ${nextEmployeeToPick.empCode} failed deviation check. Skipping.`);
-        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
-        continue;
-      }
-
-      if (maxDuration && tentativeDetails.totalDuration > maxDuration) {
-        console.warn(`Candidate ${nextEmployeeToPick.empCode} exceeds max duration. Skipping.`);
-        tempRemainingEmployeesForThisAttempt.splice(nextEmployeeToPickData.originalIndex, 1);
-        continue;
-      }
-
-      // Candidate passed all checks - add to route
-      currentRoute.employees.push(nextEmployeeToPick);
-      currentRoute.routeDetails = tentativeDetails;
-
-      if (isSpecialNeedsUser(nextEmployeeToPick) && !routeIsCurrentlySpecialNeeds) {
-        routeIsCurrentlySpecialNeeds = true;
-        currentRouteMaxAllowedOccupancy = 2;
-        currentRoute.isSpecialNeedsRoute = true;
-      }
-
-      const actualPickedIndexInTemp = tempRemainingEmployeesForThisAttempt.findIndex(
-        (e) => e.empCode === nextEmployeeToPick.empCode
-      );
-      if (actualPickedIndexInTemp > -1) {
-        tempRemainingEmployeesForThisAttempt.splice(actualPickedIndexInTemp, 1);
-      }
-    }
-
-    let routeNeedsGuard = false;
-    let finalRouteSpecialNeedsStatusAfterGuard = routeIsCurrentlySpecialNeeds;
-
-    if (guard && currentRoute.employees.length > 0) {
-      const critIdx = isDropoff ? currentRoute.employees.length - 1 : 0;
-      if (
-        currentRoute.employees[critIdx].gender === "F" &&
-        !currentRoute.employees.some((e) => e.gender === "M")
-      ) {
-        routeNeedsGuard = true;
-        let capacityTargetForGuardTrim = finalRouteSpecialNeedsStatusAfterGuard
-          ? 2
-          : Math.max(1, originalPhysicalCapacity - 1);
-
-        while (currentRoute.employees.length > capacityTargetForGuardTrim) {
-          const removed = currentRoute.employees.pop();
-          if (removed) {
-            tempRemainingEmployeesForThisAttempt.unshift(removed);
-            if (
-              isSpecialNeedsUser(removed) &&
-              !currentRoute.employees.some(isSpecialNeedsUser)
-            ) {
-              finalRouteSpecialNeedsStatusAfterGuard = false;
-              capacityTargetForGuardTrim = routeNeedsGuard
-                ? Math.max(1, originalPhysicalCapacity - 1)
-                : originalPhysicalCapacity;
-            }
-          } else {
-            break;
-          }
-        }
-
-        // Recalculate route details after guard removal
-        if (currentRoute.employees.length > 0) {
-          const newCoords = currentRoute.employees.map(e => [e.location.lat, e.location.lng]);
-          const newAllCoords = isDropoff 
-            ? [facilityCoordinates, ...newCoords]
-            : [...newCoords, facilityCoordinates];
-          
-          const recalcDetails = await calculateRouteDetails(
-            newAllCoords,
-            currentRoute.employees,
-            pickupTimePerEmployee,
-            tripType
-          );
-
-          if (!recalcDetails.error) {
-            currentRoute.routeDetails = recalcDetails;
-          }
-        }
-      }
-    }
-
-    if (currentRoute.employees.length > 0) {
-      currentRoute.guardNeeded = routeNeedsGuard;
-      currentRoute.isSpecialNeedsRoute = finalRouteSpecialNeedsStatusAfterGuard;
-      currentRoute.vehicleCapacity = finalRouteSpecialNeedsStatusAfterGuard
-        ? 2
-        : routeNeedsGuard
-        ? Math.max(1, originalPhysicalCapacity - 1)
-        : originalPhysicalCapacity;
-
-      routes.push(currentRoute);
-    }
-
-    globalRemainingEmployees = tempRemainingEmployeesForThisAttempt;
-  }
-
-  // Add deferred employees back to global pool
-  if (deferredEmployees.length > 0) {
-    globalRemainingEmployees.push(...deferredEmployees);
-  }
-
-  return { routes };
-}
-
-async function generateDistanceDurationMatrix(
-  locationsForMatrix,
-  facilityLocation
-) {
-  const allPointsCoords = [
-    facilityLocation,
-    ...locationsForMatrix.map((emp) => emp.location),
-  ];
-  if (allPointsCoords.length <= 1) {
-    return { distanceMatrix: [[]], durationMatrix: [[]], pointMap: [] };
-  }
-  const coordinatesString = allPointsCoords
-    .map((p) => `${p.lng},${p.lat}`)
-    .join(";");
-  const matrixTimeout = OSRM_PROBE_TIMEOUT + allPointsCoords.length * 200;
-  const osrmTableUrl = `http://localhost:5000/table/v1/driving/${coordinatesString}?annotations=duration,distance`;
-
-  try {
-    const response = await fetchApi(osrmTableUrl, { timeout: matrixTimeout });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[MatrixGen] OSRM /table HTTP error: ${response.status}. Body: ${errorText}`
-      );
-      throw new Error(
-        `OSRM table service error for matrix: ${response.status}`
-      );
-    }
-    const data = await response.json();
-    if (data.code !== "Ok" || !data.durations || !data.distances) {
-      console.error(
-        "[MatrixGen] Invalid OSRM table response structure or error code:",
-        data
-      );
-      throw new Error(
-        "Invalid OSRM table response for matrix (structure or code)"
-      );
-    }
-    const pointMap = [
-      { empCode: "FACILITY", isFacility: true, ...facilityLocation },
-      ...locationsForMatrix,
-    ];
-    return {
-      distanceMatrix: data.distances,
-      durationMatrix: data.durations,
-      pointMap: pointMap,
-    };
-  } catch (error) {
-    console.error(
-      "[MatrixGen] Failed to generate distance/duration matrix:",
-      error
-    );
-    throw error;
+    console.error(`[RE-OPTIMIZE] Critical error for zone "${zone}":`, error);
+    return { reOptimized: false, employees: swappedEmployees, error: error.message };
   }
 }
 
@@ -1109,66 +1110,31 @@ async function solveZoneWithORTools(
   pickupTimePerEmployee,
   tripType,
   zoneName,
-  forceSingleVehicleOptimization = false
+  forceSingleVehicleOptimization = false,
+  city
 ) {
-  const currentZoneNameForLogging =
-    zoneName || zoneEmployees[0]?.zone || "UNKNOWN_ZONE_IN_SOLVER";
+  const currentZoneNameForLogging = zoneName || zoneEmployees[0]?.zone || "UNKNOWN_ZONE_IN_SOLVER";
   if (!zoneEmployees || zoneEmployees.length === 0) {
-    console.warn(
-      `[OR-TOOLS SOLVER] No employees for zone "${currentZoneNameForLogging}" to solve.`
-    );
     return { routes: [], droppedEmployees: [] };
   }
 
-  console.log(
-    `\n[OR-TOOLS SOLVER] Solving for zone: "${currentZoneNameForLogging}" with ${zoneEmployees.length} employees. VehCap: ${vehicleCapacity}, MaxRouteDur: ${maxRouteDurationSeconds}s, PickupTime: ${pickupTimePerEmployee}s.`
-  );
-
   const facilityLocation = { lat: facilityData.geoY, lng: facilityData.geoX };
-  let pointMapForCurrentZone = [];
-
   try {
-    const matrixData = await generateDistanceDurationMatrix(
-      zoneEmployees,
-      facilityLocation
-    );
-    const { distanceMatrix, durationMatrix } = matrixData;
-    pointMapForCurrentZone = matrixData.pointMap;
+    const matrixData = await generateDistanceDurationMatrix(zoneEmployees, facilityLocation, city);
+    const { distanceMatrix, durationMatrix, pointMap: pointMapForCurrentZone } = matrixData;
 
-    if (
-      !distanceMatrix ||
-      distanceMatrix.length === 0 ||
-      (distanceMatrix.length > 0 && distanceMatrix[0].length === 0)
-    ) {
-      console.warn(
-        `[OR-TOOLS SOLVER] Empty/invalid distance matrix for zone "${currentZoneNameForLogging}".`
-      );
-      return { routes: [], droppedEmployees: zoneEmployees };
+    if (!distanceMatrix || distanceMatrix.length === 0 || (distanceMatrix.length > 0 && distanceMatrix[0].length === 0)) {
+      return { routes: [], droppedEmployees: zoneEmployees, error: "Empty distance matrix for OR-Tools" };
     }
     if (pointMapForCurrentZone.length !== distanceMatrix.length) {
-      console.error(
-        `[OR-TOOLS SOLVER] Mismatch pointMap length and matrix dimensions for zone "${currentZoneNameForLogging}"!`
-      );
-      return { routes: [], droppedEmployees: zoneEmployees };
+      return { routes: [], droppedEmployees: zoneEmployees, error: "Matrix-PointMap mismatch for OR-Tools" };
     }
 
     const numCustomers = zoneEmployees.length;
-    let numVehiclesForSolver;
-    if (forceSingleVehicleOptimization) {
-      numVehiclesForSolver = 1;
-      console.log(
-        `[OR-TOOLS SOLVER] Optimizing pre-formed route for zone "${currentZoneNameForLogging}", using numVehiclesForSolver: 1`
-      );
-    } else {
-      numVehiclesForSolver = numCustomers > 0 ? numCustomers : 1;
-      console.log(
-        `[OR-TOOLS SOLVER] Solving for zone "${currentZoneNameForLogging}", using numVehiclesForSolver: ${numVehiclesForSolver}`
-      );
-    }
+    const numVehiclesForSolver = forceSingleVehicleOptimization ? 1 : (numCustomers > 0 ? numCustomers : 1);
 
     const demands = [0, ...zoneEmployees.map(() => 1)];
     const serviceTimes = [0, ...zoneEmployees.map(() => pickupTimePerEmployee)];
-
     const orToolsInput = {
       distance_matrix: distanceMatrix,
       duration_matrix: durationMatrix,
@@ -1178,306 +1144,759 @@ async function solveZoneWithORTools(
       depot_index: 0,
       max_route_duration: maxRouteDurationSeconds,
       service_times: serviceTimes,
-      allow_dropping_visits:
-        facilityData.profile?.allowDroppingVisitsForProblematicZones || true,
-      drop_visit_penalty: facilityData.profile?.dropPenalty || 36000,
+      allow_dropping_visits: facilityData.profile?.allowDroppingVisitsForProblematicZones !== false,
+      drop_visit_penalty: facilityData.profile?.dropPenalty || 360000,
       facility_coords: [facilityLocation.lat, facilityLocation.lng],
       trip_type: tripType.toUpperCase(),
-      direction_penalty_weight:
-        facilityData.profile?.directionPenaltyWeight || 2.0,
+      direction_penalty_weight: facilityData.profile?.directionPenaltyWeight || 2.0,
     };
 
-    const pythonExecutable = "python";
+    const pythonExecutable = process.env.PYTHON_EXECUTABLE || "python";
     const scriptPath = path.join(__dirname, "or_tools_vrp_solver.py");
-
-    if (!fs.existsSync(scriptPath)) {
-      console.error(
-        `[OR-TOOLS SOLVER] Python solver script not found at: ${scriptPath}`
-      );
-      throw new Error(`Solver script not found: ${scriptPath}`);
-    }
+    if (!fs.existsSync(scriptPath)) throw new Error(`Solver script not found: ${scriptPath}`);
 
     const pythonProcess = spawn(pythonExecutable, [scriptPath]);
     let scriptOutput = "";
     let scriptError = "";
-
     pythonProcess.stdin.write(JSON.stringify(orToolsInput));
     pythonProcess.stdin.end();
-
-    pythonProcess.stdout.on("data", (data) => {
-      scriptOutput += data.toString();
-    });
-    pythonProcess.stderr.on("data", (data) => {
-      const errData = data.toString();
-      console.error(
-        `[OR-TOOLS Python stderr FOR ZONE ${currentZoneNameForLogging}]: ${errData}`
-      );
-      scriptError += errData;
-    });
+    pythonProcess.stdout.on("data", (data) => scriptOutput += data.toString());
+    pythonProcess.stderr.on("data", (data) => scriptError += data.toString());
 
     return new Promise((resolve, reject) => {
-      pythonProcess.on("close", (code) => {
-        let solution = null;
-        let parsedSuccessfully = false;
-        let parseErrorDetail = null;
-
-        if (scriptOutput && scriptOutput.trim() !== "") {
-          try {
-            let lastBraceIndex = scriptOutput.lastIndexOf("}");
-            if (lastBraceIndex !== -1) {
-              let openBraceCount = 0;
-              let firstBraceIndex = -1;
-              for (let i = lastBraceIndex; i >= 0; i--) {
-                if (scriptOutput[i] === "}") openBraceCount++;
-                else if (scriptOutput[i] === "{") {
-                  openBraceCount--;
-                  if (openBraceCount === 0) {
-                    firstBraceIndex = i;
-                    break;
-                  }
-                }
-              }
-              if (firstBraceIndex !== -1) {
-                const potentialJsonString = scriptOutput.substring(
-                  firstBraceIndex,
-                  lastBraceIndex + 1
-                );
-                solution = JSON.parse(potentialJsonString);
-                parsedSuccessfully = true;
-              }
+        pythonProcess.on("close", (code) => {
+            if (code !== 0) {
+                console.error(`[OR-TOOLS Python stderr FOR ZONE ${currentZoneNameForLogging}]: ${scriptError}`);
+                return reject(new Error(`Python script (zone "${currentZoneNameForLogging}") exit ${code}. Stderr: ${scriptError.substring(0,200)}`));
             }
-            if (!parsedSuccessfully) {
-              const lines = scriptOutput.trim().split("\n");
-              const lastLine = lines[lines.length - 1].trim();
-              if (lastLine.startsWith("{") && lastLine.endsWith("}")) {
-                solution = JSON.parse(lastLine);
-                parsedSuccessfully = true;
-              } else {
-                throw new Error("Last line not valid JSON.");
-              }
-            }
-          } catch (e) {
-            parseErrorDetail = e.message;
-            console.error(
-              `[OR-TOOLS SOLVER] Error parsing Python stdout for zone "${currentZoneNameForLogging}":`,
-              e,
-              "\nRaw stdout:\n",
-              scriptOutput
-            );
-          }
-        }
-
-        if (code !== 0) {
-          let pyErrMsg = `Python script (zone "${currentZoneNameForLogging}") exit ${code}.`;
-          if (scriptError) {
             try {
-              const eObj = JSON.parse(scriptError);
-              if (eObj.error)
-                pyErrMsg = `Python error (zone "${currentZoneNameForLogging}"): ${
-                  eObj.error
-                } - ${eObj.details || ""}`;
-              else pyErrMsg += ` Stderr: ${scriptError}`;
+                let solution = null;
+                const lines = scriptOutput.trim().split('\n');
+                for (let i = lines.length - 1; i >= 0; i--) {
+                    try { solution = JSON.parse(lines[i]); if (typeof solution === 'object' && solution !== null) break; } catch (e) { /* not this line */ }
+                }
+                if (!solution) throw new Error("No valid JSON solution found in Python output for OR-Tools.");
+
+                if (solution.error) return reject(new Error(`OR-Tools solver error: ${solution.error}`));
+
+                const orRoutes = [];
+                const solutionDroppedIndices = solution.dropped_node_indices || [];
+                const droppedEmployees = solutionDroppedIndices
+                    .map(nodeIdx => (nodeIdx > 0 && nodeIdx < pointMapForCurrentZone.length) ? pointMapForCurrentZone[nodeIdx] : null)
+                    .filter(Boolean);
+
+                if (solution.routes && Array.isArray(solution.routes)) {
+                    solution.routes.forEach((routeNodeIndices) => {
+                        if (routeNodeIndices.length > 0) {
+                            const currentRouteEmployees = routeNodeIndices
+                                .map(nodeIndex => (nodeIndex === 0 || nodeIndex >= pointMapForCurrentZone.length) ? null : pointMapForCurrentZone[nodeIndex])
+                                .filter(emp => emp != null && !emp.isFacility);
+                            if (currentRouteEmployees.length > 0) {
+                                orRoutes.push({ employees: currentRouteEmployees, vehicleCapacity, zone: currentZoneNameForLogging, tripType });
+                            }
+                        }
+                    });
+                }
+                resolve({ routes: orRoutes, droppedEmployees });
             } catch (e) {
-              pyErrMsg += ` Stderr: ${scriptError}`;
+                console.error(`[OR-TOOLS SOLVER] Error parsing Python stdout for zone "${currentZoneNameForLogging}":`, e, "\nRaw stdout:\n", scriptOutput);
+                reject(new Error(`Failed to parse OR-Tools solution: ${e.message}. Output: ${scriptOutput.substring(0, 500)}`));
             }
-          }
-          return reject(new Error(pyErrMsg));
-        }
-        if (!parsedSuccessfully || !solution)
-          return reject(
-            new Error(
-              `Failed to parse OR-Tools solution for zone "${currentZoneNameForLogging}". Parse error: ${
-                parseErrorDetail || "Unknown"
-              }. Output: ${scriptOutput.substring(0, 500)}`
-            )
-          );
-        if (solution.error)
-          return reject(
-            new Error(
-              `OR-Tools solver error (zone "${currentZoneNameForLogging}"): ${solution.error}`
-            )
-          );
-
-        const orRoutes = [];
-        const solutionDroppedIndices = solution.dropped_node_indices || [];
-        const droppedEmployees = solutionDroppedIndices
-          .map((nodeIdx) => {
-            if (nodeIdx > 0 && nodeIdx < pointMapForCurrentZone.length)
-              return pointMapForCurrentZone[nodeIdx];
-            console.error(
-              `[OR-TOOLS] Invalid dropped_node_index ${nodeIdx} for pointMap length ${pointMapForCurrentZone.length}`
-            );
-            return null;
-          })
-          .filter(Boolean);
-
-        if (solution.routes && Array.isArray(solution.routes)) {
-          solution.routes.forEach((routeNodeIndices) => {
-            if (routeNodeIndices.length > 0) {
-              const currentRouteEmployees = routeNodeIndices
-                .map((nodeIndex) => {
-                  if (nodeIndex === 0) return null;
-                  if (nodeIndex >= pointMapForCurrentZone.length) {
-                    console.error(
-                      `[OR-TOOLS] Route nodeIndex ${nodeIndex} out of bounds for pointMap length ${pointMapForCurrentZone.length}`
-                    );
-                    return null;
-                  }
-                  return pointMapForCurrentZone[nodeIndex];
-                })
-                .filter((emp) => emp != null && !emp.isFacility);
-
-              if (currentRouteEmployees.length > 0) {
-                orRoutes.push({
-                  employees: currentRouteEmployees,
-                  vehicleCapacity,
-                  guardNeeded: false,
-                  zone: currentZoneNameForLogging,
-                  tripType,
-                });
-              }
-            }
-          });
-        }
-        console.log(
-          `[OR-TOOLS SOLVER] Processed ${orRoutes.length} routes, ${droppedEmployees.length} dropped for zone: "${currentZoneNameForLogging}".`
-        );
-        resolve({ routes: orRoutes, droppedEmployees });
-      });
-      pythonProcess.on("error", (err) => {
-        console.error(
-          `[OR-TOOLS SOLVER] Failed to start Python subprocess for zone "${currentZoneNameForLogging}".`,
-          err
-        );
-        reject(err);
-      });
+        });
+        pythonProcess.on("error", (err) => reject(new Error(`Failed to start Python subprocess: ${err.message}`)));
     });
+
   } catch (error) {
-    console.error(
-      `[OR-TOOLS SOLVER] Critical error in solveZoneWithORTools for zone "${currentZoneNameForLogging}":`,
-      error
-    );
-    return { routes: [], droppedEmployees: [...zoneEmployees] };
+    console.error(`[OR-TOOLS SOLVER] Critical error for zone "${currentZoneNameForLogging}":`, error);
+    return { routes: [], droppedEmployees: [...zoneEmployees], error: error.message };
   }
 }
+
+// Add these constants at the top of your file
+const MAX_UNROUTED_PROCESSING_ATTEMPTS = 5; // Maximum attempts per employee
+const UNROUTED_DEVIATION_TOLERANCE = 0.15; // 15% tolerance for unrouted employees
+const FORCE_SINGLETON_DISTANCE_THRESHOLD = 20; // Force singleton if > 20km from facility
+
+// Add this function to track processing attempts
+function createUnroutedAttemptTracker() {
+  const attempts = new Map();
+  
+  return {
+    getAttempts: (empCode) => attempts.get(empCode) || 0,
+    incrementAttempts: (empCode) => {
+      const current = attempts.get(empCode) || 0;
+      attempts.set(empCode, current + 1);
+      return current + 1;
+    },
+    hasExceededMaxAttempts: (empCode) => {
+      return (attempts.get(empCode) || 0) >= MAX_UNROUTED_PROCESSING_ATTEMPTS;
+    }
+  };
+}
+
+// Enhanced route deviation check for unrouted employees
+// Simplified and stricter route deviation check for unrouted employees
+async function checkRouteDeviationForUnrouted(route, facility, profile, isUnroutedPass = false) {
+  // Always run the standard deviation check first
+  const baseCheck = await checkRouteDeviation(route, facility, profile);
+  
+  if (baseCheck) {
+    return true; // Passes normal deviation check - route is fine
+  }
+  
+  // If unrouted pass, apply MINIMAL tolerance only for borderline cases
+  if (isUnroutedPass && profile?.routeDeviationRules) {
+    const city = profile?.name;
+    const osrmBaseUrl = getOsrmBaseUrl(city);
+    
+    if (!route?.employees || route.employees.length === 0) return true;
+    
+    const ruleKeys = Object.keys(profile.routeDeviationRules);
+    if (ruleKeys.length === 0) return true;
+    
+    let effectiveRuleKey = profile.facilityType && profile.routeDeviationRules[profile.facilityType]
+      ? profile.facilityType
+      : ruleKeys[0];
+    let rules = profile.routeDeviationRules[effectiveRuleKey];
+    
+    if (!rules || !Array.isArray(rules) || rules.length === 0) return true;
+    
+    // Calculate farthest employee distance (same as base check)
+    let farthestEmployeeDistanceKm = 0;
+    const isDropoffRoute = route.tripType?.toLowerCase() === "dropoff";
+    
+    if (route.employees.length > 0) {
+      const farthestEmployee = isDropoffRoute 
+        ? route.employees[route.employees.length - 1]
+        : route.employees[0];
+        
+      if (farthestEmployee?.location?.lng != null && farthestEmployee?.location?.lat != null) {
+        try {
+          const facilityCoords = `${facility.geoX},${facility.geoY}`;
+          const employeeCoords = `${farthestEmployee.location.lng},${farthestEmployee.location.lat}`;
+          
+          const coordsString = isDropoffRoute 
+            ? `${facilityCoords};${employeeCoords}`
+            : `${employeeCoords};${facilityCoords}`;
+          
+          const url = `${osrmBaseUrl}/route/v1/driving/${coordsString}?alternatives=false&steps=false&annotations=distance`;
+          const response = await fetchApi(url, { method: "GET", timeout: OSRM_PROBE_TIMEOUT });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.code === "Ok" && data.routes?.[0]?.distance != null) {
+              farthestEmployeeDistanceKm = data.routes[0].distance / 1000;
+            }
+          }
+        } catch (err) {
+          console.warn(`[UnroutedDeviation] OSRM error: ${err.message}`);
+          return false; // If we can't calculate, don't allow it
+        }
+      }
+    }
+    
+    // Find applicable rule (same logic as base check)
+    const EPSILON = 0.001;
+    let applicableRule = rules.find(
+      (rule) =>
+        farthestEmployeeDistanceKm >= rule.minDistKm - EPSILON &&
+        farthestEmployeeDistanceKm <= rule.maxDistKm + EPSILON
+    );
+    
+    if (!applicableRule) {
+      const sortedRules = [...rules].sort((a, b) => a.maxDistKm - b.maxDistKm);
+      if (sortedRules.length > 0 && farthestEmployeeDistanceKm > sortedRules[sortedRules.length - 1].maxDistKm) {
+        applicableRule = sortedRules[sortedRules.length - 1];
+      } else if (sortedRules.length > 0) {
+        let closestRule = sortedRules[0];
+        for(const rule of sortedRules) {
+          if (farthestEmployeeDistanceKm <= rule.maxDistKm + EPSILON) {
+            closestRule = rule; break;
+          }
+        }
+        applicableRule = closestRule;
+      }
+    }
+    
+    if (!applicableRule?.maxTotalOneWayKm) return false;
+    
+    const relevantRouteDistanceKm = (route.routeDetails.totalDistance || 0) / 1000;
+    const ruleLimit = applicableRule.maxTotalOneWayKm;
+    const exceedanceKm = relevantRouteDistanceKm - ruleLimit;
+    const exceedancePercentage = exceedanceKm / ruleLimit;
+    
+    // ONLY allow very small exceedances for unrouted (< 5% or < 2km, whichever is smaller)
+    const maxAllowedExceedanceKm = Math.min(ruleLimit * 0.05, 2.0);
+    
+    if (exceedanceKm <= maxAllowedExceedanceKm) {
+      console.log(`[UnroutedDeviation] Route ${route.uniqueKey || route.routeNumber}: PASSED with minimal tolerance. Rule limit: ${ruleLimit}km, Actual: ${relevantRouteDistanceKm.toFixed(2)}km (exceeds by ${exceedanceKm.toFixed(2)}km). FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(2)}km.`);
+      return true;
+    }
+    
+    console.warn(`[UnroutedDeviation] Route ${route.uniqueKey || route.routeNumber}: REJECTED. Rule limit: ${ruleLimit}km, Actual: ${relevantRouteDistanceKm.toFixed(2)}km (exceeds by ${exceedanceKm.toFixed(2)}km, ${(exceedancePercentage * 100).toFixed(1)}%). Max allowed exceedance: ${maxAllowedExceedanceKm.toFixed(2)}km. FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(2)}km.`);
+  }
+  
+  return false;
+}
+
+// Remove the distance-based pre-filtering and keep it simple
+function preFilterEmployeesForProcessing(employees, facility) {
+  // Only filter out employees that are clearly impossible to reach
+  const impossibleEmployees = [];
+  const routeableEmployees = [];
+  
+  const IMPOSSIBLE_DISTANCE_THRESHOLD = 50; // Only filter truly unreachable employees
+  
+  for (const emp of employees) {
+    const distToFacility = haversineDistance(
+      [emp.location.lat, emp.location.lng],
+      [facility.geoY, facility.geoX]
+    );
+    
+    if (distToFacility > IMPOSSIBLE_DISTANCE_THRESHOLD) {
+      impossibleEmployees.push(emp);
+      console.warn(`[Pre-filter] Employee ${emp.empCode} is ${distToFacility.toFixed(2)}km from facility. Impossible to route.`);
+    } else {
+      routeableEmployees.push(emp);
+    }
+  }
+  
+  return { routeableEmployees, impossibleEmployees };
+}
+
+// Simplified unrouted processing that respects deviation rules strictly
+async function processUnroutedEmployeesWithSafeguards(
+  finalUnroutedForProcessing,
+  profile,
+  availableFleetCounts,
+  facility,
+  tripType,
+  profileMaxDuration,
+  pickupTimePerEmployee,
+  activateGuardSystemFromInput,
+  shiftTime,
+  city,
+  totalRouteCount,
+  routeDataContainer
+) {
+  if (finalUnroutedForProcessing.length === 0) {
+    return { processedRoutes: [], remainingUnrouted: [], updatedRouteCount: totalRouteCount };
+  }
+
+  console.log(`\n[UNROUTED HANDLING] Processing ${finalUnroutedForProcessing.length} unrouted employees with strict deviation checks...`);
+  
+  const attemptTracker = createUnroutedAttemptTracker();
+  const processedRoutes = [];
+  let currentRouteCount = totalRouteCount;
+  
+  // Distance-based constants for unrouted processing
+  const UNROUTED_FORCE_SINGLETON_DISTANCE = 40; // Force singleton if > 20km from facility
+  const UNROUTED_MAX_GROUP_DISTANCE = 5.0; // Max distance between any two employees in unrouted group
+  const UNROUTED_MAX_CONSECUTIVE_DISTANCE = 5.0; // Max distance between consecutive employees
+  const UNROUTED_MAX_GROUP_SPAN = 12; // Max distance between farthest employees in a group
+  
+  let MAX_INITIAL_GROUP_SIZE_UNROUTED = profile.unroutedGroupSizeTarget || 2; // Reduced from 3
+  const MAX_TRIM_ATTEMPTS_PER_GROUP = profile.unroutedTrimAttempts || 2;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const facilityCoordinates = [facility.geoY, facility.geoX];
+  
+  // Helper function to validate consecutive distances
+  function validateUnroutedGroupDistances(employees, maxConsecutiveKm = UNROUTED_MAX_CONSECUTIVE_DISTANCE) {
+    if (!employees || employees.length < 2) return true;
+    
+    for (let i = 0; i < employees.length - 1; i++) {
+      const emp1 = employees[i];
+      const emp2 = employees[i + 1];
+      
+      const distance = haversineDistance(
+        [emp1.location.lat, emp1.location.lng],
+        [emp2.location.lat, emp2.location.lng]
+      );
+      
+      if (distance > maxConsecutiveKm) {
+        console.warn(`[Unrouted Consecutive] Employees ${emp1.empCode} and ${emp2.empCode} are ${distance.toFixed(2)}km apart (max: ${maxConsecutiveKm}km)`);
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  // Helper function to check maximum span in a group
+  function checkGroupSpan(employees, maxSpanKm = UNROUTED_MAX_GROUP_SPAN) {
+    if (!employees || employees.length < 2) return true;
+    
+    let maxDistance = 0;
+    for (let i = 0; i < employees.length; i++) {
+      for (let j = i + 1; j < employees.length; j++) {
+        const dist = haversineDistance(
+          [employees[i].location.lat, employees[i].location.lng],
+          [employees[j].location.lat, employees[j].location.lng]
+        );
+        maxDistance = Math.max(maxDistance, dist);
+      }
+    }
+    
+    if (maxDistance > maxSpanKm) {
+      console.warn(`[Unrouted Group Span] Max distance between employees in group is ${maxDistance.toFixed(2)}km (max: ${maxSpanKm}km)`);
+      return false;
+    }
+    return true;
+  }
+  
+  // Simple pre-filtering - only remove truly impossible employees
+  const { routeableEmployees, impossibleEmployees } = preFilterEmployeesForProcessing(finalUnroutedForProcessing, facility);
+  
+  // Separate employees by distance from facility for singleton vs grouping decision
+  const singletonCandidates = [];
+  const groupableCandidates = [];
+  
+  for (const emp of routeableEmployees) {
+    const distToFacility = haversineDistance(
+      [emp.location.lat, emp.location.lng],
+      [facility.geoY, facility.geoX]
+    );
+    
+    if (distToFacility > UNROUTED_FORCE_SINGLETON_DISTANCE) {
+      console.log(`[Unrouted Singleton] Employee ${emp.empCode} is ${distToFacility.toFixed(2)}km from facility. Forcing singleton.`);
+      singletonCandidates.push(emp);
+    } else {
+      groupableCandidates.push(emp);
+    }
+  }
+  
+  // Process forced singletons first
+  for (const emp of singletonCandidates) {
+    currentRouteCount++;
+    
+    const singletonRoute = {
+      routeNumber: currentRouteCount,
+      employees: [emp],
+      zone: emp.zone || "UNROUTED_SINGLETON",
+      tripType: tripType,
+      uniqueKey: `${emp.zone}_UNROUTED_SINGLETON_${currentRouteCount}_${uuidv4()}`,
+    };
+    
+    // Vehicle assignment for singleton
+    const { employeesTrimmedOff } = await assignVehicleAndFinalizeGroup(
+      singletonRoute, [emp], profile, availableFleetCounts, shiftTime, tripType, activateGuardSystemFromInput
+    );
+    
+    if (!singletonRoute.error && singletonRoute.employees.length > 0) {
+      // Calculate route details
+      const singletonCoords = [emp.location.lat, emp.location.lng];
+      const allCoords = isDropoff ? [facilityCoordinates, singletonCoords] : [singletonCoords, facilityCoordinates];
+      const routeDetails = await calculateRouteDetails(allCoords, [emp], pickupTimePerEmployee, tripType, city, shiftTime);
+      
+      if (!routeDetails.error) {
+        updateRouteWithDetails(singletonRoute, routeDetails);
+        
+        // More lenient deviation check for forced singletons
+        if (await checkRouteDeviationForUnrouted(singletonRoute, facility, profile, true)) {
+          calculatePickupTimes(singletonRoute, shiftTime, pickupTimePerEmployee, 0);
+          singletonRoute.guardNeeded = activateGuardSystemFromInput && emp.gender === 'F';
+          processedRoutes.push(singletonRoute);
+          console.log(`[Unrouted Singleton Success] Created singleton route ${singletonRoute.uniqueKey} for distant employee ${emp.empCode}`);
+        } else {
+          impossibleEmployees.push(emp);
+        }
+      } else {
+        impossibleEmployees.push(emp);
+      }
+    } else {
+      impossibleEmployees.push(emp);
+    }
+  }
+  
+  // Now process groupable candidates with distance validation
+  let remainingToRouteIteratively = [...groupableCandidates];
+  const processedInThisUnroutedPass = new Set();
+  let globalIterationCount = 0;
+  const MAX_GLOBAL_ITERATIONS = groupableCandidates.length * 3; // Circuit breaker
+  
+  // Process employees with strict deviation adherence and distance validation
+  while (remainingToRouteIteratively.length > 0 && globalIterationCount < MAX_GLOBAL_ITERATIONS) {
+    globalIterationCount++;
+    currentRouteCount++;
+    
+    // Filter out employees that have exceeded max attempts
+    remainingToRouteIteratively = remainingToRouteIteratively.filter(emp => {
+      if (attemptTracker.hasExceededMaxAttempts(emp.empCode)) {
+        console.warn(`[Unrouted Circuit Breaker] Employee ${emp.empCode} has exceeded ${MAX_UNROUTED_PROCESSING_ATTEMPTS} attempts. Moving to impossible list.`);
+        impossibleEmployees.push(emp);
+        return false;
+      }
+      return true;
+    });
+    
+    if (remainingToRouteIteratively.length === 0) break;
+    
+    let initialGroupForThisAttempt = [];
+    let tempHoldingForNextIteration = [];
+    
+    // Build initial group WITH DISTANCE VALIDATION
+    let count = 0;
+    while(remainingToRouteIteratively.length > 0 && count < MAX_INITIAL_GROUP_SIZE_UNROUTED) {
+      const candidateEmp = remainingToRouteIteratively.shift();
+      if (!processedInThisUnroutedPass.has(candidateEmp.empCode)) {
+        
+        // Check distance to existing employees in group
+        let canAddToGroup = true;
+        if (initialGroupForThisAttempt.length > 0) {
+          for (const existingEmp of initialGroupForThisAttempt) {
+            const distance = haversineDistance(
+              [candidateEmp.location.lat, candidateEmp.location.lng],
+              [existingEmp.location.lat, existingEmp.location.lng]
+            );
+            
+            if (distance > UNROUTED_MAX_GROUP_DISTANCE) {
+              console.log(`[Unrouted Distance Check] Employee ${candidateEmp.empCode} is ${distance.toFixed(2)}km from ${existingEmp.empCode}. Too far for grouping.`);
+              canAddToGroup = false;
+              break;
+            }
+          }
+        }
+        
+        if (canAddToGroup) {
+          initialGroupForThisAttempt.push(candidateEmp);
+          processedInThisUnroutedPass.add(candidateEmp.empCode);
+          attemptTracker.incrementAttempts(candidateEmp.empCode);
+          count++;
+        } else {
+          // Put back for singleton processing
+          tempHoldingForNextIteration.push(candidateEmp);
+        }
+      } else {
+        tempHoldingForNextIteration.push(candidateEmp);
+      }
+    }
+    remainingToRouteIteratively.unshift(...tempHoldingForNextIteration);
+
+    if (initialGroupForThisAttempt.length === 0) break;
+    
+    // Adjust group size based on average distance from facility
+    if (initialGroupForThisAttempt.length > 0) {
+      const avgDistanceFromFacility = initialGroupForThisAttempt.reduce((sum, emp) => {
+        return sum + haversineDistance([emp.location.lat, emp.location.lng], [facility.geoY, facility.geoX]);
+      }, 0) / initialGroupForThisAttempt.length;
+      
+      // If employees are far from facility, prefer smaller groups
+      if (avgDistanceFromFacility > 15.0 && initialGroupForThisAttempt.length > 1) {
+        console.log(`[Unrouted] Employees are ${avgDistanceFromFacility.toFixed(2)}km from facility on average. Reducing group size.`);
+        // Remove excess employees and put them back
+        while (initialGroupForThisAttempt.length > 1) {
+          const removedEmp = initialGroupForThisAttempt.pop();
+          processedInThisUnroutedPass.delete(removedEmp.empCode);
+          remainingToRouteIteratively.unshift(removedEmp);
+        }
+      }
+    }
+    
+    // Check group span before proceeding
+    if (initialGroupForThisAttempt.length > 1 && !checkGroupSpan(initialGroupForThisAttempt)) {
+      console.log(`[Unrouted] Group span too large. Breaking into singletons.`);
+      
+      // Process each as singleton instead
+      for (const emp of initialGroupForThisAttempt) {
+        processedInThisUnroutedPass.delete(emp.empCode);
+        remainingToRouteIteratively.unshift(emp);
+      }
+      continue; // Skip to next iteration
+    }
+
+    let currentEmployeesInRouteAttempt = [...initialGroupForThisAttempt];
+    let successfullyRoutedThisIteration = false;
+
+    // Try different group sizes, trimming down if deviation fails
+    for (let trimAttempt = 0; trimAttempt <= MAX_TRIM_ATTEMPTS_PER_GROUP; trimAttempt++) {
+      if (currentEmployeesInRouteAttempt.length === 0) break;
+      
+      // Validate consecutive distances before proceeding
+      if (currentEmployeesInRouteAttempt.length > 1 && !validateUnroutedGroupDistances(currentEmployeesInRouteAttempt)) {
+        console.log(`[Unrouted] Breaking group into singletons due to excessive consecutive distances`);
+        
+        // Process each employee as singleton
+        for (const emp of currentEmployeesInRouteAttempt) {
+          processedInThisUnroutedPass.delete(emp.empCode);
+          remainingToRouteIteratively.unshift(emp);
+        }
+        break; // Skip to next iteration
+      }
+
+      const routeForThisAttempt = {
+        routeNumber: currentRouteCount,
+        employees: [...currentEmployeesInRouteAttempt],
+        zone: currentEmployeesInRouteAttempt[0].zone || "UNROUTED_ITERATIVE",
+        tripType: tripType,
+        uniqueKey: `${currentEmployeesInRouteAttempt[0].zone}_UNROUTED_ITER_${currentRouteCount}_${trimAttempt}_${uuidv4()}`,
+      };
+
+      // Vehicle assignment
+      const { employeesTrimmedOff: trimmedForCapacity } = await assignVehicleAndFinalizeGroup(
+        routeForThisAttempt, [...currentEmployeesInRouteAttempt], profile,
+        availableFleetCounts, shiftTime, tripType, activateGuardSystemFromInput
+      );
+
+      if (trimmedForCapacity.length > 0) {
+        trimmedForCapacity.forEach(emp => {
+          processedInThisUnroutedPass.delete(emp.empCode);
+        });
+        remainingToRouteIteratively.unshift(...trimmedForCapacity);
+        currentEmployeesInRouteAttempt = routeForThisAttempt.employees;
+        if (currentEmployeesInRouteAttempt.length === 0) {
+          break;
+        }
+      }
+
+      if (routeForThisAttempt.error || routeForThisAttempt.employees.length === 0) {
+        currentEmployeesInRouteAttempt.forEach(e => {
+          processedInThisUnroutedPass.delete(e.empCode);
+          remainingToRouteIteratively.unshift(e);
+        });
+        break;
+      }
+
+      // OR-Tools optimization
+      if (routeForThisAttempt.employees.length > 0) {
+        try {
+          const { routes: orRoutes, droppedEmployees: orDropped, error: orError } = await solveZoneWithORTools(
+            routeForThisAttempt.employees, facility, routeForThisAttempt.vehicleCapacity, profileMaxDuration,
+            pickupTimePerEmployee, tripType, routeForThisAttempt.zone, true, city
+          );
+          
+          if (orError) throw new Error(orError);
+          
+          if (orDropped?.length > 0) {
+            orDropped.forEach(emp => {
+              processedInThisUnroutedPass.delete(emp.empCode);
+              remainingToRouteIteratively.unshift(emp);
+            });
+          }
+          
+          if (orRoutes?.[0]?.employees.length > 0) {
+            routeForThisAttempt.employees = orRoutes[0].employees;
+            
+            // Re-validate distances after OR-Tools optimization
+            if (routeForThisAttempt.employees.length > 1 && !validateUnroutedGroupDistances(routeForThisAttempt.employees)) {
+              console.warn(`[Unrouted] OR-Tools result failed distance validation. Breaking into singletons.`);
+              routeForThisAttempt.employees.forEach(emp => {
+                processedInThisUnroutedPass.delete(emp.empCode);
+                remainingToRouteIteratively.unshift(emp);
+              });
+              break;
+            }
+          }
+        } catch (e) {
+          console.warn(`OR-Tools failed for unrouted group ${routeForThisAttempt.uniqueKey}: ${e.message}`);
+        }
+      }
+
+      if (routeForThisAttempt.employees.length === 0) {
+        currentEmployeesInRouteAttempt.forEach(e => {
+          processedInThisUnroutedPass.delete(e.empCode);
+          remainingToRouteIteratively.unshift(e);
+        });
+        break;
+      }
+
+      // Route calculation
+      const routeCoords = routeForThisAttempt.employees.map(emp => [emp.location.lat, emp.location.lng]);
+      const allCoords = isDropoff ? [facilityCoordinates, ...routeCoords] : [...routeCoords, facilityCoordinates];
+      const routeDetails = await calculateRouteDetails(allCoords, routeForThisAttempt.employees, pickupTimePerEmployee, tripType, city, shiftTime);
+
+      if (routeDetails.error) {
+        assignErrorState(routeForThisAttempt, `OSRM failed for unrouted: ${routeDetails.error}`);
+        currentEmployeesInRouteAttempt.forEach(e => {
+          processedInThisUnroutedPass.delete(e.empCode);
+          remainingToRouteIteratively.unshift(e);
+        });
+        break;
+      }
+      
+      updateRouteWithDetails(routeForThisAttempt, routeDetails);
+
+      // Guard handling
+      let unroutedRouteModifiedBySwap = false;
+      if (activateGuardSystemFromInput && routeForThisAttempt.employees.length > 0) {
+        const checkIndexUnrouted = isDropoff ? routeForThisAttempt.employees.length - 1 : 0;
+        const criticalEmployeeUnrouted = routeForThisAttempt.employees[checkIndexUnrouted];
+        if (criticalEmployeeUnrouted?.gender === 'F' && routeForThisAttempt.employees.some((emp, idx) => idx !== checkIndexUnrouted && emp.gender === 'M')) {
+          const swapAttemptResultUnrouted = await handleGuardRequirements(routeForThisAttempt, isDropoff, facility, pickupTimePerEmployee, city, shiftTime);
+          if (swapAttemptResultUnrouted.swapped) {
+            unroutedRouteModifiedBySwap = true;
+            updateRouteWithDetails(routeForThisAttempt, swapAttemptResultUnrouted.routeDetails);
+          }
+        }
+      }
+
+      // Final guard determination
+      if (activateGuardSystemFromInput && routeForThisAttempt.employees.length > 0) {
+        const finalCheckIndexUnrouted = isDropoff ? routeForThisAttempt.employees.length - 1 : 0;
+        if (routeForThisAttempt.employees[finalCheckIndexUnrouted]?.gender === 'F') {
+          routeForThisAttempt.guardNeeded = true;
+        } else {
+          routeForThisAttempt.guardNeeded = false;
+        }
+      } else {
+        routeForThisAttempt.guardNeeded = false;
+      }
+
+      // STRICT deviation check - minimal tolerance only
+      if (await checkRouteDeviationForUnrouted(routeForThisAttempt, facility, profile, true)) {
+        successfullyRoutedThisIteration = true;
+        
+        // Guard capacity check
+        if (routeForThisAttempt.guardNeeded) {
+          let passengerCapacity = routeForThisAttempt.vehicleCapacity - 1;
+          if (routeForThisAttempt.isSpecialNeedsRoute) passengerCapacity = Math.min(passengerCapacity, 1);
+          if (routeForThisAttempt.employees.length > Math.max(0, passengerCapacity)) {
+            assignErrorState(routeForThisAttempt, "Unrouted group too large for vehicle with guard");
+            currentEmployeesInRouteAttempt.forEach(e => {
+              processedInThisUnroutedPass.delete(e.empCode);
+              remainingToRouteIteratively.unshift(e);
+            });
+            successfullyRoutedThisIteration = false;
+            break;
+          }
+        }
+        
+        calculatePickupTimes(routeForThisAttempt, shiftTime, pickupTimePerEmployee, 0);
+        routeForThisAttempt.swapped = unroutedRouteModifiedBySwap;
+        processedRoutes.push(routeForThisAttempt);
+        console.log(`[Unrouted Success] Route ${routeForThisAttempt.uniqueKey} created with ${routeForThisAttempt.employees.length} employees. Distance: ${((routeForThisAttempt.routeDetails?.totalDistance || 0) / 1000).toFixed(2)}km`);
+        break;
+        
+      } else { // Deviation failed - try trimming or fail
+        if (trimAttempt < MAX_TRIM_ATTEMPTS_PER_GROUP && currentEmployeesInRouteAttempt.length > 1) {
+          // Remove one employee and try again
+          let empToTrim;
+          if (isDropoff) {
+            empToTrim = currentEmployeesInRouteAttempt.pop(); // Remove last (farthest)
+          } else {
+            empToTrim = currentEmployeesInRouteAttempt.shift(); // Remove first (farthest)
+          }
+          
+          if (empToTrim) {
+            console.log(`[Deviation Trim] Route ${routeForThisAttempt.uniqueKey} failed deviation check. Trimming employee ${empToTrim.empCode}. Retrying with ${currentEmployeesInRouteAttempt.length} employees.`);
+            processedInThisUnroutedPass.delete(empToTrim.empCode);
+            remainingToRouteIteratively.unshift(empToTrim);
+          }
+        } else {
+          // Can't trim anymore or single employee failed - mark as unrouteable
+          console.warn(`[Deviation Failed] Route ${routeForThisAttempt.uniqueKey} failed deviation check after ${trimAttempt} attempts. Marking employees as unrouteable.`);
+          currentEmployeesInRouteAttempt.forEach(e => {
+            processedInThisUnroutedPass.delete(e.empCode);
+            impossibleEmployees.push(e); // These employees can't be routed due to deviation
+          });
+          currentEmployeesInRouteAttempt = [];
+          break;
+        }
+      }
+    } // End trimming loop
+
+    if (!successfullyRoutedThisIteration && currentEmployeesInRouteAttempt?.length > 0) {
+      currentEmployeesInRouteAttempt.forEach(e => {
+        processedInThisUnroutedPass.delete(e.empCode);
+        remainingToRouteIteratively.unshift(e);
+      });
+    }
+  } // End main processing loop
+
+  // Final remaining unrouted
+  const finalRemainingUnrouted = [
+    ...remainingToRouteIteratively.filter(e => !processedInThisUnroutedPass.has(e.empCode)),
+    ...impossibleEmployees
+  ].filter((emp, index, self) => index === self.findIndex(e => e.empCode === emp.empCode));
+
+  if (globalIterationCount >= MAX_GLOBAL_ITERATIONS) {
+    console.warn(`[Circuit Breaker] Stopped unrouted processing after ${MAX_GLOBAL_ITERATIONS} iterations.`);
+  }
+
+  console.log(`[Unrouted Summary] Created ${processedRoutes.length} routes (including ${singletonCandidates.length} forced singletons). ${finalRemainingUnrouted.length} employees remain unrouted.`);
+
+  return {
+    processedRoutes,
+    remainingUnrouted: finalRemainingUnrouted,
+    updatedRouteCount: currentRouteCount
+  };
+}
+
+
+
 
 async function generateRoutes(data) {
   try {
     const {
-      employees,
-      facility,
-      shiftTime,
-      date,
-      profile,
-      saveToDatabase = false,
-      pickupTimePerEmployee = 180,
-      reportingTime = 0,
-      guard = false,
+      employees, facility, shiftTime, date, profile,
+      pickupTimePerEmployee = 180, reportingTime = 0, guard = false,
       tripType = "PICKUP",
     } = data;
 
     if (!employees?.length) throw new Error("Employee data is required");
-    if (!facility?.geoX || !facility?.geoY)
-      throw new Error("Valid facility data required");
-    if (!date || !shiftTime || !profile)
-      throw new Error("Missing required parameters");
+    if (!facility?.geoX || !facility?.geoY) throw new Error("Valid facility data required");
+    if (!date || !shiftTime || !profile) throw new Error("Missing required parameters");
 
-    const osrmAvailable = await isOsrmAvailable();
-    if (!osrmAvailable) throw new Error("OSRM routing service unavailable");
+    const city = profile?.name || "ncr";
+    const activateGuardSystemFromInput = guard; // This is the master switch from input
+    console.log(`Generating routes for ${employees.length} employees, date: ${date}, shift: ${shiftTime}, city: ${city}, activateGuardSystem: ${activateGuardSystemFromInput}`);
+    if (!await isOsrmAvailable(profile)) throw new Error("OSRM routing service unavailable");
 
-    const useZones =
-      profile.zoneBasedRouting !== undefined
-        ? !!profile.zoneBasedRouting
-        : true;
+    let availableFleetCounts = {};
+    if (profile.fleet && Array.isArray(profile.fleet)) {
+      profile.fleet.forEach(vehicle => {
+        availableFleetCounts[vehicle.type] = vehicle.count;
+      });
+    } else {
+      console.warn("[Fleet] profile.fleet is missing or invalid. Fleet features will be limited.");
+    }
+    let masterUnroutedPool = [];
+
+    const useZones = profile.zoneBasedRouting !== false;
     let employeesByZone = {};
-    const removedForGuardByZone = {};
-
-    const ensureSpecialFlags = (emp) => ({
-      ...emp,
-      isMedical: emp.isMedical || false,
-      isPWD: emp.isPWD || false,
-    });
+    const ensureSpecialFlags = (emp) => ({ ...emp, isMedical: emp.isMedical || false, isPWD: emp.isPWD || false, isNMT: emp.isNMT || false, isOOB: emp.isOOB || false });
 
     if (useZones) {
       let zones = data.zones || [];
       if (!zones.length && ZONES_DATA_FILE) {
         try {
-          zones = await loadZonesData();
-          if (!zones.length) console.warn("No zones data loaded.");
+            zones = await loadZonesData();
+            if (!zones.length) console.warn("No zones data loaded from file.");
         } catch (err) {
-          console.error(`Failed to load zones: ${err.message}.`);
+            console.error(`Failed to load zones from ${ZONES_DATA_FILE}: ${err.message}. Proceeding without file-based zones.`);
         }
       }
-      employeesByZone = assignEmployeesToZones(
-        employees.map(ensureSpecialFlags),
-        zones
-      );
-      if (Object.keys(employeesByZone).length === 0 && employees.length > 0) {
-        if (!employeesByZone["DEFAULT_ZONE"])
-          employeesByZone["DEFAULT_ZONE"] = [];
-        employees.forEach((emp) => {
-          if (
-            !Object.values(employeesByZone)
-              .flat()
-              .find((e) => e.empCode === emp.empCode)
-          ) {
-            employeesByZone["DEFAULT_ZONE"].push({
-              ...ensureSpecialFlags(emp),
-              zone: "DEFAULT_ZONE",
-              location: { lat: emp.geoY, lng: emp.geoX },
-            });
-          }
-        });
+      if (zones.length === 0 && (!data.zones || data.zones.length === 0)) {
+          console.warn("No zones provided in request or loaded from backend. All employees will be in DEFAULT_ZONE.");
       }
+      employeesByZone = assignEmployeesToZones(employees.map(ensureSpecialFlags), zones);
     } else {
-      employeesByZone = {
-        GLOBAL: employees.map((emp) => ({
-          ...ensureSpecialFlags(emp),
-          zone: "GLOBAL",
-          location: { lat: emp.geoY, lng: emp.geoX },
-        })),
-      };
+      employeesByZone = { GLOBAL: employees.map(emp => ({ ...ensureSpecialFlags(emp), zone: "GLOBAL", location: { lat: emp.geoY, lng: emp.geoX } })) };
+    }
+     if (Object.keys(employeesByZone).length === 0 && employees.length > 0) {
+        employeesByZone["DEFAULT_ZONE"] = employees.map(emp => ({ ...ensureSpecialFlags(emp), zone: "DEFAULT_ZONE", location: { lat: emp.geoY, lng: emp.geoX } }));
     }
 
-    const routeData = {
-      uuid: data.uuid || uuidv4(),
-      date,
-      shift: shiftTime,
-      tripType: tripType.toUpperCase(),
-      facility,
-      profile,
-      employeeData: employees,
-      routeData: [],
-    };
-
+    const routeDataContainer = { uuid: data.uuid || uuidv4(), date, shift: shiftTime, tripType: tripType.toUpperCase(), facility, profile, employeeData: employees, routeData: [] };
     const processedZones = new Set();
-    const { zonePairingMatrix = {}, maxDuration: profileMaxDuration = 7200 } =
-      profile;
+    const { zonePairingMatrix = {}, maxDuration: profileMaxDuration = 7200 } = profile;
     let totalRouteCount = 0;
     let finalTotalSwappedRoutes = 0;
     const allInitiallyFormedRoutes = [];
-    let unroutedByOrTools = [];
-    let unroutableDueToDeviation = [];
 
     const isDropoff = tripType.toLowerCase() === "dropoff";
     const facilityCoordinates = [facility.geoY, facility.geoX];
 
-    const processZoneOrGroup = async (
-      empsInScope,
-      zoneIdentifier,
-      effectiveMaxCapacity
-    ) => {
+    const processZoneOrGroup = async (empsInScope, zoneIdentifier, targetHeuristicCapacity) => {
       if (empsInScope.length === 0) return;
-      const { routes: batchRoutes } = await processEmployeeBatch(
-        empsInScope,
-        effectiveMaxCapacity,
-        facility,
-        tripType,
-        profileMaxDuration,
+      const { routes: batchRoutes, employeesAddedToMasterUnrouted } = await processEmployeeBatch(
+        empsInScope, targetHeuristicCapacity, facility, tripType, profileMaxDuration,
         pickupTimePerEmployee,
-        guard
+        activateGuardSystemFromInput, // Pass the master guard activation flag
+        profile, availableFleetCounts, city, shiftTime
       );
-      batchRoutes.forEach((route) => {
+      if (employeesAddedToMasterUnrouted?.length > 0) {
+        employeesAddedToMasterUnrouted.forEach(emp => masterUnroutedPool.push(emp));
+      }
+      batchRoutes.forEach(route => {
         route.zone = zoneIdentifier;
         allInitiallyFormedRoutes.push(route);
       });
@@ -1487,713 +1906,272 @@ async function generateRoutes(data) {
       const zoneGroups = findZoneGroups(zonePairingMatrix);
       for (const group of zoneGroups) {
         const clubbedZoneName = group.join("-");
-        const combinedEmployees = group
-          .flatMap((zn) => employeesByZone[zn] || [])
-          .filter((e) => e.location);
-        const maxCap = Math.max(
-          ...group.map((z) => getZoneCapacity(z, profile)),
-          1
-        );
+        const combinedEmployees = group.flatMap(zn => employeesByZone[zn] || []).filter(e => e.location);
+        const maxCap = Math.max(...group.map(z => getZoneCapacity(z, profile)), 1);
         await processZoneOrGroup(combinedEmployees, clubbedZoneName, maxCap);
-        group.forEach((z) => processedZones.add(z));
+        group.forEach(z => processedZones.add(z));
       }
     }
     for (const [zoneName, zoneEmpList] of Object.entries(employeesByZone)) {
       if (processedZones.has(zoneName)) continue;
-      const currentZoneEmployees = (zoneEmpList || []).filter(
-        (e) => e.location
-      );
+      const currentZoneEmployees = (zoneEmpList || []).filter(e => e.location);
       const maxCap = getZoneCapacity(zoneName, profile);
       await processZoneOrGroup(currentZoneEmployees, zoneName, maxCap);
     }
 
     const allOptimizedOrToolsRoutes = [];
     for (const initialRoute of allInitiallyFormedRoutes) {
-      if (!initialRoute.employees || initialRoute.employees.length === 0)
+      if (!initialRoute.employees || initialRoute.employees.length === 0 || initialRoute.error) {
+        if(initialRoute.error) console.warn(`Skipping OR-Tools for errored route ${initialRoute.uniqueKey}: ${initialRoute.errorMessage}`);
         continue;
+      }
       try {
-        const { routes: orToolsSolvedRouteList, droppedEmployees } =
-          await solveZoneWithORTools(
-            initialRoute.employees,
-            facility,
-            initialRoute.vehicleCapacity,
-            profileMaxDuration,
-            pickupTimePerEmployee,
-            tripType,
-            initialRoute.zone,
-            true
-          );
-        if (droppedEmployees && droppedEmployees.length > 0)
-          unroutedByOrTools.push(...droppedEmployees);
-        if (orToolsSolvedRouteList && orToolsSolvedRouteList.length > 0) {
-          allOptimizedOrToolsRoutes.push({
-            ...initialRoute,
-            employees: orToolsSolvedRouteList[0].employees,
-          });
+        const { routes: orToolsSolvedRouteList, droppedEmployees, error: orError } = await solveZoneWithORTools(
+          initialRoute.employees, facility, initialRoute.vehicleCapacity, profileMaxDuration,
+          pickupTimePerEmployee, tripType, initialRoute.zone, true, city
+        );
+        if (orError) throw new Error(orError.message || orError);
+        if (droppedEmployees?.length > 0) masterUnroutedPool.push(...droppedEmployees);
+
+        if (orToolsSolvedRouteList?.[0]?.employees.length > 0) {
+          allOptimizedOrToolsRoutes.push({ ...initialRoute, employees: orToolsSolvedRouteList[0].employees });
         } else {
           allOptimizedOrToolsRoutes.push(initialRoute);
         }
       } catch (error) {
-        console.error(
-          `  [OR-Tools Stage] Error optimizing route for zone ${initialRoute.zone}: ${error.message}. Using original order.`
-        );
-        allOptimizedOrToolsRoutes.push(initialRoute);
+        console.error(`[OR-Tools Stage] Error optimizing route ${initialRoute.uniqueKey}: ${error.message}. Adding its employees to unrouted.`);
+        masterUnroutedPool.push(...initialRoute.employees);
       }
     }
 
     const finalProcessedRoutes = [];
+    const collectedUnroutedForReinsertionMap = new Map();
+
     for (const route of allOptimizedOrToolsRoutes) {
-      try {
-        totalRouteCount++;
-        route.routeNumber = totalRouteCount;
-        let routeModifiedByGuardSwap = false;
-        route.guardNeeded = false;
+      totalRouteCount++;
+      route.routeNumber = totalRouteCount;
+      if (!route.employees || route.employees.length === 0 || route.error) {
+        if (route.error) console.warn(`Skipping post-processing for errored route ${route.uniqueKey}: ${route.errorMessage}`);
+        if (route.employees?.length > 0) route.employees.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+        finalProcessedRoutes.push(route);
+        continue;
+      }
 
-        if (!route.employees || route.employees.length === 0) {
-          continue;
-        }
+      let currentRouteDetails = route.routeDetails;
+      const orToolsEmpCodes = route.employees.map(e => e.empCode).sort().join(',');
+      const initialEmpCodes = currentRouteDetails?.employees?.map(e => e.empCode).sort().join(',');
 
-        const routeCoordinates = route.employees.map((emp) => [
-          emp.location.lat,
-          emp.location.lng,
-        ]);
-        const currentAllCoordinates = isDropoff
-          ? [facilityCoordinates, ...routeCoordinates]
-          : [...routeCoordinates, facilityCoordinates];
-        let currentRouteDetails = await calculateRouteDetails(
-          currentAllCoordinates,
-          route.employees,
-          pickupTimePerEmployee,
-          tripType
-        );
+      if (!currentRouteDetails || orToolsEmpCodes !== initialEmpCodes) {
+          const currentRouteCoords = route.employees.map(emp => [emp.location.lat, emp.location.lng]);
+          const currentAllCoords = isDropoff ? [facilityCoordinates, ...currentRouteCoords] : [...currentRouteCoords, facilityCoordinates];
+          const freshRouteDetails = await calculateRouteDetails(currentAllCoords, route.employees, pickupTimePerEmployee, tripType, city, shiftTime);
+          if (freshRouteDetails.error) {
+              assignErrorState(route, `OSRM failed after OR-Tools: ${freshRouteDetails.error}`);
+              route.employees.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+              finalProcessedRoutes.push(route); continue;
+          }
+          updateRouteWithDetails(route, freshRouteDetails);
+          currentRouteDetails = route.routeDetails;
+      }
 
-        if (currentRouteDetails.error) {
-          unroutedByOrTools.push(...route.employees);
-          continue;
-        }
-        updateRouteWithDetails(route, currentRouteDetails);
+      let routeModifiedByGuardSwap = false;
+      let performReOptimization = false;
+      // route.guardNeeded was preliminarily set by assignVehicleAndFinalizeGroup
 
-        let routeActuallyNeedsExternalGuard = false;
-        let performReOptimization = false;
-        const nightShiftActive = isNightShiftForGuard(
-          shiftTime,
-          tripType,
-          profile
-        );
+      // --- Experiential Swap Attempt ---
+      if (activateGuardSystemFromInput && route.employees.length > 0) {
+        const checkIndex = isDropoff ? route.employees.length - 1 : 0;
+        const criticalEmployee = route.employees[checkIndex];
 
-        if (guard && route.employees.length > 0 && nightShiftActive) {
-          const guardSwapResult = await handleGuardRequirements(
-            route,
-            isDropoff,
-            facility,
-            pickupTimePerEmployee
+        // Condition for attempting an experiential swap:
+        // 1. Guard system is active.
+        // 2. Critical employee is Female.
+        // 3. There is at least one Male in the route (not at the critical position) to swap with.
+        if (criticalEmployee?.gender === 'F' && route.employees.some((emp, idx) => idx !== checkIndex && emp.gender === 'M')) {
+          console.log(`[Guard Logic - Swap Attempt] Route ${route.uniqueKey}: Critical is Female, attempting experiential swap to save guard.`);
+          const swapAttemptResult = await handleGuardRequirements(
+              route, // Pass the route object
+              isDropoff,
+              facility,
+              pickupTimePerEmployee,
+              city,
+              shiftTime
           );
-          if (
-            guardSwapResult.swapped &&
-            guardSwapResult.routeDetails &&
-            !guardSwapResult.routeDetails.error
-          ) {
+
+          if (swapAttemptResult.swapped) { // A swap occurred
             routeModifiedByGuardSwap = true;
             finalTotalSwappedRoutes++;
-            route.guardNeeded = false;
-            updateRouteWithDetails(route, guardSwapResult.routeDetails);
-            currentRouteDetails = guardSwapResult.routeDetails;
+            updateRouteWithDetails(route, swapAttemptResult.routeDetails); // Update with new details if swapped
+            currentRouteDetails = route.routeDetails; // Update local var
             performReOptimization = true;
-          } else if (guardSwapResult.guardNeeded) {
-            routeActuallyNeedsExternalGuard = true;
-            route.guardNeeded = true;
+            console.log(`[Guard Logic - Swap Attempt] Experiential swap for route ${route.uniqueKey} was successful. Guard saved!`);
           } else {
-            const critIdx = isDropoff ? route.employees.length - 1 : 0;
-            if (
-              route.employees.length > 0 &&
-              route.employees[critIdx].gender === "F" &&
-              !route.employees.some((e) => e.gender === "M")
-            ) {
-              routeActuallyNeedsExternalGuard = true;
-              route.guardNeeded = true;
-            } else {
-              route.guardNeeded = false;
-            }
+            console.log(`[Guard Logic - Swap Attempt] Experiential swap for route ${route.uniqueKey} did not occur or was rejected. Guard will be assigned.`);
           }
-        } else if (guard && route.employees.length > 0 && !nightShiftActive) {
-          route.guardNeeded = false;
-        }
-
-        if (performReOptimization) {
-          const capacityForReOpt = route.isSpecialNeedsRoute
-            ? 2
-            : route.vehicleCapacity;
-          const reOptResult = await reOptimizeSwappedRouteWithORTools(
-            { ...route, vehicleCapacity: capacityForReOpt },
-            facility,
-            pickupTimePerEmployee
-          );
-          if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
-            route.employees = reOptResult.employees;
-            const reOptRouteCoordinates = route.employees.map((emp) => [
-              emp.location.lat,
-              emp.location.lng,
-            ]);
-            const reOptAllCoordinates = isDropoff
-              ? [facilityCoordinates, ...reOptRouteCoordinates]
-              : [...reOptRouteCoordinates, facilityCoordinates];
-            currentRouteDetails = await calculateRouteDetails(
-              reOptAllCoordinates,
-              route.employees,
-              pickupTimePerEmployee,
-              tripType
-            );
-            if (currentRouteDetails.error) {
-              assignErrorState(
-                route,
-                `OSRM /trip failed after re-optimization: ${currentRouteDetails.error}`
-              );
-              unroutableDueToDeviation.push(...route.employees);
-              continue;
-            } else {
-              updateRouteWithDetails(route, currentRouteDetails);
-            }
-          }
-        }
-
-        let tempRemovedForGuardThisRouteIteration = [];
-        if (routeActuallyNeedsExternalGuard) {
-          let passengerCapacity;
-          const capacityBasisForGuardLogic = route.vehicleCapacity;
-          if (route.isSpecialNeedsRoute) {
-            passengerCapacity = 1;
-          } else {
-            passengerCapacity = Math.max(1, capacityBasisForGuardLogic - 1);
-          }
-
-          if (route.employees.length > passengerCapacity) {
-            const numToRemove = route.employees.length - passengerCapacity;
-            for (let i = 0; i < numToRemove; i++) {
-              if (route.employees.length === 0) break;
-              const removedEmp = isDropoff
-                ? route.employees.shift()
-                : route.employees.pop();
-              if (removedEmp) {
-                tempRemovedForGuardThisRouteIteration.push(removedEmp);
-                if (
-                  isSpecialNeedsUser(removedEmp) &&
-                  !route.employees.some(isSpecialNeedsUser)
-                ) {
-                  route.isSpecialNeedsRoute = false;
-                }
-              }
-            }
-            if (route.employees.length > 0) {
-              const newCoords = route.employees.map((e) => [
-                e.location.lat,
-                e.location.lng,
-              ]);
-              const newAllCoordsForGuardTrim = isDropoff
-                ? [facilityCoordinates, ...newCoords]
-                : [...newCoords, facilityCoordinates];
-              const recalcDetailsAfterGuardTrim = await calculateRouteDetails(
-                newAllCoordsForGuardTrim,
-                route.employees,
-                pickupTimePerEmployee,
-                tripType
-              );
-              if (!recalcDetailsAfterGuardTrim.error) {
-                updateRouteWithDetails(route, recalcDetailsAfterGuardTrim);
-                currentRouteDetails = recalcDetailsAfterGuardTrim;
-              } else {
-                assignErrorState(
-                  route,
-                  `OSRM failed after guard removal: ${recalcDetailsAfterGuardTrim.error}`
-                );
-                unroutableDueToDeviation.push(
-                  ...route.employees,
-                  ...tempRemovedForGuardThisRouteIteration
-                );
-                continue;
-              }
-            } else {
-              assignErrorState(route, "No employees after guard removal");
-              removedForGuardByZone[route.zone] = (
-                removedForGuardByZone[route.zone] || []
-              ).concat(tempRemovedForGuardThisRouteIteration);
-              continue;
-            }
-          }
-          route.vehicleCapacity = passengerCapacity;
-        }
-        if (tempRemovedForGuardThisRouteIteration.length > 0) {
-          removedForGuardByZone[route.zone] = (
-            removedForGuardByZone[route.zone] || []
-          ).concat(tempRemovedForGuardThisRouteIteration);
-        }
-
-        if (route.employees.length === 0) {
-          if (!route.error)
-            assignErrorState(
-              route,
-              "Route became empty after guard/other processing"
-            );
-          continue;
-        }
-        if (route.error) {
-          unroutableDueToDeviation.push(...route.employees);
-          continue;
-        }
-
-        const deviationOkay = checkRouteDeviation(route, facility, profile);
-        if (!deviationOkay) {
-          console.warn(
-            `Route ${
-              route.routeNumber
-            } (Emps: ${route.employees
-              .map((e) => e.empCode)
-              .join(",")}) FAILED acceptable route deviation. Adding employees to unroutable list.`
-          );
-          unroutableDueToDeviation.push(...route.employees);
-          continue;
-        }
-
-        calculatePickupTimes(
-          route,
-          shiftTime,
-          pickupTimePerEmployee,
-          reportingTime
-        );
-        if (
-          profileMaxDuration &&
-          route.routeDetails &&
-          route.routeDetails.totalDuration > profileMaxDuration // Check totalDuration
-        ) {
-          route.durationExceeded = true;
-          // console.warn(`Route ${route.routeNumber} exceeds max duration. Adding to unroutable.`);
-          // unroutableDueToDeviation.push(...route.employees);
-          // continue;
-        }
-        route.swapped = routeModifiedByGuardSwap;
-        finalProcessedRoutes.push(route);
-      } catch (error) {
-        console.error(
-          `Critical error in post-processing loop for route ${
-            route?.routeNumber || "UNKNOWN"
-          }:`,
-          error
-        );
-        if (route && route.employees && route.employees.length > 0) {
-          unroutableDueToDeviation.push(...route.employees);
         }
       }
-    }
 
-    routeData.routeData = [...finalProcessedRoutes];
-
-    let collectedUnroutedForReinsertion = [
-      ...unroutedByOrTools,
-      ...unroutableDueToDeviation,
-    ];
-    for (const empList of Object.values(removedForGuardByZone)) {
-      collectedUnroutedForReinsertion.push(...empList);
-    }
-    const potentiallyUnroutedMap = new Map(
-      collectedUnroutedForReinsertion.map((emp) => [emp.empCode, emp])
-    );
-    const successfullyRoutedEmpCodesInMainPass = new Set();
-    finalProcessedRoutes.forEach((route) => {
-      if (!route.error && route.employees) {
-        route.employees.forEach((emp) =>
-          successfullyRoutedEmpCodesInMainPass.add(emp.empCode)
-        );
-      }
-    });
-    const finalUnroutedEmployees = Array.from(
-      potentiallyUnroutedMap.values()
-    ).filter((emp) => !successfullyRoutedEmpCodesInMainPass.has(emp.empCode));
-
-    if (finalUnroutedEmployees.length > 0) {
-      console.log(`\n[UNROUTED HANDLING] Processing ${finalUnroutedEmployees.length} unrouted employees...`);
-      
-      // Enforce max capacity for unrouted grouping
-      const maxCapacity = getZoneCapacity("GLOBAL", profile);
-      const groupedUnrouted = [];
-      const remainingUnrouted = [...finalUnroutedEmployees];
-      
-      while (remainingUnrouted.length > 0) {
-        const currentGroup = [];
-        const firstEmp = remainingUnrouted.shift();
-        currentGroup.push(firstEmp);
+      // --- Final Guard Needed Determination (after potential swap) ---
+      if (activateGuardSystemFromInput && route.employees.length > 0) {
+        const finalCheckIndex = isDropoff ? route.employees.length - 1 : 0;
         
-        for (let i = remainingUnrouted.length - 1; i >= 0; i--) {
-          if (currentGroup.length >= maxCapacity) break;
-          const candidateEmp = remainingUnrouted[i];
-          const tentativeRoute = {
-            employees: [...currentGroup, candidateEmp],
-            vehicleCapacity: maxCapacity,
-            guardNeeded: false,
-            isSpecialNeedsRoute: currentGroup.some(isSpecialNeedsUser) || isSpecialNeedsUser(candidateEmp),
-            tripType: tripType
-          };
-          const routeCoords = tentativeRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
-          const allCoords = isDropoff
-            ? [facilityCoordinates, ...routeCoords]
-            : [...routeCoords, facilityCoordinates];
-          const routeDetails = await calculateRouteDetails(
-            allCoords,
-            tentativeRoute.employees,
-            pickupTimePerEmployee,
-            tripType
-          );
-          if (!routeDetails.error) {
-            updateRouteWithDetails(tentativeRoute, routeDetails);
-            const deviationOkay = checkRouteDeviation(tentativeRoute, facility, profile);
-            if (deviationOkay) {
-              if (!profileMaxDuration || routeDetails.totalDuration <= profileMaxDuration) {
-                currentGroup.push(candidateEmp);
-                remainingUnrouted.splice(i, 1);
-              }
-            }
-          }
+        // CORRECTED: Guard needed if critical position is Female (regardless of other males)
+        if (route.employees[finalCheckIndex]?.gender === 'F') {
+            route.guardNeeded = true;
+            console.log(`[Guard Logic - Final Check] Route ${route.uniqueKey} requires guard (critical position is Female).`);
+        } else {
+            route.guardNeeded = false;
+            console.log(`[Guard Logic - Final Check] Route ${route.uniqueKey} does NOT require guard (critical position is Male).`);
         }
-        if (currentGroup.length > 0) {
-          groupedUnrouted.push(currentGroup);
-        }
-      }
-      // Process grouped unrouted employees
-      for (const group of groupedUnrouted) {
-        totalRouteCount++;
-        let groupRoute = {
-          routeNumber: totalRouteCount,
-          employees: group,
-          zone: group[0].zone || "UNROUTED_GROUP",
-          vehicleCapacity: maxCapacity,
-          guardNeeded: false,
-          isSpecialNeedsRoute: group.some(isSpecialNeedsUser),
-          uniqueKey: `${group[0].zone}_${totalRouteCount}_${uuidv4()}`,
-          tripType: tripType
-        };
-        // OR-Tools optimization for the group
-        try {
-          const { routes: orToolsRoutes } = await solveZoneWithORTools(
-            group,
-            facility,
-            maxCapacity,
-            profileMaxDuration,
-            pickupTimePerEmployee,
-            tripType,
-            groupRoute.zone,
-            true
-          );
-          if (orToolsRoutes && orToolsRoutes.length > 0) {
-            groupRoute.employees = orToolsRoutes[0].employees;
-          }
-        } catch (e) {
-          console.warn(`OR-Tools failed for unrouted group: ${e.message}`);
-        }
-        // Validate group route with OSRM
-        const routeCoords = groupRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
-        const allCoords = isDropoff
-          ? [facilityCoordinates, ...routeCoords]
-          : [...routeCoords, facilityCoordinates];
-        const routeDetails = await calculateRouteDetails(
-          allCoords,
-          groupRoute.employees,
-          pickupTimePerEmployee,
-          tripType
-        );
-        if (routeDetails.error) {
-          console.warn(`Group route failed OSRM validation: ${routeDetails.error}`);
-          assignErrorState(groupRoute, `OSRM validation failed: ${routeDetails.error}`);
-          routeData.routeData.push(groupRoute);
-          continue;
-        }
-        updateRouteWithDetails(groupRoute, routeDetails);
-        // Check deviation for group route
-        const deviationOkay = checkRouteDeviation(groupRoute, facility, profile);
-        if (!deviationOkay) {
-          console.warn(`Group route failed deviation check`);
-          assignErrorState(groupRoute, "Exceeded acceptable route deviation");
-          routeData.routeData.push(groupRoute);
-          continue;
-        }
-        // Guard logic and swapping for unrouted group
-        let routeActuallyNeedsExternalGuard = false;
-        let performReOptimization = false;
-        const nightShiftActive = isNightShiftForGuard(
-          shiftTime,
-          tripType,
-          profile
-        );
-        if (guard && groupRoute.employees.length > 0 && nightShiftActive) {
-          const guardSwapResult = await handleGuardRequirements(
-            groupRoute,
-            isDropoff,
-            facility,
-            pickupTimePerEmployee
-          );
-          if (
-            guardSwapResult.swapped &&
-            guardSwapResult.routeDetails &&
-            !guardSwapResult.routeDetails.error
-          ) {
-            groupRoute.guardNeeded = false;
-            updateRouteWithDetails(groupRoute, guardSwapResult.routeDetails);
-            performReOptimization = true;
-          } else if (guardSwapResult.guardNeeded) {
-            routeActuallyNeedsExternalGuard = true;
-            groupRoute.guardNeeded = true;
-          } else {
-            const critIdx = isDropoff ? groupRoute.employees.length - 1 : 0;
-            if (
-              groupRoute.employees.length > 0 &&
-              groupRoute.employees[critIdx].gender === "F" &&
-              !groupRoute.employees.some((e) => e.gender === "M")
-            ) {
-              routeActuallyNeedsExternalGuard = true;
-              groupRoute.guardNeeded = true;
-            } else {
-              groupRoute.guardNeeded = false;
-            }
-          }
-        } else if (guard && groupRoute.employees.length > 0 && !nightShiftActive) {
-          groupRoute.guardNeeded = false;
-        }
-        if (performReOptimization) {
-          const capacityForReOpt = groupRoute.isSpecialNeedsRoute
-            ? 2
-            : groupRoute.vehicleCapacity;
-          const reOptResult = await reOptimizeSwappedRouteWithORTools(
-            { ...groupRoute, vehicleCapacity: capacityForReOpt },
-            facility,
-            pickupTimePerEmployee
-          );
-          if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
-            groupRoute.employees = reOptResult.employees;
-            const reOptRouteCoordinates = groupRoute.employees.map((emp) => [
-              emp.location.lat,
-              emp.location.lng,
-            ]);
-            const reOptAllCoordinates = isDropoff
-              ? [facilityCoordinates, ...reOptRouteCoordinates]
-              : [...reOptRouteCoordinates, facilityCoordinates];
-            const currentRouteDetails = await calculateRouteDetails(
-              reOptAllCoordinates,
-              groupRoute.employees,
-              pickupTimePerEmployee,
-              tripType
-            );
-            if (!currentRouteDetails.error) {
-              updateRouteWithDetails(groupRoute, currentRouteDetails);
-            }
-          }
-        }
-        // Calculate pickup times
-        calculatePickupTimes(
-          groupRoute,
-          shiftTime,
-          pickupTimePerEmployee,
-          reportingTime
-        );
-        // Check duration
-        if (profileMaxDuration && groupRoute.routeDetails.totalDuration > profileMaxDuration) {
-          groupRoute.durationExceeded = true;
-        }
-        routeData.routeData.push(groupRoute);
-      }
-      // Create singleton routes for any remaining unrouted employees
-      for (const unroutedEmp of remainingUnrouted) {
-        totalRouteCount++;
-        let singletonRoute = {
-          routeNumber: totalRouteCount,
-          employees: [unroutedEmp],
-          zone: unroutedEmp.zone || "UNROUTED_SINGLETON",
-          vehicleCapacity: 1,
-          guardNeeded: false,
-          isSpecialNeedsRoute: isSpecialNeedsUser(unroutedEmp),
-          uniqueKey: `${unroutedEmp.zone}_${totalRouteCount}_${uuidv4()}`,
-          tripType: tripType
-        };
-        // OR-Tools optimization for singleton
-        try {
-          const { routes: orToolsRoutes } = await solveZoneWithORTools(
-            [unroutedEmp],
-            facility,
-            1,
-            profileMaxDuration,
-            pickupTimePerEmployee,
-            tripType,
-            singletonRoute.zone,
-            true
-          );
-          if (orToolsRoutes && orToolsRoutes.length > 0) {
-            singletonRoute.employees = orToolsRoutes[0].employees;
-          }
-        } catch (e) {
-          console.warn(`OR-Tools failed for singleton unrouted: ${e.message}`);
-        }
-        // Validate singleton route with OSRM
-        const routeCoords = singletonRoute.employees.map(emp => [emp.location.lat, emp.location.lng]);
-        const allCoords = isDropoff
-          ? [facilityCoordinates, ...routeCoords]
-          : [...routeCoords, facilityCoordinates];
-        const routeDetails = await calculateRouteDetails(
-          allCoords,
-          singletonRoute.employees,
-          pickupTimePerEmployee,
-          tripType
-        );
-        if (routeDetails.error) {
-          console.warn(`Singleton route for ${unroutedEmp.empCode} failed OSRM validation: ${routeDetails.error}`);
-          assignErrorState(singletonRoute, `OSRM validation failed: ${routeDetails.error}`);
-          routeData.routeData.push(singletonRoute);
-          continue;
-        }
-        updateRouteWithDetails(singletonRoute, routeDetails);
-        // Check deviation for singleton route
-        const deviationOkay = checkRouteDeviation(singletonRoute, facility, profile);
-        if (!deviationOkay) {
-          console.warn(`Singleton route for ${unroutedEmp.empCode} failed deviation check`);
-          assignErrorState(singletonRoute, "Exceeded acceptable route deviation");
-          routeData.routeData.push(singletonRoute);
-          continue;
-        }
-        // Guard logic and swapping for singleton
-        let routeActuallyNeedsExternalGuard = false;
-        let performReOptimization = false;
-        const nightShiftActive = isNightShiftForGuard(
-          shiftTime,
-          tripType,
-          profile
-        );
-        if (guard && singletonRoute.employees.length > 0 && nightShiftActive) {
-          const guardSwapResult = await handleGuardRequirements(
-            singletonRoute,
-            isDropoff,
-            facility,
-            pickupTimePerEmployee
-          );
-          if (
-            guardSwapResult.swapped &&
-            guardSwapResult.routeDetails &&
-            !guardSwapResult.routeDetails.error
-          ) {
-            singletonRoute.guardNeeded = false;
-            updateRouteWithDetails(singletonRoute, guardSwapResult.routeDetails);
-            performReOptimization = true;
-          } else if (guardSwapResult.guardNeeded) {
-            routeActuallyNeedsExternalGuard = true;
-            singletonRoute.guardNeeded = true;
-          } else {
-            const critIdx = isDropoff ? singletonRoute.employees.length - 1 : 0;
-            if (
-              singletonRoute.employees.length > 0 &&
-              singletonRoute.employees[critIdx].gender === "F" &&
-              !singletonRoute.employees.some((e) => e.gender === "M")
-            ) {
-              routeActuallyNeedsExternalGuard = true;
-              singletonRoute.guardNeeded = true;
-            } else {
-              singletonRoute.guardNeeded = false;
-            }
-          }
-        } else if (guard && singletonRoute.employees.length > 0 && !nightShiftActive) {
-          singletonRoute.guardNeeded = false;
-        }
-        if (performReOptimization) {
-          const capacityForReOpt = singletonRoute.isSpecialNeedsRoute
-            ? 2
-            : singletonRoute.vehicleCapacity;
-          const reOptResult = await reOptimizeSwappedRouteWithORTools(
-            { ...singletonRoute, vehicleCapacity: capacityForReOpt },
-            facility,
-            pickupTimePerEmployee
-          );
-          if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
-            singletonRoute.employees = reOptResult.employees;
-            const reOptRouteCoordinates = singletonRoute.employees.map((emp) => [
-              emp.location.lat,
-              emp.location.lng,
-            ]);
-            const reOptAllCoordinates = isDropoff
-              ? [facilityCoordinates, ...reOptRouteCoordinates]
-              : [...reOptRouteCoordinates, facilityCoordinates];
-            const currentRouteDetails = await calculateRouteDetails(
-              reOptAllCoordinates,
-              singletonRoute.employees,
-              pickupTimePerEmployee,
-              tripType
-            );
-            if (!currentRouteDetails.error) {
-              updateRouteWithDetails(singletonRoute, currentRouteDetails);
-            }
-          }
-        }
-        // Calculate pickup times
-        calculatePickupTimes(
-          singletonRoute,
-          shiftTime,
-          pickupTimePerEmployee,
-          reportingTime
-        );
-        // Check duration
-        if (profileMaxDuration && singletonRoute.routeDetails.totalDuration > profileMaxDuration) {
-          singletonRoute.durationExceeded = true;
-        }
-        routeData.routeData.push(singletonRoute);
-      }
+    } else {
+        route.guardNeeded = false; // Guard system not active or no employees
     }
 
-    // After all routing and singleton/group handling
-    // Collect all routed employee codes
-    const routedEmpCodes = new Set();
-    routeData.routeData.forEach(route => {
-      if (!route.error && route.employees) {
-        route.employees.forEach(emp => routedEmpCodes.add(emp.empCode));
-      }
-    });
-    // Find unrouted employees
-    const unroutedEmployees = employees.filter(emp => !routedEmpCodes.has(emp.empCode));
 
-    const stats = calculateRouteStatistics(routeData, employees.length);
-    const response = createSimplifiedResponse({
-      ...routeData,
-      ...stats,
+      if (performReOptimization) {
+        const reOptResult = await reOptimizeSwappedRouteWithORTools(route, facility, pickupTimePerEmployee, city);
+        if (reOptResult.reOptimized && reOptResult.employees.length > 0) {
+          route.employees = reOptResult.employees;
+          const reOptRouteCoords = route.employees.map(emp => [emp.location.lat, emp.location.lng]);
+          const reOptAllCoords = isDropoff ? [facilityCoordinates, ...reOptRouteCoords] : [...reOptRouteCoords, facilityCoordinates];
+          const reOptDetails = await calculateRouteDetails(reOptAllCoords, route.employees, pickupTimePerEmployee, tripType, city,shiftTime);
+          if (reOptDetails.error) {
+            assignErrorState(route, `OSRM failed after re-optimization: ${reOptDetails.error}`);
+            route.employees.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+            finalProcessedRoutes.push(route); continue;
+          }
+          updateRouteWithDetails(route, reOptDetails);
+        }
+      }
+
+      if (route.guardNeeded) {
+        console.log(`[Guard Logic] Route ${route.uniqueKey} finally requires an external guard. Adjusting capacity.`);
+        let passengerCapacity = route.vehicleCapacity - 1;
+        if (route.isSpecialNeedsRoute) passengerCapacity = Math.min(passengerCapacity, 1);
+        passengerCapacity = Math.max(0, passengerCapacity);
+
+        if (route.employees.length > passengerCapacity) {
+          console.warn(`[Post-Processing] Route ${route.uniqueKey} needs guard and has ${route.employees.length} emps, but only ${passengerCapacity} passenger slots. Trimming...`);
+          const numToRemove = route.employees.length - passengerCapacity;
+          let tempRemoved = [];
+          for (let i = 0; i < numToRemove; i++) {
+            if (route.employees.length === 0) break;
+            const removedEmp = isDropoff ? route.employees.shift() : route.employees.pop();
+            if (removedEmp) tempRemoved.push(removedEmp);
+          }
+          tempRemoved.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+          route.isSpecialNeedsRoute = route.employees.some(isSpecialNeedsUser);
+
+          if (route.employees.length > 0) {
+            const newCoords = route.employees.map(e => [e.location.lat, e.location.lng]);
+            const newAllCoords = isDropoff ? [facilityCoordinates, ...newCoords] : [...newCoords, facilityCoordinates];
+            const recalcDetails = await calculateRouteDetails(newAllCoords, route.employees, pickupTimePerEmployee, tripType, city,shiftTime);
+            if (recalcDetails.error) {
+              assignErrorState(route, `OSRM failed after safeguard guard trim: ${recalcDetails.error}`);
+              route.employees.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+              finalProcessedRoutes.push(route); continue;
+            }
+            updateRouteWithDetails(route, recalcDetails);
+          } else {
+            assignErrorState(route, "Route empty after safeguard guard trim");
+            finalProcessedRoutes.push(route); continue;
+          }
+        }
+      }
+
+      if (route.employees.length === 0) {
+        if (!route.error) assignErrorState(route, "Route became empty post-processing");
+        finalProcessedRoutes.push(route); continue;
+      }
+
+      if (!await checkRouteDeviation(route, facility, profile)) {
+        assignErrorState(route, "Exceeded acceptable route deviation");
+        route.employees.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+        finalProcessedRoutes.push(route); continue;
+      }
+
+      calculatePickupTimes(route, shiftTime, pickupTimePerEmployee, reportingTime);
+      if (profileMaxDuration && route.routeDetails?.totalDuration > profileMaxDuration) {
+        route.durationExceeded = true;
+      }
+      route.swapped = routeModifiedByGuardSwap;
+      finalProcessedRoutes.push(route);
+    } // End main processing loop for allOptimizedOrToolsRoutes
+
+    routeDataContainer.routeData = [...finalProcessedRoutes];
+    masterUnroutedPool.forEach(e => collectedUnroutedForReinsertionMap.set(e.empCode, e));
+
+    const successfullyRoutedEmpCodes = new Set();
+    routeDataContainer.routeData.forEach(r => {
+        if (!r.error && r.employees) r.employees.forEach(e => successfullyRoutedEmpCodes.add(e.empCode));
+    });
+    const finalUnroutedForProcessing = Array.from(collectedUnroutedForReinsertionMap.values())
+                                          .filter(emp => emp && emp.empCode && !successfullyRoutedEmpCodes.has(emp.empCode));
+
+
+    // --- UNROUTED HANDLING WITH ITERATIVE TRIMMING (STRATEGY 2) ---
+    // Replace the existing unrouted handling section with:
+if (finalUnroutedForProcessing.length > 0) {
+  const unroutedResult = await processUnroutedEmployeesWithSafeguards(
+    finalUnroutedForProcessing,
+    profile,
+    availableFleetCounts,
+    facility,
+    tripType,
+    profileMaxDuration,
+    pickupTimePerEmployee,
+    activateGuardSystemFromInput,
+    shiftTime,
+    city,
+    totalRouteCount,
+    routeDataContainer
+  );
+  
+  // Add successful routes to the container
+  routeDataContainer.routeData.push(...unroutedResult.processedRoutes);
+  totalRouteCount = unroutedResult.updatedRouteCount;
+  
+  // Update master unrouted pool with remaining
+  masterUnroutedPool = unroutedResult.remainingUnrouted;
+}
+
+    // --- END OF UNROUTED HANDLING ---
+
+    const finalStats = calculateRouteStatistics(routeDataContainer, employees.length);
+    const response = await createSimplifiedResponse({
+      ...routeDataContainer,
+      ...finalStats,
       totalSwappedRoutes: finalTotalSwappedRoutes,
     });
-    // Add unrouted employees to the response
-    response.unroutedEmployees = unroutedEmployees.map(emp => ({
-      empCode: emp.empCode,
-      geoX: emp.geoX,
-      geoY: emp.geoY,
-      gender: emp.gender,
-      isMedical: emp.isMedical || false,
-      isPWD: emp.isPWD || false
-    }));
 
-    if (saveToDatabase) {
-      /* console.log("Simulating save to database"); */
-    }
-    return response;
-  } catch (error) {
-    console.error("Top-level generateRoutes error:", error);
-    const inputData = typeof data === "object" && data !== null ? data : {};
-    return createEmptyResponse({
-      uuid: inputData.uuid,
-      date: inputData.date,
-      shiftTime: inputData.shiftTime,
-      tripType: inputData.tripType,
-      employees: inputData.employees,
+    const allEffectivelyRoutedEmpCodes = new Set();
+    routeDataContainer.routeData.forEach(r => {
+        if (!r.error && r.employees) r.employees.forEach(e => allEffectivelyRoutedEmpCodes.add(e.empCode));
     });
+     response.unroutedEmployees = employees
+        .filter(emp => !allEffectivelyRoutedEmpCodes.has(emp.empCode))
+        .concat(masterUnroutedPool.filter(emp => !allEffectivelyRoutedEmpCodes.has(emp.empCode)))
+        .filter((emp, index, self) => emp && emp.empCode && index === self.findIndex(e => e.empCode === emp.empCode))
+        .map(emp => ({ empCode: emp.empCode, geoX: emp.geoX, geoY: emp.geoY, gender: emp.gender, isMedical: emp.isMedical || false, isPWD: emp.isPWD || false }));
+
+    return response;
+
+  } catch (error) {
+    console.error("Top-level generateRoutes error:", error.stack);
+    const inputData = typeof data === "object" && data !== null ? data : {};
+    return createEmptyResponse({ uuid: inputData.uuid, date: inputData.date, shiftTime: inputData.shiftTime, tripType: inputData.tripType, employees: inputData.employees });
   }
 }
 
+
+
+
+
 function formatTime(date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.error("formatTime: Invalid date object received", date);
     return "Invalid Time";
   }
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 }
 
 function calculatePickupTimes(
@@ -2204,315 +2182,189 @@ function calculatePickupTimes(
 ) {
   try {
     if (!route || !route.employees || !route.employees.length || !shiftTime) {
-      console.error("calculatePickupTimes: Invalid input parameters.", {
-        routeExists: !!route,
-        employeesExist: !!route?.employees,
-        shiftTimeExists: !!shiftTime,
-      });
       throw new Error("Invalid input parameters for calculatePickupTimes");
     }
-
+    // Get dynamic traffic buffer
+    const TRAFFIC_BUFFER_PERCENTAGE = getTrafficBufferForShiftTime(shiftTime);
+    
     const timeStr = shiftTime.toString().padStart(4, "0");
     const hours = parseInt(timeStr.substring(0, 2), 10);
     const minutes = parseInt(timeStr.substring(2, 4), 10);
-
-    if (
-      isNaN(hours) ||
-      isNaN(minutes) ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes > 59
-    ) {
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
       throw new Error(`Invalid shift time format: ${shiftTime}`);
     }
 
     const facilityTargetTime = new Date();
     facilityTargetTime.setHours(hours, minutes, 0, 0);
-
     const isDropoff = route.tripType?.toLowerCase() === "dropoff";
     let currentTime = new Date(facilityTargetTime);
 
     if (!isDropoff) {
       let targetFacilityArrivalTime = new Date(facilityTargetTime);
       if (reportingTimeSeconds > 0) {
-        targetFacilityArrivalTime.setSeconds(
-          targetFacilityArrivalTime.getSeconds() - reportingTimeSeconds
-        );
+        targetFacilityArrivalTime.setSeconds(targetFacilityArrivalTime.getSeconds() - reportingTimeSeconds);
       }
       route.facilityArrivalTime = formatTime(targetFacilityArrivalTime);
       currentTime = new Date(targetFacilityArrivalTime);
 
       for (let i = route.employees.length - 1; i >= 0; i--) {
         const employee = route.employees[i];
-        const legToNextStopOrFacility = route.routeDetails?.legs?.[i];
-        const legDuration =
-          (legToNextStopOrFacility?.duration || 0) *
-          (1 + TRAFFIC_BUFFER_PERCENTAGE);
-
+        const legToNext = route.routeDetails?.legs?.[i];
+        const legDuration = (legToNext?.duration || 0) * (1 + TRAFFIC_BUFFER_PERCENTAGE);
         currentTime.setSeconds(currentTime.getSeconds() - legDuration);
-        currentTime.setSeconds(
-          currentTime.getSeconds() - pickupTimePerEmployee
-        );
+        currentTime.setSeconds(currentTime.getSeconds() - pickupTimePerEmployee);
         employee.pickupTime = formatTime(currentTime);
       }
     } else {
       route.facilityDepartureTime = formatTime(currentTime);
-
       for (let i = 0; i < route.employees.length; i++) {
         const employee = route.employees[i];
         const legToThisEmployee = route.routeDetails?.legs?.[i];
-        const legDuration =
-          (legToThisEmployee?.duration || 0) * (1 + TRAFFIC_BUFFER_PERCENTAGE);
-
+        const legDuration = (legToThisEmployee?.duration || 0) * (1 + TRAFFIC_BUFFER_PERCENTAGE);
         currentTime.setSeconds(currentTime.getSeconds() + legDuration);
-        currentTime.setSeconds(
-          currentTime.getSeconds() + pickupTimePerEmployee
-        );
+        currentTime.setSeconds(currentTime.getSeconds() + pickupTimePerEmployee);
         employee.dropoffTime = formatTime(currentTime);
         employee.pickupTime = employee.dropoffTime;
       }
     }
   } catch (error) {
-    console.error("Time calculation error in calculatePickupTimes:", error);
-    if (route && route.employees) {
-      route.employees.forEach((emp) => {
-        emp.pickupTime = "Error";
-        emp.dropoffTime = "Error";
-      });
-    }
-    if (route) {
-      route.facilityArrivalTime = "Error";
-      route.facilityDepartureTime = "Error";
-    }
+    console.error("Time calculation error:", error.message);
+    if (route?.employees) route.employees.forEach(emp => { emp.pickupTime = "Error"; emp.dropoffTime = "Error"; });
+    if (route) { route.facilityArrivalTime = "Error"; route.facilityDepartureTime = "Error"; }
   }
 }
 
 async function handleGuardRequirements(
-  route,
+  route, // The route object
   isDropoff,
   facility,
-  pickupTimePerEmployee
+  pickupTimePerEmployee,
+  city,
+  shiftTime
 ) {
+  const osrmBaseUrl = getOsrmBaseUrl(city);
+  let detailsToUse = route.routeDetails; // Start with original details
+  let swappedOccurred = false;
+
   try {
-    if (!route?.employees?.length || route.employees.length < 2) {
-      return { guardNeeded: false, swapped: false };
+    // This function attempts an experiential swap to save a guard.
+    // It's called if the guard system is active and a female is at a critical spot.
+    if (!route.employees || route.employees.length < 2) { // Need at least 2 to swap
+      return { swapped: false, routeDetails: route.routeDetails };
     }
 
     const checkIndex = isDropoff ? route.employees.length - 1 : 0;
     const criticalEmployee = route.employees[checkIndex];
 
-    if (!criticalEmployee || criticalEmployee.gender !== "F") {
-      return { guardNeeded: false, swapped: false };
+    if (criticalEmployee?.gender !== "F") {
+      // Critical is not Female, no experiential swap needed based on this rule.
+      return { swapped: false, routeDetails: route.routeDetails };
     }
 
-    const potentialMaleCandidates = route.employees.filter(
+    // Find MALE employees in the current route, EXCLUDING the critical position
+    const swappableMaleCandidates = route.employees.filter(
       (emp, index) => index !== checkIndex && emp.gender === "M"
     );
 
-    if (potentialMaleCandidates.length === 0) {
-      return { guardNeeded: true, swapped: false };
+    if (swappableMaleCandidates.length === 0) {
+      // Critical employee is Female, but no other males in the route to swap with.
+      console.log(`[Guard Swap] Route ${route.uniqueKey}: Critical is Female but no males available to swap. Guard will be assigned.`);
+      return { swapped: false, routeDetails: route.routeDetails };
     }
 
+    // We have a critical Female and at least one swappable Male in the route.
+    // Proceed to find the closest swappable Male to the critical Female.
     const osrmCoordinates = [
       `${criticalEmployee.location.lng},${criticalEmployee.location.lat}`,
-      ...potentialMaleCandidates.map(
-        (emp) => `${emp.location.lng},${emp.location.lat}`
-      ),
+      ...swappableMaleCandidates.map(emp => `${emp.location.lng},${emp.location.lat}`),
     ];
-
     const sources = "0";
-    const destinations = potentialMaleCandidates
-      .map((_, i) => i + 1)
-      .join(";");
+    const destinations = swappableMaleCandidates.map((_, i) => i + 1).join(";");
 
-    const osrmTableUrl = `http://localhost:5000/table/v1/driving/${osrmCoordinates.join(
-      ";"
-    )}?sources=${sources}&destinations=${destinations}&annotations=distance`;
-
+    const osrmTableUrl = `${osrmBaseUrl}/table/v1/driving/${osrmCoordinates.join(";")}?sources=${sources}&destinations=${destinations}&annotations=distance`;
     let osrmDistances = [];
-    try {
-      const response = await fetchApi(osrmTableUrl, {
-        timeout: OSRM_PROBE_TIMEOUT_HEURISTIC,
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.code === "Ok" && data.distances && data.distances.length > 0) {
-          osrmDistances = data.distances[0];
-        } else {
-          console.warn(
-            `[handleGuardRequirements] OSRM /table error or no distances for route ${
-              route.routeNumber
-            }: ${data.code} - ${data.message || ""}`
-          );
-          return { guardNeeded: true, swapped: false };
-        }
+
+    const response = await fetchApi(osrmTableUrl, { timeout: OSRM_PROBE_TIMEOUT_HEURISTIC });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.code === "Ok" && data.distances?.[0]) {
+        osrmDistances = data.distances[0];
       } else {
-        console.warn(
-          `[handleGuardRequirements] OSRM /table HTTP error ${response.status} for route ${route.routeNumber}`
-        );
-        return { guardNeeded: true, swapped: false };
+        console.warn(`[GuardSwap - Experiential] OSRM table error for ${route.uniqueKey}: ${data.message}. Guard will be assigned.`);
+        return { swapped: false, routeDetails: route.routeDetails };
       }
-    } catch (error) {
-      console.error(
-        `[handleGuardRequirements] OSRM /table fetch error for route ${route.routeNumber}:`,
-        error
-      );
-      return { guardNeeded: true, swapped: false };
+    } else {
+      console.warn(`[GuardSwap - Experiential] OSRM table HTTP error for ${route.uniqueKey}: ${response.status}. Guard will be assigned.`);
+      return { swapped: false, routeDetails: route.routeDetails };
     }
 
-    const validCandidates = [];
-    potentialMaleCandidates.forEach((maleEmp, idx) => {
-      const roadDistanceMeters = osrmDistances[idx];
+    const validCandidatesForSwap = [];
+    swappableMaleCandidates.forEach((maleEmp, idx) => {
+      const roadDistanceMeters = osrmDistances[idx + 1];
       if (roadDistanceMeters != null) {
         const roadDistanceKm = roadDistanceMeters / 1000;
         if (roadDistanceKm <= MAX_SWAP_DISTANCE_KM) {
-          validCandidates.push({
+          validCandidatesForSwap.push({
             employee: maleEmp,
-            index: route.employees.findIndex(
-              (e) => e.empCode === maleEmp.empCode
-            ),
-            distance: roadDistanceKm,
+            indexInRoute: route.employees.findIndex(e => e.empCode === maleEmp.empCode),
+            distance: roadDistanceKm
           });
         }
       }
     });
 
-    if (validCandidates.length === 0) {
-      return { guardNeeded: true, swapped: false };
+    if (validCandidatesForSwap.length === 0) {
+      console.log(`[Guard Swap] Route ${route.uniqueKey}: No male candidates within ${MAX_SWAP_DISTANCE_KM}km range. Guard will be assigned.`);
+      return { swapped: false, routeDetails: route.routeDetails }; // No male candidate is close enough.
     }
 
-    validCandidates.sort((a, b) => a.distance - b.distance);
-    const bestCandidate = validCandidates[0];
+    validCandidatesForSwap.sort((a, b) => a.distance - b.distance);
+    const bestMaleToSwap = validCandidatesForSwap[0];
 
+    // Perform the swap
     const newEmployees = [...route.employees];
-    if (bestCandidate.index === -1 || bestCandidate.index === checkIndex) {
-      console.error(
-        `[handleGuardRequirements] Error finding original index for best candidate or candidate is the critical employee.`
-      );
-      return { guardNeeded: true, swapped: false };
-    }
+    [newEmployees[checkIndex], newEmployees[bestMaleToSwap.indexInRoute]] = [newEmployees[bestMaleToSwap.indexInRoute], newEmployees[checkIndex]];
 
-    [newEmployees[checkIndex], newEmployees[bestCandidate.index]] = [
-      newEmployees[bestCandidate.index],
-      newEmployees[checkIndex],
-    ];
-
-    const newRouteCoordinates = newEmployees.map((emp) => [
-      emp.location.lat,
-      emp.location.lng,
-    ]);
+    const newRouteCoordinates = newEmployees.map(emp => [emp.location.lat, emp.location.lng]);
     const facilityCoordsArray = [facility.geoY, facility.geoX];
     const allCoordinatesForTrip = isDropoff
       ? [facilityCoordsArray, ...newRouteCoordinates]
       : [...newRouteCoordinates, facilityCoordsArray];
 
-    const routeDetailsAfterSwap = await calculateRouteDetails(
-      allCoordinatesForTrip,
-      newEmployees,
-      pickupTimePerEmployee,
-      route.tripType
-    );
+    const routeDetailsAfterSwap = await calculateRouteDetails(allCoordinatesForTrip, newEmployees, pickupTimePerEmployee, route.tripType, city, shiftTime);
 
     if (routeDetailsAfterSwap.error) {
-      console.warn(
-        `Swap validation (OSRM /trip) failed for route ${route.routeNumber} after road distance swap: ${routeDetailsAfterSwap.error}`
-      );
-      return { guardNeeded: true, swapped: false };
+      console.warn(`[GuardSwap - Experiential] OSRM failed for swapped route ${route.uniqueKey}: ${routeDetailsAfterSwap.error}. Guard will be assigned.`);
+      return { swapped: false, routeDetails: route.routeDetails }; // Swap failed validation
     }
 
-    return {
-      guardNeeded: false,
-      swapped: true,
-      routeDetails: routeDetailsAfterSwap,
-    };
-  } catch (error) {
-    console.error(
-      `Error in handleGuardRequirements (road distance) for route ${route?.routeNumber}:`,
-      error
-    );
-    return { guardNeeded: true, swapped: false };
-  }
-}
+    const originalDuration = route.routeDetails?.totalDuration || Infinity;
+    const newDuration = routeDetailsAfterSwap.totalDuration;
+    const durationIncreasePercentage = newDuration > originalDuration ? (newDuration - originalDuration) / originalDuration : 0;
 
-async function validateSwap(
-  route,
-  emp1Index,
-  emp2Index,
-  facility,
-  pickupTimePerEmployee
-) {
-  try {
-    const newEmployees = [...route.employees];
-    [newEmployees[emp1Index], newEmployees[emp2Index]] = [
-      newEmployees[emp2Index],
-      newEmployees[emp1Index],
-    ];
-
-    const newCoordinates = newEmployees.map((emp) => [
-      emp.location.lat,
-      emp.location.lng,
-    ]);
-
-    const facilityCoordinates = [facility.geoY, facility.geoX];
-    const isDropoff = route.tripType?.toLowerCase() === "dropoff";
-
-    const allCoordinates = isDropoff
-      ? [facilityCoordinates, ...newCoordinates]
-      : [...newCoordinates, facilityCoordinates];
-
-    const routeDetails = await calculateRouteDetails(
-      allCoordinates,
-      newEmployees,
-      pickupTimePerEmployee,
-      route.tripType
-    );
-
-    if (routeDetails.error) {
-      return { viable: false, routeDetails };
+    if (durationIncreasePercentage > 0.25) {
+        console.warn(`[GuardSwap - Experiential] Route ${route.uniqueKey} swap increases duration by ${(durationIncreasePercentage * 100).toFixed(1)}%. Rejecting swap. Guard will be assigned.`);
+        return { swapped: false, routeDetails: route.routeDetails }; // Swap rejected due to duration
     }
 
-    const originalDuration = route.routeDetails?.totalDuration || Infinity; // Use totalDuration
-    const newDuration = routeDetails.totalDuration;
-    const durationIncrease =
-      newDuration > originalDuration
-        ? (newDuration - originalDuration) / originalDuration
-        : 0;
+    console.log(`[GuardSwap - Experiential] Successfully swapped ${criticalEmployee.empCode} (F) with ${bestMaleToSwap.employee.empCode} (M) in route ${route.uniqueKey}. Guard saved!`);
+    swappedOccurred = true;
+    detailsToUse = routeDetailsAfterSwap;
 
-    return {
-      viable: durationIncrease <= 0.2,
-      routeDetails,
-    };
   } catch (error) {
-    console.error("Swap validation error:", error);
-    return { viable: false, error: error.message };
+    console.error(`Error in handleGuardRequirements (experiential swap) for route ${route?.uniqueKey}:`, error);
   }
+  
+  return { swapped: swappedOccurred, routeDetails: detailsToUse };
 }
 
-async function findComplexSwap(
-  route,
-  criticalIndex,
-  facility,
-  pickupTimePerEmployee
-) {
-  return null;
-}
 
 function assignErrorState(route, message = "Unknown error") {
   if (!route) return;
-  console.warn(
-    `Assigning error state to route ${
-      route.routeNumber || "UNKNOWN"
-    }: ${message}`
-  );
-  route.employees = (route.employees || []).map((e, i) => ({
-    ...e,
-    order: i + 1,
-    pickupTime: "Error",
-    dropoffTime: "Error",
-  }));
+  console.warn(`Assigning error state to route ${route.uniqueKey || route.routeNumber || "UNKNOWN"}: ${message}`);
+  route.employees = (route.employees || []).map((e, i) => ({ ...e, order: i + 1, pickupTime: "Error", dropoffTime: "Error" }));
   route.encodedPolyline = "error_polyline";
-  route.routeDetails = { totalDistance: 0, totalDuration: 0, legs: [] }; // Use totalDistance/totalDuration
+  route.routeDetails = { totalDistance: 0, totalDuration: 0, legs: [] };
   route.swapped = false;
   route.error = true;
   route.errorMessage = message;
@@ -2521,13 +2373,7 @@ function assignErrorState(route, message = "Unknown error") {
 function updateRouteWithDetails(route, routeDetails) {
   if (!route || !routeDetails) return;
   if (routeDetails.error) {
-    console.warn(
-      `Not updating route ${route.routeNumber} with errored details: ${routeDetails.error}`
-    );
-    assignErrorState(
-      route,
-      `Failed to update with details: ${routeDetails.error}`
-    );
+    assignErrorState(route, `Failed to update with details: ${routeDetails.error}`);
     return;
   }
   route.employees = routeDetails.employees;
@@ -2542,100 +2388,152 @@ function updateRouteWithDetails(route, routeDetails) {
   route.errorMessage = undefined;
 }
 
-function calculateRouteStatistics(routeData, totalEmployeesInput) {
-  const validRoutes = routeData.routeData.filter(
-    (route) => !route.error && route.employees?.length > 0
-  );
+function calculateRouteStatistics(routeDataContainer, totalEmployeesInput) {
+  const validRoutes = routeDataContainer.routeData.filter(route => !route.error && route.employees?.length > 0);
   const totalValidRoutes = validRoutes.length;
-  const totalRoutedEmployees = validRoutes.reduce(
-    (sum, route) => sum + route.employees.length,
-    0
-  );
-
-  const averageOccupancy =
-    totalValidRoutes > 0 ? totalRoutedEmployees / totalValidRoutes : 0;
-
+  const totalRoutedEmployees = validRoutes.reduce((sum, route) => sum + route.employees.length, 0);
+  const averageOccupancy = totalValidRoutes > 0 ? totalRoutedEmployees / totalValidRoutes : 0;
+  
+  // Calculate total guarded routes
+  const totalGuardedRoutes = validRoutes.filter(route => route.guardNeeded === true).length;
+  
   let totalDistanceSum = 0;
   let totalDurationSum = 0;
-
-  validRoutes.forEach((route) => {
-    // Access totalDistance and totalDuration from route.routeDetails
-    const routeDist = route.routeDetails?.totalDistance;
-    const routeDur = route.routeDetails?.totalDuration;
-
-    if (routeDur !== Infinity && routeDist !== Infinity) {
-      totalDistanceSum += routeDist || 0;
-      totalDurationSum += routeDur || 0;
-    }
+  validRoutes.forEach(route => {
+    totalDistanceSum += route.routeDetails?.totalDistance || 0;
+    totalDurationSum += route.routeDetails?.totalDuration || 0;
   });
-
+  
   return {
     totalEmployees: totalEmployeesInput,
     totalRoutedEmployees,
     totalRoutes: totalValidRoutes,
+    totalGuardedRoutes, // NEW: Total routes with guards
     averageOccupancy: parseFloat(averageOccupancy.toFixed(2)),
-    routeDetails: { // This becomes overallRouteDetails in the response
-      totalDistance: parseFloat((totalDistanceSum / 1000).toFixed(2)), // km
-      totalDuration: parseFloat(totalDurationSum.toFixed(2)), // seconds
+    overallRouteDetails: {
+      totalDistance: parseFloat((totalDistanceSum / 1000).toFixed(2)),
+      totalDuration: parseFloat(totalDurationSum.toFixed(2)),
     },
   };
 }
 
-function createSimplifiedResponse(routeData) {
-  return {
-    uuid: routeData.uuid,
-    date: routeData.date,
-    shift: routeData.shift,
-    tripType: routeData.tripType === "PICKUP" ? "P" : "D",
-    totalEmployees: routeData.totalEmployees,
-    totalRoutedEmployees: routeData.totalRoutedEmployees,
-    totalRoutes: routeData.totalRoutes,
-    averageOccupancy: routeData.averageOccupancy,
-    overallRouteDetails: routeData.routeDetails, // This now comes from calculateRouteStatistics
-    totalSwappedRoutes: routeData.totalSwappedRoutes,
-    routes: routeData.routeData
-      .filter((route) => !route.error && route.employees?.length > 0)
-      .map((route) => {
-        const guardAssigned = route.guardNeeded || false;
-        const occupancy = (route.employees?.length || 0) + (guardAssigned ? 1 : 0);
-        const reportedVehicleCapacity = route.vehicleCapacity;
 
+async function createSimplifiedResponse(routeDataContainer) {
+  const city = routeDataContainer.profile?.name || "ncr";
+  const osrmBaseUrl = getOsrmBaseUrl(city);
+  const isDropoffTrip = routeDataContainer.tripType === "DROPOFF";
+  
+  // Process routes with OSRM distance calculations
+  const processedRoutes = await Promise.all(
+    routeDataContainer.routeData
+      .filter((route) => !route.error && route.employees?.length > 0)
+      .map(async (route) => {
+        const guardAssigned = route.guardNeeded || false;
+        const occupancy = (route.employees?.length || 0);
+        
+        // Calculate farthest employee distance using OSRM
+        let farthestEmployeeDistance = 0;
+        
+        if (route.employees && route.employees.length > 0 && 
+            routeDataContainer.facility?.geoY && routeDataContainer.facility?.geoX) {
+          
+          // Identify the farthest employee
+          const farthestEmployee = isDropoffTrip 
+            ? route.employees[route.employees.length - 1]  // Last dropoff
+            : route.employees[0];                          // First pickup
+            
+          if (farthestEmployee?.location?.lat && farthestEmployee?.location?.lng) {
+            try {
+              const facilityCoords = `${routeDataContainer.facility.geoX},${routeDataContainer.facility.geoY}`;
+              const employeeCoords = `${farthestEmployee.location.lng},${farthestEmployee.location.lat}`;
+              
+              // CORRECTED: Different direction for pickup vs dropoff
+              const coordsString = isDropoffTrip 
+                ? `${facilityCoords};${employeeCoords}`     // Dropoff: Facility → Employee
+                : `${employeeCoords};${facilityCoords}`;    // Pickup: Employee → Facility
+              
+              const osrmUrl = `${osrmBaseUrl}/route/v1/driving/${coordsString}?alternatives=false&steps=false&annotations=distance`;
+              const response = await fetchApi(osrmUrl, { method: "GET", timeout: OSRM_PROBE_TIMEOUT });
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data.code === "Ok" && data.routes?.[0]?.distance != null) {
+                  farthestEmployeeDistance = data.routes[0].distance / 1000; // Convert to km
+                }
+              } else {
+                console.warn(`[FarthestDistance] OSRM failed for route ${route.uniqueKey}: ${response.status}`);
+              }
+            } catch (error) {
+              console.warn(`[FarthestDistance] Error calculating distance for route ${route.uniqueKey}:`, error.message);
+            }
+          }
+        }
+        
+        // Check for special employee types in the route
+        const hasAnyEmployeeType = (route.employees || []).reduce((flags, emp) => {
+          return {
+            isMedical: flags.isMedical || (emp.isMedical === true),
+            isPWD: flags.isPWD || (emp.isPWD === true),
+            isNMT: flags.isNMT || (emp.isNMT === true),
+            isOOB: flags.isOOB || (emp.isOOB === true)
+          };
+        }, { isMedical: false, isPWD: false, isNMT: false, isOOB: false });
+        
         return {
           routeNumber: route.routeNumber,
           zone: route.zone,
-          vehicleCapacity: reportedVehicleCapacity,
+          vehicleCapacity: route.vehicleCapacity,
+          vehicleType: route.assignedVehicleType || "UNKNOWN",
           guard: guardAssigned,
           swapped: route.swapped || false,
           durationExceeded: route.durationExceeded || false,
           uniqueKey: route.uniqueKey,
           isSpecialNeedsRoute: route.isSpecialNeedsRoute || false,
-          // Access totalDistance and totalDuration for individual routes
-          distance: parseFloat(
-            ((route.routeDetails?.totalDistance || 0) / 1000).toFixed(2)
-          ),
-          duration: parseFloat(
-            (route.routeDetails?.totalDuration || 0).toFixed(2)
-          ),
+          afterFleetExhaustion: route.afterFleetExhaustion || false,
+          distance: parseFloat(((route.routeDetails?.totalDistance || 0) / 1000).toFixed(2)),
+          duration: parseFloat((route.routeDetails?.totalDuration || 0).toFixed(2)),
           occupancy,
+          farthestEmployeeDistance: parseFloat(farthestEmployeeDistance.toFixed(2)),
+          isMedicalRoute: hasAnyEmployeeType.isMedical,
+          isPWDRoute: hasAnyEmployeeType.isPWD,
+          isNMTRoute: hasAnyEmployeeType.isNMT,
+          isOOBRoute: hasAnyEmployeeType.isOOB,
           encodedPolyline: route.encodedPolyline || "no_polyline",
           employees: (route.employees || []).map((emp, index) => ({
             empCode: emp.empCode,
             gender: emp.gender,
             isMedical: emp.isMedical || false,
             isPWD: emp.isPWD || false,
-            eta:
-              route.tripType?.toUpperCase() === "DROPOFF"
-                ? emp.dropoffTime
-                : emp.pickupTime,
-            order:
-              emp.order !== undefined && emp.order >= 1 ? emp.order : index + 1,
+            isNMT: emp.isNMT || false,
+            isOOB: emp.isOOB || false,
+            eta: route.tripType?.toUpperCase() === "DROPOFF" ? emp.dropoffTime : emp.pickupTime,
+            order: emp.order !== undefined && emp.order >= 1 ? emp.order : index + 1,
             geoX: emp.geoX,
             geoY: emp.geoY,
           })),
         };
-      }),
+      })
+  );
+
+  return {
+    uuid: routeDataContainer.uuid,
+    date: routeDataContainer.date,
+    shift: routeDataContainer.shift,
+    tripType: routeDataContainer.tripType === "PICKUP" ? "P" : "D",
+    totalEmployees: routeDataContainer.totalEmployees,
+    totalRoutedEmployees: routeDataContainer.totalRoutedEmployees,
+    totalRoutes: routeDataContainer.totalRoutes,
+    totalGuardedRoutes: routeDataContainer.totalGuardedRoutes,
+    averageOccupancy: routeDataContainer.averageOccupancy,
+    overallRouteDetails: routeDataContainer.overallRouteDetails,
+    totalSwappedRoutes: routeDataContainer.totalSwappedRoutes,
+    routes: processedRoutes,
+    unroutedEmployees: routeDataContainer.unroutedEmployees || [],
   };
 }
+
+
+
 
 function createEmptyResponse(data) {
   return {
@@ -2646,12 +2544,24 @@ function createEmptyResponse(data) {
     totalEmployees: data.employees?.length || 0,
     totalRoutedEmployees: 0,
     totalRoutes: 0,
+    totalGuardedRoutes: 0, // NEW: No guarded routes in empty response
     averageOccupancy: 0,
     overallRouteDetails: { totalDistance: 0, totalDuration: 0 },
     totalSwappedRoutes: 0,
     routes: [],
+    unroutedEmployees: (data.employees || []).map(emp => ({ 
+      empCode: emp.empCode, 
+      geoX: emp.geoX, 
+      geoY: emp.geoY, 
+      gender: emp.gender, 
+      isMedical: emp.isMedical || false, 
+      isPWD: emp.isPWD || false,
+      isNMT: emp.isNMT || false, // NEW: Include NMT flag
+      isOOB: emp.isOOB || false  // NEW: Include OOB flag
+    })),
   };
 }
+
 
 module.exports = {
   generateRoutes,

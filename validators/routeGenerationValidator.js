@@ -6,7 +6,9 @@ const employeeSchema = z.object({
   geoY: z.number().optional(),
   gender: z.string().optional(),
   isMedical: z.boolean().optional(),
-  isPWD: z.boolean().optional().default(false) 
+  isPWD: z.boolean().optional().default(false) ,
+  isNMT: z.boolean().optional().default(false),
+  isOOB: z.boolean().optional().default(false)
 });
 
 const employeesArraySchema = z.array(employeeSchema).min(1, { message: "At least one employee is required" }).superRefine((employees, ctx) => {
@@ -79,9 +81,16 @@ const routeDeviationRuleSchema = z.object({
     maxTotalOneWayKm: z.number().positive({ message: "maxTotalOneWayKm is required and must be positive" }),
 });
 
+const fleetVehicleSchema = z.object({
+  type: z.string(), // e.g., "4-seater", "6/7-seater", "12-seater"
+  capacity: z.number().int().positive(), // e.g., 3, 5, 8
+  count: z.number().int().nonnegative()  // e.g., 82, 378, 105
+});
+
 const profileSchema = z.object({
   id: z.number().optional(),
   name: z.string().optional(),
+  city: z.string().optional(),
   zoneClubbing: z.boolean({ required_error: "zoneClubbing is required and must be a boolean" }),
   zoneBasedRouting: z.boolean({ required_error: "zoneBasedRouting is required and must be a boolean" }),
   // SL #5: Night Shift Guard Timings - THIS IS THE KEY ADDITION FOR CURRENT GUARD LOGIC
@@ -101,6 +110,7 @@ const profileSchema = z.object({
   zonePairingMatrix: z.record(z.string(), z.array(z.string())).optional(),
   isAutoClubbing: z.boolean().optional(),
   maxDuration: z.number({ required_error: "maxDuration is required and must be a number" }),
+  fleet: z.array(fleetVehicleSchema).optional(),
   // ...other fields
 }).strict();
 

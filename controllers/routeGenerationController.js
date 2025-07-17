@@ -1,40 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
-const { Route, RouteLeg } = require('../models');
 const routeGenerationService = require('../services/routeGenerationService');
 const { routeRequestSchema } = require('../validators/routeGenerationValidator');
 
-// Helper function to process a route with its legs for response
-const processRouteWithLegs = (route) => {
-  if (!route) return null;
-  const routeObj = route.toJSON ? route.toJSON() : { ...route };
-
-  routeObj.routeData = (routeObj.legs || [])
-    .sort((a, b) => a.legIndex - b.legIndex)
-    .map(leg => ({
-      encodedPolyline: leg.encodedPolyline,
-      distance: leg.distance,
-      duration: leg.duration,
-      employees: leg.employees,
-    }));
-  delete routeObj.legs;
-
-  const fieldsToParse = [
-    'profile', 'facility', 'employeeData', 'roadPathDetails',
-    'geometry', 'roadGeometry', 'routeDetails'
-  ];
-  fieldsToParse.forEach(field => {
-    if (routeObj[field] && typeof routeObj[field] === 'string') {
-      try {
-        routeObj[field] = JSON.parse(routeObj[field]);
-      } catch (e) {
-        console.warn(`Failed to parse ${field} JSON for route UUID ${routeObj.uuid}:`, e);
-      }
-    }
-  });
-
-  console.log(`Processed route ${routeObj.uuid} with ${routeObj.routeData?.length || 0} legs for response.`);
-  return routeObj;
-};
 
 const routeGenerationController = {
   generateRoutes: async (req, res) => {

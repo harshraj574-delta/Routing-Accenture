@@ -476,7 +476,8 @@ async function calculateRouteDetails(
   shiftTime = null
 ) {
   const fastApiCity = getFastApiCityKey(city);
-  const TRAFFIC_BUFFER_PERCENTAGE = getTrafficBufferForShiftTime(shiftTime);
+  let TRAFFIC_BUFFER_PERCENTAGE = getTrafficBufferForShiftTime(shiftTime);
+  TRAFFIC_BUFFER_PERCENTAGE = Math.min(TRAFFIC_BUFFER_PERCENTAGE, 0.8); // ← Same cap as calculatePickupTimes
   try {
     if (!routeCoordinates || routeCoordinates.length === 0) {
       // ... (your existing validation for empty routeCoordinates)
@@ -746,6 +747,12 @@ async function generateDistanceDurationMatrix(
   };
 }
 
+// Helper function to get NMT capacity limit
+function getNMTCapacityLimit(fleetConfig) {
+  const smallVehicle = fleetConfig.find(vehicle => vehicle.type === "s");
+  return smallVehicle ? smallVehicle.capacity : 3; // fallback to 3 if no 's' defined
+}
+
 async function assignVehicleAndFinalizeGroup(
   routeShell,
   preliminaryEmployeesInGroup,
@@ -773,6 +780,16 @@ async function assignVehicleAndFinalizeGroup(
 
   const isDropoff = tripType.toLowerCase() === "dropoff";
 
+  // **NEW: Check for NMT employees and get capacity limit**
+  const hasNMTEmployee = currentEmployeesForRoute.some(emp => emp.isNMT === true);
+  const nmtCapacityLimit = hasNMTEmployee ? getNMTCapacityLimit(profile.fleet || []) : null;
+  
+  if (hasNMTEmployee) {
+    console.log(`[NMT Route] Route ${routeShell.uniqueKey} contains NMT employee(s). Capacity limited to ${nmtCapacityLimit} (type 's' capacity).`);
+    routeShell.isNMTRoute = true;
+    routeShell.nmtCapacityLimit = nmtCapacityLimit;
+  }
+
   // CORRECTED: Guard needed if critical position is Female (regardless of other males)
   if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
     const critIdx = isDropoff ? currentEmployeesForRoute.length - 1 : 0;
@@ -785,6 +802,13 @@ async function assignVehicleAndFinalizeGroup(
   let requiredVehicleOccupancy =
     currentEmployeesForRoute.length + (preliminaryGuardNeeded ? 1 : 0);
 
+  // **NEW: For NMT routes, cap the required occupancy for vehicle selection**
+  let vehicleSelectionOccupancy = requiredVehicleOccupancy;
+  if (hasNMTEmployee) {
+    vehicleSelectionOccupancy = Math.min(requiredVehicleOccupancy, nmtCapacityLimit);
+    console.log(`[NMT Vehicle Selection] Route ${routeShell.uniqueKey} required: ${requiredVehicleOccupancy}, capped for vehicle selection: ${vehicleSelectionOccupancy}`);
+  }
+
   const sortedFleet = [...(profile.fleet || [])].sort(
     (a, b) => a.capacity - b.capacity
   );
@@ -793,7 +817,7 @@ async function assignVehicleAndFinalizeGroup(
   if (sortedFleet.length > 0) {
     for (const vehicleOption of sortedFleet) {
       if (
-        vehicleOption.capacity >= requiredVehicleOccupancy &&
+        vehicleOption.capacity >= vehicleSelectionOccupancy && // **UPDATED: Uses capped occupancy for NMT routes**
         availableFleetCounts[vehicleOption.type] > 0
       ) {
         assignedVehicleConfig = vehicleOption;
@@ -833,9 +857,17 @@ async function assignVehicleAndFinalizeGroup(
     return { employeesTrimmedOff };
   }
 
+  // **NEW: Calculate effective capacity (consider NMT limit)**
+  let effectiveVehicleCapacity = routeShell.vehicleCapacity;
+  
+  if (hasNMTEmployee) {
+    effectiveVehicleCapacity = Math.min(routeShell.vehicleCapacity, nmtCapacityLimit);
+    console.log(`[NMT Effective Capacity] Route ${routeShell.uniqueKey} vehicle capacity: ${routeShell.vehicleCapacity}, NMT limited to: ${effectiveVehicleCapacity}`);
+  }
+
   let finalIsSpecial = false;
   let maxPassengersAllowedInVehicle =
-    routeShell.vehicleCapacity - (routeShell.guardNeeded ? 1 : 0);
+    effectiveVehicleCapacity - (routeShell.guardNeeded ? 1 : 0); // **UPDATED: Uses effective capacity**
 
   let trimmingIteration = 0;
   const MAX_TRIMMING_ITERATIONS = currentEmployeesForRoute.length + 3;
@@ -859,7 +891,15 @@ async function assignVehicleAndFinalizeGroup(
       const empToTrim = isDropoff
         ? currentEmployeesForRoute.shift()
         : currentEmployeesForRoute.pop();
-      if (empToTrim) employeesTrimmedOff.push(empToTrim);
+      
+      if (empToTrim) {
+        employeesTrimmedOff.push(empToTrim);
+        
+        // **NEW: Enhanced logging for NMT routes**
+        if (hasNMTEmployee) {
+          console.log(`[NMT Trimming] Employee ${empToTrim.empCode} trimmed from NMT route ${routeShell.uniqueKey} due to NMT capacity limit (${nmtCapacityLimit})`);
+        }
+      }
 
       // CORRECTED: Re-check guard needed after trimming
       if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
@@ -871,19 +911,20 @@ async function assignVehicleAndFinalizeGroup(
         if (routeShell.guardNeeded !== newGuardNeededStatus) {
           routeShell.guardNeeded = newGuardNeededStatus;
           maxPassengersAllowedInVehicle =
-            routeShell.vehicleCapacity - (routeShell.guardNeeded ? 1 : 0);
+            effectiveVehicleCapacity - (routeShell.guardNeeded ? 1 : 0); // **UPDATED: Uses effective capacity**
         }
       } else if (
         currentEmployeesForRoute.length === 0 &&
         routeShell.guardNeeded
       ) {
         routeShell.guardNeeded = false;
-        maxPassengersAllowedInVehicle = routeShell.vehicleCapacity;
+        maxPassengersAllowedInVehicle = effectiveVehicleCapacity; // **UPDATED: Uses effective capacity**
       }
     } else {
       break;
     }
   }
+  
   if (trimmingIteration >= MAX_TRIMMING_ITERATIONS)
     console.warn(
       `[Fleet Trim] Max iterations reached for ${routeShell.uniqueKey}`
@@ -901,11 +942,13 @@ async function assignVehicleAndFinalizeGroup(
     routeShell.error = true;
     routeShell.errorMessage = `Route became empty after vehicle assignment and guard trimming (Vehicle: ${routeShell.assignedVehicleType})`;
   }
+  
   if (employeesTrimmedOff.length > 0) {
     console.log(
       `[Fleet] Route ${routeShell.uniqueKey} (Type: ${routeShell.assignedVehicleType}, Final Emps: ${routeShell.employees.length}) trimmed ${employeesTrimmedOff.length} employees.`
     );
   }
+  
   return { employeesTrimmedOff };
 }
 
@@ -3040,118 +3083,119 @@ function calculatePickupTimes(
     if (!route || !route.employees || !route.employees.length || !shiftTime) {
       throw new Error("Invalid input parameters for calculatePickupTimes");
     }
-    
-    // Get dynamic traffic buffer - but cap it at reasonable levels
+
     let TRAFFIC_BUFFER_PERCENTAGE = getTrafficBufferForShiftTime(shiftTime);
-    
-    // Cap the traffic buffer to prevent unreasonable delays
-    TRAFFIC_BUFFER_PERCENTAGE = Math.min(TRAFFIC_BUFFER_PERCENTAGE, 0.4); // Max 40%
-    
-    console.log(`[DEBUG] Traffic buffer for shift ${shiftTime}: ${(TRAFFIC_BUFFER_PERCENTAGE * 100).toFixed(1)}%`);
+    TRAFFIC_BUFFER_PERCENTAGE = Math.min(TRAFFIC_BUFFER_PERCENTAGE, 0.8); // Cap buffer
 
     const timeStr = shiftTime.toString().padStart(4, "0");
     const hours = parseInt(timeStr.substring(0, 2), 10);
     const minutes = parseInt(timeStr.substring(2, 4), 10);
-    
+
     if (
-      isNaN(hours) ||
-      isNaN(minutes) ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes > 59
+      isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59
     ) {
       throw new Error(`Invalid shift time format: ${shiftTime}`);
     }
 
-    // Create target time
     const facilityTargetTime = new Date();
     facilityTargetTime.setHours(hours, minutes, 0, 0);
     const isDropoff = route.tripType?.toLowerCase() === "dropoff";
 
-    console.log(`[DEBUG] Facility target time: ${formatTime(facilityTargetTime)}`);
-    console.log(`[DEBUG] Reporting time: ${reportingTimeSeconds} seconds`);
+    let routeStartTime, routeEndTime; // To calculate final duration
 
     if (!isDropoff) {
       // PICKUP LOGIC
-      // Calculate when employees should arrive at facility (before shift time)
-      let targetFacilityArrivalTime = new Date(facilityTargetTime);
-      if (reportingTimeSeconds > 0) {
-        targetFacilityArrivalTime = new Date(facilityTargetTime.getTime() - (reportingTimeSeconds * 1000));
-      }
-      
+      let targetFacilityArrivalTime = new Date(
+        facilityTargetTime.getTime() - reportingTimeSeconds * 1000
+      );
+      routeEndTime = targetFacilityArrivalTime; // Route ends at facility
       route.facilityArrivalTime = formatTime(targetFacilityArrivalTime);
-      console.log(`[DEBUG] Target facility arrival: ${route.facilityArrivalTime}`);
 
-      // Start from facility arrival time and work backwards
       let currentTimeMs = targetFacilityArrivalTime.getTime();
-      
-      // Debug: Print all leg durations
-      console.log(`[DEBUG] Route legs:`, route.routeDetails?.legs?.map((leg, idx) => ({
-        index: idx,
-        duration: leg.duration,
-        durationMin: (leg.duration / 60).toFixed(1)
-      })));
-      
-      // Work backwards through employees
+
       for (let i = route.employees.length - 1; i >= 0; i--) {
         const employee = route.employees[i];
-        
-        // Get the leg duration for travel FROM this employee TO the next destination
         let legDuration = 0;
-        
+
+        // Correctly get duration for the leg FROM this employee TO the next point
         if (i === route.employees.length - 1) {
-          // Last employee: travel time to facility (should be last leg)
+          // Last employee: travel time to facility is the last leg
           const lastLegIndex = route.routeDetails?.legs?.length - 1;
-          if (lastLegIndex >= 0 && route.routeDetails.legs[lastLegIndex]) {
-            legDuration = route.routeDetails.legs[lastLegIndex].duration || 0;
+          if (lastLegIndex >= 0) {
+            legDuration =
+              route.routeDetails.legs[lastLegIndex]?.duration || 0;
           }
-          console.log(`[DEBUG] Employee ${employee.empCode} (last): using leg ${lastLegIndex}, duration: ${(legDuration/60).toFixed(1)}min`);
         } else {
-          // Other employees: travel time to next employee
-          if (route.routeDetails?.legs?.[i]) {
-            legDuration = route.routeDetails.legs[i].duration || 0;
-          }
-          console.log(`[DEBUG] Employee ${employee.empCode}: using leg ${i}, duration: ${(legDuration/60).toFixed(1)}min`);
+          // Other employees: travel time to the next employee is leg[i]
+          legDuration = route.routeDetails?.legs?.[i]?.duration || 0;
         }
-        
-        // Apply traffic buffer
-        const bufferedLegDuration = legDuration * (1 + TRAFFIC_BUFFER_PERCENTAGE);
-        
-        // Subtract travel time to next destination
-        currentTimeMs -= (bufferedLegDuration * 1000);
-        
-        // Subtract pickup time for this employee
-        currentTimeMs -= (pickupTimePerEmployee * 1000);
-        
-        // Set pickup time
+
+        const bufferedLegDuration =
+          legDuration * (1 + TRAFFIC_BUFFER_PERCENTAGE);
+
+        // Subtract travel time
+        currentTimeMs -= bufferedLegDuration * 1000;
+
+        // Subtract service time for this employee
+        currentTimeMs -= pickupTimePerEmployee * 1000;
+
         const pickupTime = new Date(currentTimeMs);
         employee.pickupTime = formatTime(pickupTime);
-        
-        console.log(`[DEBUG] Employee ${employee.empCode}: pickup at ${employee.pickupTime} (leg: ${(legDuration/60).toFixed(1)}min, buffered: ${(bufferedLegDuration/60).toFixed(1)}min, pickup service: ${pickupTimePerEmployee}s)`);
+
+        if (i === 0) {
+          routeStartTime = pickupTime; // First pickup is the route start
+        }
       }
-      
     } else {
-      // DROPOFF LOGIC (existing logic should be fine)
-      let currentTimeMs = facilityTargetTime.getTime();
+      // DROPOFF LOGIC
+      routeStartTime = facilityTargetTime; // Route starts at facility
       route.facilityDepartureTime = formatTime(facilityTargetTime);
-      
+      let currentTimeMs = facilityTargetTime.getTime();
+
       for (let i = 0; i < route.employees.length; i++) {
         const employee = route.employees[i];
-        const legToThisEmployee = route.routeDetails?.legs?.[i];
-        const legDuration = (legToThisEmployee?.duration || 0) * (1 + TRAFFIC_BUFFER_PERCENTAGE);
-        
-        currentTimeMs += (legDuration * 1000);
-        currentTimeMs += (pickupTimePerEmployee * 1000);
-        
+        // Travel TO this employee from previous point is leg[i]
+        const legDuration = route.routeDetails?.legs?.[i]?.duration || 0;
+        const bufferedLegDuration =
+          legDuration * (1 + TRAFFIC_BUFFER_PERCENTAGE);
+
+        // Add travel time
+        currentTimeMs += bufferedLegDuration * 1000;
+
+        // Add service time (dropoff)
+        currentTimeMs += pickupTimePerEmployee * 1000;
+
         const dropoffTime = new Date(currentTimeMs);
         employee.dropoffTime = formatTime(dropoffTime);
-        employee.pickupTime = employee.dropoffTime;
+        employee.pickupTime = employee.dropoffTime; // legacy compatibility
+
+        if (i === route.employees.length - 1) {
+          routeEndTime = dropoffTime; // Last dropoff is route end
+        }
       }
     }
-    
+
+    // Recalculate and update totalDuration to be consistent with ETAs
+    if (routeStartTime && routeEndTime && route.routeDetails) {
+      const originalOsrmDuration = route.routeDetails.totalDuration;
+      const newDurationInSeconds = Math.round(
+        (routeEndTime.getTime() - routeStartTime.getTime()) / 1000
+      );
+
+      if (newDurationInSeconds >= 0) {
+        console.log(
+          `[Duration Sync] Route ${
+            route.uniqueKey
+          }: Original OSRM duration (travel only): ${originalOsrmDuration.toFixed(
+            0
+          )}s. New ETA-based duration (travel + service): ${newDurationInSeconds}s.`
+        );
+        // Overwrite the old duration with the new, more accurate one.
+        route.routeDetails.totalDuration = newDurationInSeconds;
+      }
+    }
   } catch (error) {
-    console.error("Time calculation error:", error.message);
+    console.error("Time calculation error:", error.message, error.stack);
     if (route?.employees) {
       route.employees.forEach((emp) => {
         emp.pickupTime = "Error";

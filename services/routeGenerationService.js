@@ -8,7 +8,7 @@ const MAX_SWAP_DISTANCE_KM = 1.5; // or your business threshold
 
 const OSRM_PROBE_TIMEOUT_HEURISTIC = 3000;
 const OSRM_PROBE_TIMEOUT = 8000;
-const BYPASS_ROUTE_DEVIATION_CHECKS = false; // Set to true to bypass all deviation checks
+const BYPASS_ROUTE_DEVIATION_CHECKS = true; // Set to true to bypass all deviation checks
 
 
 
@@ -40,16 +40,16 @@ function getTrafficBufferForShiftTime(shiftTime) {
   // Define traffic patterns based on time of day
   if (decimalTime >= 7.0 && decimalTime < 10.0) {
     // Morning rush hour: 7:00 AM - 10:00 AM (High traffic)
-    return 1.2; // 60% buffer
+    return 0.6; // 60% buffer
   } else if (decimalTime >= 10.0 && decimalTime < 16.0) {
     // Afternoon: 10:00 AM - 4:00 PM (Moderate traffic)
-    return 1.2; // 30% buffer
+    return 0.6; // 30% buffer
   } else if (decimalTime >= 16.0 && decimalTime < 20.0) {
     // Evening rush hour: 4:00 PM - 8:00 PM (High traffic)
-    return 1.2; // 60% buffer
+    return 0.6; // 60% buffer
   } else {
     // Night time: 8:00 PM - 7:00 AM (Low traffic)
-    return 0.9; // 20% buffer
+    return 0.6; // 20% buffer
   }
 }
 
@@ -313,7 +313,7 @@ const isSpecialNeedsUser = (emp) => {
 async function checkRouteDeviation(route, facility, profile) {
 
    if (BYPASS_ROUTE_DEVIATION_CHECKS) {
-    console.log(`[RouteDeviation] BYPASSING deviation check for route ${route.uniqueKey || route.routeNumber} (global override).`);
+    // console.log(`[RouteDeviation] BYPASSING deviation check for route ${route.uniqueKey || route.routeNumber} (global override).`);
     return true;
   }
   
@@ -453,17 +453,17 @@ async function checkRouteDeviation(route, facility, profile) {
     return false;
   }
 
-  console.log(
-    `[checkRouteDeviation] Route ${
-      route.uniqueKey || route.routeNumber
-    }: PASSED. Rule: ${applicableRule.minDistKm}-${
-      applicableRule.maxDistKm
-    }km (maxTotal: ${
-      applicableRule.maxTotalOneWayKm
-    }km). FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(
-      3
-    )}km. ActualRouteDist: ${relevantRouteDistanceKm.toFixed(3)}km.`
-  );
+  // console.log(
+  //   `[checkRouteDeviation] Route ${
+  //     route.uniqueKey || route.routeNumber
+  //   }: PASSED. Rule: ${applicableRule.minDistKm}-${
+  //     applicableRule.maxDistKm
+  //   }km (maxTotal: ${
+  //     applicableRule.maxTotalOneWayKm
+  //   }km). FarthestEmpDist: ${farthestEmployeeDistanceKm.toFixed(
+  //     3
+  //   )}km. ActualRouteDist: ${relevantRouteDistanceKm.toFixed(3)}km.`
+  // );
   return true;
 }
 
@@ -542,10 +542,10 @@ async function calculateRouteDetails(
     //   JSON.stringify(data)
     // );
     if (data.routes && data.routes[0]) {
-      console.log(
-        "[DEBUG calculateRouteDetails] routeObject.distance:",
-        data.routes[0].distance
-      );
+      // console.log(
+      //   "[DEBUG calculateRouteDetails] routeObject.distance:",
+      //   data.routes[0].distance
+      // );
     }
     if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
       console.error(
@@ -753,14 +753,112 @@ function getNMTCapacityLimit(fleetConfig) {
   return smallVehicle ? smallVehicle.capacity : 3; // fallback to 3 if no 's' defined
 }
 
+/**
+ * Analyze fleet configuration and determine optimal routing strategy
+ */
+function analyzeFleetConfiguration(fleet) {
+  if (!fleet || !Array.isArray(fleet) || fleet.length === 0) {
+    return {
+      vehicleTypes: [],
+      capacityRanges: {},
+      optimalSizes: {},
+      totalCapacity: 0
+    };
+  }
+
+  const sortedFleet = [...fleet].sort((a, b) => a.capacity - b.capacity);
+  
+  const analysis = {
+    vehicleTypes: sortedFleet,
+    capacityRanges: {},
+    optimalSizes: {},
+    totalCapacity: fleet.reduce((sum, v) => sum + (v.capacity * v.count), 0),
+    fleetDistribution: {}
+  };
+
+  sortedFleet.forEach((vehicle, index) => {
+    const type = vehicle.type;
+    const capacity = vehicle.capacity;
+    
+    let minEmployees, maxEmployees;
+    
+    if (index === 0) {
+      minEmployees = 1;
+      maxEmployees = capacity;
+    } else {
+      const prevCapacity = sortedFleet[index - 1].capacity;
+      minEmployees = prevCapacity + 1;
+      maxEmployees = capacity;
+    }
+    
+    analysis.capacityRanges[type] = {
+      minEmployees,
+      maxEmployees,
+      capacity,
+      count: vehicle.count,
+      utilization: 0
+    };
+    
+    // **NEW: Target MAXIMUM capacity, not capacity - 1**
+    analysis.optimalSizes[type] = capacity; // Full capacity utilization
+    
+    analysis.fleetDistribution[type] = vehicle.count / fleet.reduce((sum, v) => sum + v.count, 0);
+  });
+
+  console.log('[Fleet Analysis] MAXIMUM Capacity Configuration:', JSON.stringify(analysis.capacityRanges, null, 2));
+  console.log('[Fleet Analysis] MAXIMUM Optimal sizes:', analysis.optimalSizes);
+  
+  return analysis;
+}
+
+/**
+ * Get recommended route size based on fleet configuration and current availability
+ */
+function getRecommendedRouteSize(fleetAnalysis, availableFleetCounts, zoneName) {
+  if (!fleetAnalysis.vehicleTypes || fleetAnalysis.vehicleTypes.length === 0) {
+    return 6; // fallback
+  }
+
+  // Find the vehicle type with the best availability vs utilization ratio
+  let bestType = null;
+  let bestScore = -1;
+
+  fleetAnalysis.vehicleTypes.forEach(vehicle => {
+    const type = vehicle.type;
+    const available = availableFleetCounts[type] || 0;
+    const total = vehicle.count;
+    const utilizationRate = (total - available) / total;
+    const availabilityRate = available / total;
+    
+    // Prefer underutilized types with good availability
+    const score = availabilityRate * (1 - utilizationRate) * fleetAnalysis.fleetDistribution[type];
+    
+    if (score > bestScore && available > 0) {
+      bestScore = score;
+      bestType = type;
+    }
+  });
+
+  if (bestType) {
+    const recommendedSize = fleetAnalysis.optimalSizes[bestType];
+    console.log(`[Route Size] Zone ${zoneName}: Targeting ${bestType} type (capacity: ${fleetAnalysis.capacityRanges[bestType].capacity}) → recommended size: ${recommendedSize}`);
+    return recommendedSize;
+  }
+
+  // Fallback: use the most available vehicle type
+  const fallbackType = fleetAnalysis.vehicleTypes.find(v => (availableFleetCounts[v.type] || 0) > 0);
+  return fallbackType ? fleetAnalysis.optimalSizes[fallbackType.type] : 4;
+}
+
 async function assignVehicleAndFinalizeGroup(
   routeShell,
   preliminaryEmployeesInGroup,
   profile,
   availableFleetCounts,
-  shiftTime, // Kept for consistency, not used for guard decision here
+  shiftTime,
   tripType,
-  activateGuardSystem // This is the 'guard: true/false' from input JSON
+  activateGuardSystem,
+  fleetAnalysis
 ) {
   let currentEmployeesForRoute = [...preliminaryEmployeesInGroup];
   let employeesTrimmedOff = [];
@@ -771,7 +869,7 @@ async function assignVehicleAndFinalizeGroup(
   routeShell.afterFleetExhaustion = false;
   routeShell.assignedVehicleType = "NONE";
   routeShell.vehicleCapacity = 0;
-  let preliminaryGuardNeeded = false; // Default to no guard
+  let preliminaryGuardNeeded = false;
 
   if (!currentEmployeesForRoute || currentEmployeesForRoute.length === 0) {
     routeShell.guardNeeded = false;
@@ -780,55 +878,74 @@ async function assignVehicleAndFinalizeGroup(
 
   const isDropoff = tripType.toLowerCase() === "dropoff";
 
-  // **NEW: Check for NMT employees and get capacity limit**
+  // **CONSTRAINT 1: NMT Check and Early Trimming**
   const hasNMTEmployee = currentEmployeesForRoute.some(emp => emp.isNMT === true);
   const nmtCapacityLimit = hasNMTEmployee ? getNMTCapacityLimit(profile.fleet || []) : null;
-  
+
   if (hasNMTEmployee) {
-    console.log(`[NMT Route] Route ${routeShell.uniqueKey} contains NMT employee(s). Capacity limited to ${nmtCapacityLimit} (type 's' capacity).`);
+    console.log(`[NMT Route EARLY] Route ${routeShell.uniqueKey} contains NMT employee(s). Must limit to ${nmtCapacityLimit} employees TOTAL.`);
     routeShell.isNMTRoute = true;
     routeShell.nmtCapacityLimit = nmtCapacityLimit;
+
+    // **IMMEDIATE TRIMMING: Reduce to NMT limit BEFORE vehicle assignment**
+    if (currentEmployeesForRoute.length > nmtCapacityLimit) {
+      const originalCount = currentEmployeesForRoute.length;
+
+      // Keep the first nmtCapacityLimit employees, trim the rest
+      const employeesToKeep = currentEmployeesForRoute.slice(0, nmtCapacityLimit);
+      const employeesToTrim = currentEmployeesForRoute.slice(nmtCapacityLimit);
+
+      currentEmployeesForRoute = employeesToKeep;
+      employeesTrimmedOff.push(...employeesToTrim);
+
+      console.log(`[NMT EARLY TRIM] Route ${routeShell.uniqueKey}: Trimmed ${employeesToTrim.length} employees (${originalCount} → ${currentEmployeesForRoute.length}) due to NMT capacity limit`);
+
+      // Log which employees were trimmed
+      employeesToTrim.forEach(emp => {
+        console.log(`[NMT Early Trimming] Employee ${emp.empCode} trimmed from NMT route ${routeShell.uniqueKey} due to NMT capacity limit (${nmtCapacityLimit})`);
+      });
+    }
   }
 
-  // CORRECTED: Guard needed if critical position is Female (regardless of other males)
+  // **CONSTRAINT 2: Guard Logic (check AFTER NMT trimming)**
   if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
     const critIdx = isDropoff ? currentEmployeesForRoute.length - 1 : 0;
     if (currentEmployeesForRoute[critIdx]?.gender === "F") {
       preliminaryGuardNeeded = true;
+      console.log(`[Guard Needed] Route ${routeShell.uniqueKey}: Guard required for female employee at critical position`);
     }
   }
   routeShell.guardNeeded = preliminaryGuardNeeded;
 
-  let requiredVehicleOccupancy =
-    currentEmployeesForRoute.length + (preliminaryGuardNeeded ? 1 : 0);
+  let requiredVehicleOccupancy = currentEmployeesForRoute.length + (preliminaryGuardNeeded ? 1 : 0);
 
-  // **NEW: For NMT routes, cap the required occupancy for vehicle selection**
+  // **For NMT routes, the vehicle selection occupancy is already correct after early trimming**
   let vehicleSelectionOccupancy = requiredVehicleOccupancy;
   if (hasNMTEmployee) {
-    vehicleSelectionOccupancy = Math.min(requiredVehicleOccupancy, nmtCapacityLimit);
-    console.log(`[NMT Vehicle Selection] Route ${routeShell.uniqueKey} required: ${requiredVehicleOccupancy}, capped for vehicle selection: ${vehicleSelectionOccupancy}`);
+    console.log(`[NMT Vehicle Selection] Route ${routeShell.uniqueKey} final occupancy: ${vehicleSelectionOccupancy} (${currentEmployeesForRoute.length} employees + ${preliminaryGuardNeeded ? 1 : 0} guard)`);
   }
 
-  const sortedFleet = [...(profile.fleet || [])].sort(
-    (a, b) => a.capacity - b.capacity
-  );
+  const sortedFleet = [...(profile.fleet || [])].sort((a, b) => a.capacity - b.capacity);
   let assignedVehicleConfig = null;
 
+  // **Vehicle Selection**
   if (sortedFleet.length > 0) {
-    for (const vehicleOption of sortedFleet) {
-      if (
-        vehicleOption.capacity >= vehicleSelectionOccupancy && // **UPDATED: Uses capped occupancy for NMT routes**
-        availableFleetCounts[vehicleOption.type] > 0
-      ) {
-        assignedVehicleConfig = vehicleOption;
-        break;
-      }
-    }
+    assignedVehicleConfig = selectBestFitVehicle(
+      sortedFleet,
+      vehicleSelectionOccupancy,
+      availableFleetCounts,
+      profile,
+      fleetAnalysis
+    );
   }
 
   if (assignedVehicleConfig) {
     availableFleetCounts[assignedVehicleConfig.type]--;
     routeShell.afterFleetExhaustion = false;
+
+    if (assignedVehicleConfig.type === 'm') {
+      console.log(`[Medium Vehicle] ✅ Successfully assigned medium vehicle to route ${routeShell.uniqueKey} (occupancy: ${vehicleSelectionOccupancy})`);
+    }
   } else {
     routeShell.afterFleetExhaustion = true;
     const mediumFallbackConfig = sortedFleet.find((v) => v.type === "m");
@@ -841,10 +958,9 @@ async function assignVehicleAndFinalizeGroup(
       assignedVehicleConfig = { type: "NONE_M_MISSING", capacity: 0 };
     } else {
       assignedVehicleConfig = mediumFallbackConfig;
+      console.log(`[Fleet Exhaustion] Route ${routeShell.uniqueKey} using fallback medium vehicle (all suitable vehicles exhausted)`);
       if (assignedVehicleConfig.capacity < requiredVehicleOccupancy) {
-        console.warn(
-          `[Fleet] Route ${routeShell.uniqueKey} (Req Occupancy: ${requiredVehicleOccupancy}) assigned fallback 'm' (Cap: ${assignedVehicleConfig.capacity}) which is smaller. Trimming will occur.`
-        );
+        console.warn(`[Fleet] Route ${routeShell.uniqueKey} (Req Occupancy: ${requiredVehicleOccupancy}) assigned fallback 'm' (Cap: ${assignedVehicleConfig.capacity}) which is smaller. Trimming will occur.`);
       }
     }
   }
@@ -856,19 +972,14 @@ async function assignVehicleAndFinalizeGroup(
     routeShell.employees = [];
     return { employeesTrimmedOff };
   }
-
-  // **NEW: Calculate effective capacity (consider NMT limit)**
-  let effectiveVehicleCapacity = routeShell.vehicleCapacity;
   
+  // NMT logging for effective capacity
   if (hasNMTEmployee) {
-    effectiveVehicleCapacity = Math.min(routeShell.vehicleCapacity, nmtCapacityLimit);
-    console.log(`[NMT Effective Capacity] Route ${routeShell.uniqueKey} vehicle capacity: ${routeShell.vehicleCapacity}, NMT limited to: ${effectiveVehicleCapacity}`);
+    console.log(`[NMT Effective Capacity] Route ${routeShell.uniqueKey} vehicle capacity: ${routeShell.vehicleCapacity}, NMT limited to: ${nmtCapacityLimit}`);
   }
 
-  let finalIsSpecial = false;
-  let maxPassengersAllowedInVehicle =
-    effectiveVehicleCapacity - (routeShell.guardNeeded ? 1 : 0); // **UPDATED: Uses effective capacity**
-
+  // --- START: CORRECTED FINAL TRIMMING LOGIC ---
+  let finalIsSpecial;
   let trimmingIteration = 0;
   const MAX_TRIMMING_ITERATIONS = currentEmployeesForRoute.length + 3;
 
@@ -876,80 +987,338 @@ async function assignVehicleAndFinalizeGroup(
     trimmingIteration++ < MAX_TRIMMING_ITERATIONS &&
     currentEmployeesForRoute.length > 0
   ) {
-    finalIsSpecial = currentEmployeesForRoute.some(isSpecialNeedsUser);
-    let currentMaxPassengers = maxPassengersAllowedInVehicle;
+    let groupIsOverCapacity = false;
+    let reason = "";
 
-    if (finalIsSpecial) {
-      currentMaxPassengers = Math.min(
-        maxPassengersAllowedInVehicle,
-        routeShell.guardNeeded ? 1 : 2
-      );
+    // Check 1: Total occupants vs. Vehicle Capacity
+    const totalOccupants = currentEmployeesForRoute.length + (routeShell.guardNeeded ? 1 : 0);
+    if (totalOccupants > routeShell.vehicleCapacity) {
+        groupIsOverCapacity = true;
+        reason = `Occupants (${totalOccupants}) > Vehicle Capacity (${routeShell.vehicleCapacity})`;
     }
-    currentMaxPassengers = Math.max(0, currentMaxPassengers);
 
-    if (currentEmployeesForRoute.length > currentMaxPassengers) {
-      const empToTrim = isDropoff
-        ? currentEmployeesForRoute.shift()
-        : currentEmployeesForRoute.pop();
+    // Check 2: Special Needs Employee Constraints
+    finalIsSpecial = currentEmployeesForRoute.some(isSpecialNeedsUser);
+    if (finalIsSpecial) {
+        const specialNeedsMax = routeShell.guardNeeded ? 1 : 2;
+        if (currentEmployeesForRoute.length > specialNeedsMax) {
+            groupIsOverCapacity = true;
+            reason = `Special Needs employee count (${currentEmployeesForRoute.length}) > limit (${specialNeedsMax})`;
+            console.log(`[Special Needs Constraint] Route ${routeShell.uniqueKey}: Max passengers reduced to ${specialNeedsMax}`);
+        }
+    }
+
+    // Check 3: NMT Employee Count Constraint (this is a safeguard, should be handled by early trimming)
+    if (hasNMTEmployee && currentEmployeesForRoute.length > nmtCapacityLimit) {
+        groupIsOverCapacity = true;
+        reason = `NMT employee count (${currentEmployeesForRoute.length}) > limit (${nmtCapacityLimit})`;
+        console.log(`[NMT Final Check] ${reason}.`);
+    }
+
+    if (groupIsOverCapacity) {
+      const empToTrim = isDropoff ? currentEmployeesForRoute.shift() : currentEmployeesForRoute.pop();
       
       if (empToTrim) {
         employeesTrimmedOff.push(empToTrim);
-        
-        // **NEW: Enhanced logging for NMT routes**
-        if (hasNMTEmployee) {
-          console.log(`[NMT Trimming] Employee ${empToTrim.empCode} trimmed from NMT route ${routeShell.uniqueKey} due to NMT capacity limit (${nmtCapacityLimit})`);
-        }
+        console.log(`[Final Trimming] Employee ${empToTrim.empCode} trimmed from route ${routeShell.uniqueKey} due to capacity constraints (Special: ${finalIsSpecial}, Guard: ${routeShell.guardNeeded})`);
       }
 
-      // CORRECTED: Re-check guard needed after trimming
+      // Re-check guard needed after trimming as the critical employee might have changed
       if (activateGuardSystem && currentEmployeesForRoute.length > 0) {
-        const critIdxRecheck = isDropoff
-          ? currentEmployeesForRoute.length - 1
-          : 0;
-        const newGuardNeededStatus =
-          currentEmployeesForRoute[critIdxRecheck]?.gender === "F";
+        const critIdxRecheck = isDropoff ? currentEmployeesForRoute.length - 1 : 0;
+        const newGuardNeededStatus = currentEmployeesForRoute[critIdxRecheck]?.gender === "F";
         if (routeShell.guardNeeded !== newGuardNeededStatus) {
           routeShell.guardNeeded = newGuardNeededStatus;
-          maxPassengersAllowedInVehicle =
-            effectiveVehicleCapacity - (routeShell.guardNeeded ? 1 : 0); // **UPDATED: Uses effective capacity**
+          console.log(`[Guard Status Change] Route ${routeShell.uniqueKey}: Guard needed changed to ${newGuardNeededStatus} after trimming`);
         }
-      } else if (
-        currentEmployeesForRoute.length === 0 &&
-        routeShell.guardNeeded
-      ) {
+      } else if (currentEmployeesForRoute.length === 0 && routeShell.guardNeeded) {
         routeShell.guardNeeded = false;
-        maxPassengersAllowedInVehicle = effectiveVehicleCapacity; // **UPDATED: Uses effective capacity**
       }
     } else {
+      // If no capacity constraint is violated, the loop can end.
       break;
     }
   }
-  
-  if (trimmingIteration >= MAX_TRIMMING_ITERATIONS)
-    console.warn(
-      `[Fleet Trim] Max iterations reached for ${routeShell.uniqueKey}`
-    );
+  // --- END: CORRECTED FINAL TRIMMING LOGIC ---
+
+  if (trimmingIteration >= MAX_TRIMMING_ITERATIONS) {
+    console.warn(`[Fleet Trim] Max iterations reached for ${routeShell.uniqueKey}`);
+  }
 
   routeShell.employees = [...currentEmployeesForRoute];
-  routeShell.isSpecialNeedsRoute =
-    routeShell.employees.some(isSpecialNeedsUser);
+  routeShell.isSpecialNeedsRoute = routeShell.employees.some(isSpecialNeedsUser);
 
-  if (
-    routeShell.employees.length === 0 &&
-    preliminaryEmployeesInGroup.length > 0 &&
-    !routeShell.error
-  ) {
+  if (routeShell.employees.length === 0 && preliminaryEmployeesInGroup.length > 0 && !routeShell.error) {
     routeShell.error = true;
-    routeShell.errorMessage = `Route became empty after vehicle assignment and guard trimming (Vehicle: ${routeShell.assignedVehicleType})`;
+    routeShell.errorMessage = `Route became empty after vehicle assignment and trimming (Vehicle: ${routeShell.assignedVehicleType})`;
   }
-  
+
   if (employeesTrimmedOff.length > 0) {
-    console.log(
-      `[Fleet] Route ${routeShell.uniqueKey} (Type: ${routeShell.assignedVehicleType}, Final Emps: ${routeShell.employees.length}) trimmed ${employeesTrimmedOff.length} employees.`
-    );
+    console.log(`[Fleet] Route ${routeShell.uniqueKey} (Type: ${routeShell.assignedVehicleType}, Final Emps: ${routeShell.employees.length}) trimmed ${employeesTrimmedOff.length} employees.`);
+  }
+
+  // **VALIDATION: Final checks for all constraints**
+  if (hasNMTEmployee && routeShell.employees.length > nmtCapacityLimit) {
+    console.error(`[NMT VALIDATION ERROR] Route ${routeShell.uniqueKey} still has ${routeShell.employees.length} employees but NMT limit is ${nmtCapacityLimit}!`);
+  }
+
+  if (routeShell.isSpecialNeedsRoute && routeShell.employees.length > (routeShell.guardNeeded ? 1 : 2)) {
+    console.error(`[Special Needs VALIDATION ERROR] Route ${routeShell.uniqueKey} has ${routeShell.employees.length} special needs employees but limit is ${routeShell.guardNeeded ? 1 : 2}!`);
+  }
+
+  return { employeesTrimmedOff };
+}
+
+/**
+ * Select the best-fit vehicle for optimal fleet utilization
+ * @param {Array} sortedFleet - Fleet sorted by capacity
+ * @param {number} vehicleSelectionOccupancy - Required occupancy
+ * @param {Object} availableFleetCounts - Current available fleet counts
+ * @param {Object} profile - Profile containing original fleet configuration
+ * @returns {Object|null} Selected vehicle configuration or null
+ */
+
+/**
+ * Enhanced vehicle selection that works with any fleet configuration
+ */
+function selectBestFitVehicle(sortedFleet, vehicleSelectionOccupancy, availableFleetCounts, profile, fleetAnalysis) {
+  const suitableVehicles = sortedFleet.filter(vehicle => 
+    vehicle.capacity >= vehicleSelectionOccupancy && 
+    availableFleetCounts[vehicle.type] > 0
+  );
+  
+  if (suitableVehicles.length === 0) {
+    console.warn(`[Fleet Selection] No suitable vehicles available for occupancy ${vehicleSelectionOccupancy}`);
+    return null;
+  }
+
+  // **NEW: Perfect capacity match (high utilization) gets highest priority**
+  const highUtilizationMatches = suitableVehicles.filter(vehicle => {
+    const utilizationRate = vehicleSelectionOccupancy / vehicle.capacity;
+    return utilizationRate >= 0.75; // 75% or higher utilization
+  });
+
+  if (highUtilizationMatches.length > 0) {
+    // Among high utilization matches, prefer the one with highest utilization
+    const bestUtilization = highUtilizationMatches.sort((a, b) => {
+      const utilizationA = vehicleSelectionOccupancy / a.capacity;
+      const utilizationB = vehicleSelectionOccupancy / b.capacity;
+      return utilizationB - utilizationA;
+    })[0];
+    
+    console.log(`[Fleet High Utilization] Occupancy ${vehicleSelectionOccupancy} → HIGH UTILIZATION: ${bestUtilization.type}(${bestUtilization.capacity}) - ${(vehicleSelectionOccupancy/bestUtilization.capacity*100).toFixed(1)}% utilized`);
+    return bestUtilization;
+  }
+
+  // **NEW: Medium utilization matches**
+  const mediumUtilizationMatches = suitableVehicles.filter(vehicle => {
+    const utilizationRate = vehicleSelectionOccupancy / vehicle.capacity;
+    return utilizationRate >= 0.5 && utilizationRate < 0.75;
+  });
+
+  if (mediumUtilizationMatches.length > 0) {
+    const bestMedium = mediumUtilizationMatches.sort((a, b) => {
+      const utilizationA = vehicleSelectionOccupancy / a.capacity;
+      const utilizationB = vehicleSelectionOccupancy / b.capacity;
+      return utilizationB - utilizationA;
+    })[0];
+    
+    console.log(`[Fleet Medium Utilization] Occupancy ${vehicleSelectionOccupancy} → MEDIUM UTILIZATION: ${bestMedium.type}(${bestMedium.capacity}) - ${(vehicleSelectionOccupancy/bestMedium.capacity*100).toFixed(1)}% utilized`);
+    return bestMedium;
+  }
+
+  // **Fallback: Enhanced scoring with utilization bonus**
+  const vehicleScores = suitableVehicles.map(vehicle => {
+    const originalCount = profile.fleet.find(f => f.type === vehicle.type)?.count || 1;
+    const usedCount = originalCount - availableFleetCounts[vehicle.type];
+    const fleetUtilizationRate = usedCount / originalCount;
+    
+    const capacityUtilization = vehicleSelectionOccupancy / vehicle.capacity;
+    const capacityWaste = vehicle.capacity - vehicleSelectionOccupancy;
+    const capacityEfficiency = 1 / (1 + (capacityWaste / vehicle.capacity));
+    const utilizationBalance = Math.max(0, 1 - fleetUtilizationRate);
+    const distributionBonus = fleetAnalysis.fleetDistribution[vehicle.type] || 0;
+    
+    // **NEW: High capacity utilization bonus**
+    let utilizationBonus = 0;
+    if (capacityUtilization >= 0.8) {
+      utilizationBonus = 0.3; // Strong bonus for high utilization
+    } else if (capacityUtilization >= 0.6) {
+      utilizationBonus = 0.2; // Medium bonus
+    } else if (capacityUtilization >= 0.4) {
+      utilizationBonus = 0.1; // Small bonus
+    }
+
+    const score = (capacityEfficiency * 0.3) + 
+                  (utilizationBalance * 0.2) + 
+                  (distributionBonus * 0.1) + 
+                  (utilizationBonus * 0.4); // **Strong emphasis on utilization**
+    
+    return {
+      vehicle,
+      score,
+      capacityWaste,
+      capacityUtilization: capacityUtilization * 100,
+      fleetUtilizationRate: fleetUtilizationRate * 100,
+      utilizationBonus
+    };
+  });
+  
+  vehicleScores.sort((a, b) => b.score - a.score);
+  const selected = vehicleScores[0];
+  
+  console.log(`[Fleet Utilization Focus] Occupancy ${vehicleSelectionOccupancy} → Options:`, 
+    vehicleScores.map(v => 
+      `${v.vehicle.type}(cap:${v.vehicle.capacity}, util:${v.capacityUtilization.toFixed(1)}%, score:${v.score.toFixed(3)})`
+    ).join(' | '), 
+    `→ SELECTED: ${selected.vehicle.type} (${selected.capacityUtilization.toFixed(1)}% utilized)`
+  );
+  
+  return selected.vehicle;
+}
+
+/**
+ * Adjust target group size based on fleet availability to maximize utilization
+ */
+/**
+ * Dynamic zone capacity based on actual fleet configuration
+ */
+function getOptimalGroupSizeForZone(zoneName, profile, availableFleetCounts, fleetAnalysis) {
+  if (!fleetAnalysis || !fleetAnalysis.vehicleTypes.length) {
+    return 6; // fallback
+  }
+
+  // **NEW: Calculate total available capacity vs remaining employees**
+  const totalAvailableCapacity = fleetAnalysis.vehicleTypes.reduce((sum, vehicle) => {
+    const available = availableFleetCounts[vehicle.type] || 0;
+    return sum + (available * vehicle.capacity);
+  }, 0);
+
+  // **NEW: Prioritize by capacity and availability**
+  const fleetByCapacity = fleetAnalysis.vehicleTypes
+    .map(vehicle => {
+      const available = availableFleetCounts[vehicle.type] || 0;
+      const total = vehicle.count;
+      const utilizationRate = (total - available) / total;
+      
+      return {
+        type: vehicle.type,
+        capacity: vehicle.capacity,
+        available,
+        total,
+        utilizationRate,
+        availableCapacity: available * vehicle.capacity,
+        // **Higher score = higher priority for utilization**
+        priority: available * vehicle.capacity * (1 - utilizationRate)
+      };
+    })
+    .filter(v => v.available > 0)
+    .sort((a, b) => b.capacity - a.capacity); // Sort by capacity (largest first)
+
+  if (fleetByCapacity.length === 0) {
+    return 3; // Conservative fallback
+  }
+
+  // **NEW: Use largest available vehicle type as target**
+  const largestAvailableVehicle = fleetByCapacity[0];
+  
+  // **NEW: Aggressive capacity targeting**
+  let targetSize;
+  if (largestAvailableVehicle.available >= 5) {
+    // Plenty of vehicles available - target near full capacity
+    targetSize = Math.max(4, largestAvailableVehicle.capacity - 1); // Leave 1 spot for potential guard
+  } else if (largestAvailableVehicle.available >= 2) {
+    // Moderate availability - target 75% capacity
+    targetSize = Math.max(3, Math.floor(largestAvailableVehicle.capacity * 0.75));
+  } else {
+    // Low availability - target 60% capacity
+    targetSize = Math.max(3, Math.floor(largestAvailableVehicle.capacity * 0.6));
+  }
+
+  console.log(`[Zone Capacity Aggressive] Zone ${zoneName}: Largest available: ${largestAvailableVehicle.type}(cap:${largestAvailableVehicle.capacity}, available:${largestAvailableVehicle.available}) → targeting ${targetSize}`);
+  
+  return targetSize;
+}
+
+function getAdaptiveGroupSize(availableFleetCounts, profile, targetSize) {
+  // Find the largest available vehicle type
+  const availableVehicles = profile.fleet
+    .filter(v => (availableFleetCounts[v.type] || 0) > 0)
+    .sort((a, b) => b.capacity - a.capacity);
+  
+  if (availableVehicles.length === 0) {
+    return Math.min(targetSize, 3); // Conservative fallback
   }
   
-  return { employeesTrimmedOff };
+  const largestAvailable = availableVehicles[0];
+  const adaptedSize = Math.min(targetSize, largestAvailable.capacity - 1); // Leave room for guard
+  
+  if (adaptedSize < targetSize) {
+    console.log(`[Adaptive Group Size] Reduced from ${targetSize} to ${adaptedSize} due to largest available vehicle: ${largestAvailable.type}(${largestAvailable.capacity})`);
+  }
+  
+  return adaptedSize;
+}
+
+
+function getMaximumViableGroupSize(availableFleetCounts, profile, employees, activateGuardSystem = false) {
+  // Find the largest available vehicle type
+  const availableVehicles = profile.fleet
+    .filter(v => (availableFleetCounts[v.type] || 0) > 0)
+    .sort((a, b) => b.capacity - a.capacity);
+  
+  if (availableVehicles.length === 0) {
+    return 3; // Conservative fallback
+  }
+  
+  const largestAvailable = availableVehicles[0];
+  
+  // **Start with MAXIMUM capacity**
+  let maxPossibleSize = largestAvailable.capacity;
+  
+  console.log(`[Maximum Capacity] Targeting FULL capacity: ${maxPossibleSize} for vehicle type ${largestAvailable.type}(${largestAvailable.capacity})`);
+  
+  return maxPossibleSize;
+}
+
+/**
+ * Monitor and log fleet status during processing
+ */
+function logFleetStatus(availableFleetCounts, profile, context = "") {
+  if (!profile.fleet) return;
+  
+  console.log(`\n[Fleet Status ${context}]`);
+  let totalUsed = 0;
+  let totalAvailable = 0;
+  
+  profile.fleet.forEach(fleetType => {
+    const used = fleetType.count - (availableFleetCounts[fleetType.type] || 0);
+    const remaining = availableFleetCounts[fleetType.type] || 0;
+    const utilization = (used / fleetType.count * 100).toFixed(1);
+    
+    totalUsed += used;
+    totalAvailable += fleetType.count;
+    
+    console.log(`  ${fleetType.type.toUpperCase()}: ${used}/${fleetType.count} used, ${remaining} remaining (${utilization}%)`);
+    
+    // Specific warnings for medium vehicles
+    if (fleetType.type === 'm') {
+      if (remaining > fleetType.count * 0.7) {
+        console.warn(`  ⚠️  MEDIUM vehicles severely underutilized! Only ${utilization}% used.`);
+      } else if (remaining > fleetType.count * 0.5) {
+        console.warn(`  ⚠️  MEDIUM vehicles underutilized. ${utilization}% used.`);
+      }
+    }
+    
+    // Warning for small vehicle overuse
+    if (fleetType.type === 's' && used > fleetType.count * 0.8) {
+      console.warn(`  ⚠️  SMALL vehicles heavily used (${utilization}%). Consider using medium vehicles.`);
+    }
+  });
+  
+  const overallUtilization = (totalUsed / totalAvailable * 100).toFixed(1);
+  console.log(`  OVERALL: ${totalUsed}/${totalAvailable} vehicles used (${overallUtilization}%)`);
+  console.log('');
 }
 
 async function processEmployeeBatch(
@@ -963,7 +1332,8 @@ async function processEmployeeBatch(
   profile,
   availableFleetCounts,
   city,
-  shiftTime
+  shiftTime,
+  fleetAnalysis
 ) {
   const routes = [];
   let employeesAddedToMasterUnroutedThisBatch = [];
@@ -987,6 +1357,7 @@ async function processEmployeeBatch(
       ),
       isMedical: emp.isMedical || false,
       isPWD: emp.isPWD || false,
+      isNMT: emp.isNMT || false,
     }))
     .sort((a, b) =>
       isDropoff
@@ -998,241 +1369,288 @@ async function processEmployeeBatch(
 
   mainLoop: while (globalRemainingEmployees.length > 0) {
     batchRouteCounter++;
-    let currentHeuristicRouteMaxOccupancy = targetGroupSizeForHeuristic;
+    
+    // **NEW: Get maximum possible group size based on current fleet availability**
+    const maxPossibleGroupSize = getMaximumViableGroupSize(
+      availableFleetCounts, 
+      profile, 
+      globalRemainingEmployees,
+      activateGuardSystem
+    );
+    
     let routeIsCurrentlySpecialNeedsHeuristic = false;
 
     const firstEmployeeForThisRoute = globalRemainingEmployees.shift();
     if (!firstEmployeeForThisRoute) break;
 
-    const firstEmpCoords = [
-      firstEmployeeForThisRoute.location.lat,
-      firstEmployeeForThisRoute.location.lng,
-    ];
-    const firstRouteCoordsOSRM = isDropoff
-      ? [facilityCoordinates, firstEmpCoords]
-      : [firstEmpCoords, facilityCoordinates];
-    const firstRouteDetailsOSRM = await calculateRouteDetails(
-      firstRouteCoordsOSRM,
-      [firstEmployeeForThisRoute],
-      pickupTimePerEmployee,
-      tripType,
-      city,
-      shiftTime
-    );
-
-    if (firstRouteDetailsOSRM.error) {
-      deferredForInitialOSRM.push(firstEmployeeForThisRoute);
-      continue;
-    }
-
-    const tempHeuristicRouteForValidation = {
-      employees: [firstEmployeeForThisRoute],
-      routeDetails: firstRouteDetailsOSRM,
-      uniqueKey: `temp_val_${batchRouteCounter}`,
-    };
-    if (
-      !(await checkRouteDeviation(
-        tempHeuristicRouteForValidation,
-        facility,
-        profile
-      )) ||
-      (maxDuration && firstRouteDetailsOSRM.totalDuration > maxDuration)
-    ) {
-      deferredForInitialOSRM.push(firstEmployeeForThisRoute);
-      continue;
-    }
-
-    let preliminaryEmployeesForCurrentRoute = [firstEmployeeForThisRoute];
-    if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
-      routeIsCurrentlySpecialNeedsHeuristic = true;
-      currentHeuristicRouteMaxOccupancy = 2;
-    }
-
-    let tempRemainingForThisHeuristicAttempt = globalRemainingEmployees.filter(
-      (e) => e.empCode !== firstEmployeeForThisRoute.empCode
-    );
-    const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 2.0;
-
-    while (
-      preliminaryEmployeesForCurrentRoute.length <
-        currentHeuristicRouteMaxOccupancy &&
-      tempRemainingForThisHeuristicAttempt.length > 0
-    ) {
-      const currentLastEmpInPrelim =
-        preliminaryEmployeesForCurrentRoute[
-          preliminaryEmployeesForCurrentRoute.length - 1
-        ];
-      let bestCandidate = null;
-      let bestScore = -Infinity;
-      let bestCandidateIndex = -1;
-
-      tempRemainingForThisHeuristicAttempt.forEach((candidateEmp, idx) => {
-        const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
-        if (routeIsCurrentlySpecialNeedsHeuristic && !candidateIsSpecial)
-          return;
-        if (
-          !routeIsCurrentlySpecialNeedsHeuristic &&
-          candidateIsSpecial &&
-          preliminaryEmployeesForCurrentRoute.length > 0 &&
-          !isSpecialNeedsUser(preliminaryEmployeesForCurrentRoute[0])
-        )
-          return;
-
-        const distToLast = haversineDistance(
-          [
-            currentLastEmpInPrelim.location.lat,
-            currentLastEmpInPrelim.location.lng,
-          ],
-          [candidateEmp.location.lat, candidateEmp.location.lng]
-        );
-        if (distToLast > MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC) return;
-        const score = 1 / (1 + distToLast);
-        if (score > bestScore) {
-          bestScore = score;
-          bestCandidate = candidateEmp;
-          bestCandidateIndex = idx;
-        }
-      });
-
-      if (!bestCandidate) break;
-      const nextEmployeeToPick = bestCandidate;
-
-      const tentativePrelimEmployees = [
-        ...preliminaryEmployeesForCurrentRoute,
-        nextEmployeeToPick,
-      ];
-      const tentativeCoords = tentativePrelimEmployees.map((emp) => [
-        emp.location.lat,
-        emp.location.lng,
-      ]);
-      const allTentativeCoords = isDropoff
-        ? [facilityCoordinates, ...tentativeCoords]
-        : [...tentativeCoords, facilityCoordinates];
-      const tentativeDetails = await calculateRouteDetails(
-        allTentativeCoords,
-        tentativePrelimEmployees,
-        pickupTimePerEmployee,
-        tripType,
-        city,
-        shiftTime
-      );
-
-      if (tentativeDetails.error) {
-        tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
-        continue;
-      }
-      const tempRouteForValidation = {
-        employees: tentativePrelimEmployees,
-        routeDetails: tentativeDetails,
-        uniqueKey: `temp_val_add_${batchRouteCounter}`,
-      };
-      if (
-        !(await checkRouteDeviation(
-          tempRouteForValidation,
-          facility,
-          profile
-        )) ||
-        (maxDuration && tentativeDetails.totalDuration > maxDuration)
-      ) {
-        tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
-        continue;
-      }
-
-      preliminaryEmployeesForCurrentRoute.push(nextEmployeeToPick);
-      tempRemainingForThisHeuristicAttempt.splice(bestCandidateIndex, 1);
-
-      if (
-        isSpecialNeedsUser(nextEmployeeToPick) &&
-        !routeIsCurrentlySpecialNeedsHeuristic
-      ) {
+    // **NEW: Progressive Group Size Reduction Logic with ALL Constraints**
+    let successfulRouteBuilt = false;
+    let finalEmployeesForRoute = [];
+    let finalRouteDetails = null;
+    
+    // Try different group sizes starting from maximum, reducing only when constraints are violated
+    for (let attemptedGroupSize = maxPossibleGroupSize; attemptedGroupSize >= 1 && !successfulRouteBuilt; attemptedGroupSize--) {
+      let currentHeuristicRouteMaxOccupancy = attemptedGroupSize;
+      
+      // **CONSTRAINT 1: Special Needs (Medical/PWD) - Max 2 employees**
+      if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
         routeIsCurrentlySpecialNeedsHeuristic = true;
-        currentHeuristicRouteMaxOccupancy = 2;
+        currentHeuristicRouteMaxOccupancy = Math.min(currentHeuristicRouteMaxOccupancy, 2);
+        console.log(`[Special Needs Constraint] Route ${batchRouteCounter}: Limited to 2 employees due to special needs user`);
+      }
+      
+      let preliminaryEmployeesForThisAttempt = [firstEmployeeForThisRoute];
+      let tempRemainingForThisAttempt = globalRemainingEmployees.filter(
+        (e) => e.empCode !== firstEmployeeForThisRoute.empCode
+      );
+      
+      // Build group up to attempted size with all constraints
+      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 1.5;
+      
+      while (
+        preliminaryEmployeesForThisAttempt.length < currentHeuristicRouteMaxOccupancy &&
+        tempRemainingForThisAttempt.length > 0
+      ) {
+        const currentLastEmpInPrelim =
+          preliminaryEmployeesForThisAttempt[preliminaryEmployeesForThisAttempt.length - 1];
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+        let bestCandidateIndex = -1;
+
+        tempRemainingForThisAttempt.forEach((candidateEmp, idx) => {
+          const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
+          
+          // **CONSTRAINT: Special needs mixing rules**
+          if (routeIsCurrentlySpecialNeedsHeuristic && !candidateIsSpecial) return;
+          if (
+            !routeIsCurrentlySpecialNeedsHeuristic &&
+            candidateIsSpecial &&
+            preliminaryEmployeesForThisAttempt.length > 0 &&
+            !isSpecialNeedsUser(preliminaryEmployeesForThisAttempt[0])
+          ) return;
+
+          const distToLast = haversineDistance(
+            [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
+            [candidateEmp.location.lat, candidateEmp.location.lng]
+          );
+          if (distToLast > MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC) return;
+          
+          const score = 1 / (1 + distToLast);
+          if (score > bestScore) {
+            bestScore = score;
+            bestCandidate = candidateEmp;
+            bestCandidateIndex = idx;
+          }
+        });
+
+        if (!bestCandidate) break;
+
+        const tentativePrelimEmployees = [...preliminaryEmployeesForThisAttempt, bestCandidate];
+        
+        // **CONSTRAINT 2: NMT Limit Check DURING group building**
+        const hasNMTInGroup = tentativePrelimEmployees.some(emp => emp.isNMT === true);
+        if (hasNMTInGroup) {
+          const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
+          if (tentativePrelimEmployees.length > nmtLimit) {
+            console.log(`[NMT Group Building] Route ${batchRouteCounter}: Stopping at ${preliminaryEmployeesForThisAttempt.length} employees due to NMT limit (${nmtLimit})`);
+            break; // Stop adding more employees to this group
+          }
+        }
+        
+        const tentativeCoords = tentativePrelimEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
+        const allTentativeCoords = isDropoff
+          ? [facilityCoordinates, ...tentativeCoords]
+          : [...tentativeCoords, facilityCoordinates];
+        
+        const tentativeDetails = await calculateRouteDetails(
+          allTentativeCoords,
+          tentativePrelimEmployees,
+          pickupTimePerEmployee,
+          tripType,
+          city,
+          shiftTime
+        );
+
+        if (tentativeDetails.error) {
+          tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
+          continue;
+        }
+        
+        // **CONSTRAINT 3: Duration Check**
+        if (maxDuration) {
+    const serviceTime = tentativePrelimEmployees.length * pickupTimePerEmployee;
+    const estimatedTotalDuration = tentativeDetails.totalDuration + serviceTime;
+
+    if (estimatedTotalDuration > maxDuration) {
+        console.log(`[Duration Exceeded] Route ${batchRouteCounter}: Group size ${tentativePrelimEmployees.length} exceeds maxDuration (Travel: ${Math.round(tentativeDetails.totalDuration)}s, Service: ${serviceTime}s, Total: ${Math.round(estimatedTotalDuration)}s > ${maxDuration}s). Stopping group building.`);
+        break; // Break inner loop to try smaller group size
+    }
+}
+        
+        // **CONSTRAINT 4: Route Deviation Check**
+        const tempRouteForValidation = {
+          employees: tentativePrelimEmployees,
+          routeDetails: tentativeDetails,
+          uniqueKey: `temp_val_progressive_${batchRouteCounter}_${attemptedGroupSize}`,
+          tripType: tripType,
+        };
+        
+        if (!(await checkRouteDeviation(tempRouteForValidation, facility, profile))) {
+          tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
+          continue;
+        }
+
+        preliminaryEmployeesForThisAttempt.push(bestCandidate);
+        tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
+
+        // Update special needs status if new employee is special
+        if (isSpecialNeedsUser(bestCandidate) && !routeIsCurrentlySpecialNeedsHeuristic) {
+          routeIsCurrentlySpecialNeedsHeuristic = true;
+          currentHeuristicRouteMaxOccupancy = Math.min(currentHeuristicRouteMaxOccupancy, 2);
+          console.log(`[Special Needs Update] Route ${batchRouteCounter}: Reduced max occupancy to 2 due to special needs employee added`);
+        }
+      }
+      
+      // **Final validation for this group size attempt**
+      if (preliminaryEmployeesForThisAttempt.length > 0) {
+        const finalCoords = preliminaryEmployeesForThisAttempt.map((emp) => [emp.location.lat, emp.location.lng]);
+        const allFinalCoords = isDropoff
+          ? [facilityCoordinates, ...finalCoords]
+          : [...finalCoords, facilityCoordinates];
+        
+        const routeDetails = await calculateRouteDetails(
+          allFinalCoords,
+          preliminaryEmployeesForThisAttempt,
+          pickupTimePerEmployee,
+          tripType,
+          city,
+          shiftTime
+        );
+        
+        if (!routeDetails.error) {
+          const tempRouteForFinalValidation = {
+            employees: preliminaryEmployeesForThisAttempt,
+            routeDetails: routeDetails,
+            uniqueKey: `temp_final_${batchRouteCounter}_${attemptedGroupSize}`,
+            tripType: tripType,
+          };
+          
+          const passesDeviation = await checkRouteDeviation(tempRouteForFinalValidation, facility, profile);
+          const passesMaxDuration = !maxDuration || routeDetails.totalDuration <= maxDuration;
+          
+          if (passesDeviation && passesMaxDuration) {
+            successfulRouteBuilt = true;
+            finalEmployeesForRoute = preliminaryEmployeesForThisAttempt;
+            finalRouteDetails = routeDetails;
+            
+            // **Log constraint-based decisions**
+            const hasNMT = finalEmployeesForRoute.some(emp => emp.isNMT === true);
+            const hasSpecialNeeds = finalEmployeesForRoute.some(emp => isSpecialNeedsUser(emp));
+            const constraintInfo = [];
+            if (hasNMT) constraintInfo.push("NMT");
+            if (hasSpecialNeeds) constraintInfo.push("Special");
+            if (constraintInfo.length > 0) {
+              console.log(`[Route Success with Constraints] Route ${batchRouteCounter}: ${finalEmployeesForRoute.length} employees (${constraintInfo.join(", ")} constraints), duration: ${Math.round(routeDetails.totalDuration)}s`);
+            } else {
+              console.log(`[Route Success] Route ${batchRouteCounter}: ${finalEmployeesForRoute.length} employees, duration: ${Math.round(routeDetails.totalDuration)}s`);
+            }
+            
+            // Remove used employees from global pool
+            const usedEmpCodes = new Set(finalEmployeesForRoute.map(e => e.empCode));
+            globalRemainingEmployees = globalRemainingEmployees.filter(emp => !usedEmpCodes.has(emp.empCode));
+            break;
+          } else {
+            if (!passesMaxDuration) {
+              console.log(`[Duration Retry] Route ${batchRouteCounter}: Group size ${preliminaryEmployeesForThisAttempt.length} failed duration check (${Math.round(routeDetails.totalDuration)}s > ${maxDuration}s). Trying smaller group.`);
+            }
+            if (!passesDeviation) {
+              console.log(`[Deviation Retry] Route ${batchRouteCounter}: Group size ${preliminaryEmployeesForThisAttempt.length} failed deviation check. Trying smaller group.`);
+            }
+          }
+        }
       }
     }
 
+
+    
+    if (!successfulRouteBuilt) {
+      // If no successful route could be built, defer the first employee
+      deferredForInitialOSRM.push(firstEmployeeForThisRoute);
+      continue;
+    }
+
+        // --- NEW LOGIC: PRE-TRIM FOR GUARD IF NEEDED ---
+    if (activateGuardSystem && finalEmployeesForRoute.length > 0) {
+      const isDropoff = tripType.toLowerCase() === "dropoff";
+      const critIdx = isDropoff ? finalEmployeesForRoute.length - 1 : 0;
+      const guardWillBeNeeded = finalEmployeesForRoute[critIdx]?.gender === "F";
+
+      // If a guard is needed AND the group is already at the max attempted size,
+      // it will overflow. Trim one employee now.
+      if (guardWillBeNeeded && finalEmployeesForRoute.length === maxPossibleGroupSize) {
+        console.log(`[Guard Pre-Trim] Route ${batchRouteCounter}: Group is at full capacity (${finalEmployeesForRoute.length}) and needs a guard. Trimming one employee.`);
+        
+        // Trim the least ideal employee (last for pickup, first for dropoff)
+        const trimmedEmp = isDropoff ? finalEmployeesForRoute.shift() : finalEmployeesForRoute.pop();
+        
+        if (trimmedEmp) {
+          // Add the trimmed employee back to the main pool to be routed later
+          globalRemainingEmployees.unshift(trimmedEmp);
+          
+          // We need to recalculate route details for the smaller group
+          const finalCoords = finalEmployeesForRoute.map((emp) => [emp.location.lat, emp.location.lng]);
+          const allFinalCoords = isDropoff
+            ? [facilityCoordinates, ...finalCoords]
+            : [...finalCoords, facilityCoordinates];
+            
+          finalRouteDetails = await calculateRouteDetails(
+              allFinalCoords,
+              finalEmployeesForRoute,
+              pickupTimePerEmployee,
+              tripType,
+              city,
+              shiftTime
+          );
+        }
+      }
+    }
+    
+    // **Vehicle assignment for successful route**
     const routeShellForVehicleAssignment = {
       zone: firstEmployeeForThisRoute.zone,
       tripType: tripType,
-      uniqueKey: `${
-        firstEmployeeForThisRoute.zone
-      }_batch_${batchRouteCounter}_${uuidv4()}`,
+      uniqueKey: `${firstEmployeeForThisRoute.zone}_batch_${batchRouteCounter}_${uuidv4()}`,
     };
 
     const { employeesTrimmedOff } = await assignVehicleAndFinalizeGroup(
       routeShellForVehicleAssignment,
-      preliminaryEmployeesForCurrentRoute,
+      finalEmployeesForRoute,
       profile,
       availableFleetCounts,
       shiftTime,
       tripType,
-      activateGuardSystem
+      activateGuardSystem,
+      fleetAnalysis
     );
 
     if (employeesTrimmedOff.length > 0) {
       employeesAddedToMasterUnroutedThisBatch.push(...employeesTrimmedOff);
+      // Re-add trimmed employees to global pool for next iteration
+      globalRemainingEmployees.unshift(...employeesTrimmedOff);
     }
 
-    if (
-      routeShellForVehicleAssignment.error ||
-      routeShellForVehicleAssignment.employees.length === 0
-    ) {
-      // Handled
+    if (routeShellForVehicleAssignment.error || routeShellForVehicleAssignment.employees.length === 0) {
+      // Route creation failed, employees already added to unrouted
     } else {
-      const finalRouteCoords = routeShellForVehicleAssignment.employees.map(
-        (emp) => [emp.location.lat, emp.location.lng]
-      );
-      const finalAllCoords = isDropoff
-        ? [facilityCoordinates, ...finalRouteCoords]
-        : [...finalRouteCoords, facilityCoordinates];
-      const finalRouteDetailsOSRM = await calculateRouteDetails(
-        finalAllCoords,
-        routeShellForVehicleAssignment.employees,
-        pickupTimePerEmployee,
-        tripType,
-        city,
-        shiftTime
-      );
-
-      if (finalRouteDetailsOSRM.error) {
-        employeesAddedToMasterUnroutedThisBatch.push(
-          ...routeShellForVehicleAssignment.employees
-        );
-      } else {
-        updateRouteWithDetails(
-          routeShellForVehicleAssignment,
-          finalRouteDetailsOSRM
-        );
-        if (
-          !(await checkRouteDeviation(
-            routeShellForVehicleAssignment,
-            facility,
-            profile
-          )) ||
-          (maxDuration &&
-            routeShellForVehicleAssignment.routeDetails.totalDuration >
-              maxDuration)
-        ) {
-          employeesAddedToMasterUnroutedThisBatch.push(
-            ...routeShellForVehicleAssignment.employees
-          );
-        } else {
-          routes.push(routeShellForVehicleAssignment);
-        }
-      }
+      updateRouteWithDetails(routeShellForVehicleAssignment, finalRouteDetails);
+      routes.push(routeShellForVehicleAssignment);
     }
-    const processedEmpCodesThisIteration = new Set([
-      ...(routeShellForVehicleAssignment.employees?.map((e) => e.empCode) ||
-        []),
-      ...employeesTrimmedOff.map((e) => e.empCode),
-    ]);
-    globalRemainingEmployees = globalRemainingEmployees.filter(
-      (emp) => !processedEmpCodesThisIteration.has(emp.empCode)
-    );
   }
 
   if (deferredForInitialOSRM.length > 0) {
     employeesAddedToMasterUnroutedThisBatch.push(...deferredForInitialOSRM);
   }
+  
   return {
     routes,
     employeesAddedToMasterUnrouted: employeesAddedToMasterUnroutedThisBatch,
@@ -1655,7 +2073,7 @@ async function checkRouteDeviationForUnrouted(
 ) {
 
    if (BYPASS_ROUTE_DEVIATION_CHECKS) {
-    console.log(`[RouteDeviation] BYPASSING deviation check for route ${route.uniqueKey || route.routeNumber} (global override).`);
+    // console.log(`[RouteDeviation] BYPASSING deviation check for route ${route.uniqueKey || route.routeNumber} (global override).`);
     return true;
   }
 
@@ -1844,7 +2262,8 @@ async function processUnroutedEmployeesWithSafeguards(
   city,
   totalRouteCount,
   routeDataContainer,
-  reportingTime = 0  // <-- ADD THIS PARAMETER
+  reportingTime = 0,  // <-- ADD THIS PARAMETER
+  fleetAnalysis
 ) {
   if (finalUnroutedForProcessing.length === 0) {
     return {
@@ -1975,7 +2394,8 @@ async function processUnroutedEmployeesWithSafeguards(
       availableFleetCounts,
       shiftTime,
       tripType,
-      activateGuardSystemFromInput
+      activateGuardSystemFromInput,
+      fleetAnalysis
     );
 
     if (!singletonRoute.error && singletonRoute.employees.length > 0) {
@@ -2077,13 +2497,13 @@ async function processUnroutedEmployeesWithSafeguards(
             );
 
             if (distance > UNROUTED_MAX_GROUP_DISTANCE) {
-              console.log(
-                `[Unrouted Distance Check] Employee ${
-                  candidateEmp.empCode
-                } is ${distance.toFixed(2)}km from ${
-                  existingEmp.empCode
-                }. Too far for grouping.`
-              );
+              // console.log(
+              //   `[Unrouted Distance Check] Employee ${
+              //     candidateEmp.empCode
+              //   } is ${distance.toFixed(2)}km from ${
+              //     existingEmp.empCode
+              //   }. Too far for grouping.`
+              // );
               canAddToGroup = false;
               break;
             }
@@ -2201,7 +2621,8 @@ async function processUnroutedEmployeesWithSafeguards(
           availableFleetCounts,
           shiftTime,
           tripType,
-          activateGuardSystemFromInput
+          activateGuardSystemFromInput,
+          fleetAnalysis
         );
 
       if (trimmedForCapacity.length > 0) {
@@ -2536,6 +2957,14 @@ async function generateRoutes(data) {
         "[Fleet] profile.fleet is missing or invalid. Fleet features will be limited."
       );
     }
+
+    // **NEW: Analyze fleet configuration**
+    const fleetAnalysis = analyzeFleetConfiguration(profile.fleet);
+    console.log(`[Fleet Analysis] Client fleet configuration analyzed:`, fleetAnalysis.capacityRanges);
+    
+    // **NEW: Initial fleet status**
+    logFleetStatus(availableFleetCounts, profile, "Initial");
+    
     let masterUnroutedPool = [];
 
     const useZones = profile.zoneBasedRouting !== false;
@@ -2606,26 +3035,41 @@ async function generateRoutes(data) {
     const isDropoff = tripType.toLowerCase() === "dropoff";
     const facilityCoordinates = [facility.geoY, facility.geoX];
 
-    const processZoneOrGroup = async (
+    // **UPDATED: Enhanced zone processing with fleet-aware capacity**
+const processZoneOrGroup = async (
+  empsInScope,
+  zoneIdentifier,
+  targetHeuristicCapacity
+) => {
+  if (empsInScope.length === 0) return;
+  
+  // **NEW: Always target maximum possible capacity**
+  const maxPossibleCapacity = getMaximumViableGroupSize(
+    availableFleetCounts, 
+    profile, 
+    empsInScope,
+    activateGuardSystemFromInput
+  );
+  
+  const finalTargetCapacity = Math.max(targetHeuristicCapacity, maxPossibleCapacity);
+  
+  console.log(`[Zone Processing MAXIMUM] ${zoneIdentifier}: Targeting MAXIMUM capacity: ${finalTargetCapacity}`);
+  
+  const { routes: batchRoutes, employeesAddedToMasterUnrouted } =
+    await processEmployeeBatch(
       empsInScope,
-      zoneIdentifier,
-      targetHeuristicCapacity
-    ) => {
-      if (empsInScope.length === 0) return;
-      const { routes: batchRoutes, employeesAddedToMasterUnrouted } =
-        await processEmployeeBatch(
-          empsInScope,
-          targetHeuristicCapacity,
-          facility,
-          tripType,
-          profileMaxDuration,
-          pickupTimePerEmployee,
-          activateGuardSystemFromInput, // Pass the master guard activation flag
-          profile,
-          availableFleetCounts,
-          city,
-          shiftTime
-        );
+      finalTargetCapacity,
+      facility,
+      tripType,
+      profileMaxDuration,
+      pickupTimePerEmployee,
+      activateGuardSystemFromInput,
+      profile,
+      availableFleetCounts,
+      city,
+      shiftTime,
+      fleetAnalysis
+    );
       if (employeesAddedToMasterUnrouted?.length > 0) {
         employeesAddedToMasterUnrouted.forEach((emp) =>
           masterUnroutedPool.push(emp)
@@ -2652,14 +3096,30 @@ async function generateRoutes(data) {
         group.forEach((z) => processedZones.add(z));
       }
     }
-    for (const [zoneName, zoneEmpList] of Object.entries(employeesByZone)) {
-      if (processedZones.has(zoneName)) continue;
-      const currentZoneEmployees = (zoneEmpList || []).filter(
-        (e) => e.location
-      );
-      const maxCap = getZoneCapacity(zoneName, profile);
-      await processZoneOrGroup(currentZoneEmployees, zoneName, maxCap);
-    }
+    // In the main generateRoutes function, update the zone capacity logic:
+for (const [zoneName, zoneEmpList] of Object.entries(employeesByZone)) {
+  if (processedZones.has(zoneName)) continue;
+  const currentZoneEmployees = (zoneEmpList || []).filter(e => e.location);
+  
+  // **NEW: More aggressive initial capacity**
+  let maxCap = getZoneCapacity(zoneName, profile);
+  
+  // **Scale up based on available fleet**
+  const largestAvailableVehicle = profile.fleet
+    .filter(v => (availableFleetCounts[v.type] || 0) > 0)
+    .sort((a, b) => b.capacity - a.capacity)[0];
+  
+  if (largestAvailableVehicle) {
+    maxCap = Math.max(maxCap, Math.floor(largestAvailableVehicle.capacity * 0.8));
+  }
+  
+  console.log(`[Zone Initial Capacity] ${zoneName}: Base: ${getZoneCapacity(zoneName, profile)}, Fleet-adjusted: ${maxCap}`);
+  
+  await processZoneOrGroup(currentZoneEmployees, zoneName, maxCap);
+}
+
+    // **NEW: Fleet status after zone processing**
+    logFleetStatus(availableFleetCounts, profile, "After Zone Processing");
 
     const allOptimizedOrToolsRoutes = [];
     for (const initialRoute of allInitiallyFormedRoutes) {
@@ -2710,12 +3170,13 @@ async function generateRoutes(data) {
       }
     }
 
+    // **NEW: Fleet status after OR-Tools**
+    logFleetStatus(availableFleetCounts, profile, "After OR-Tools");
+
     const finalProcessedRoutes = [];
     const collectedUnroutedForReinsertionMap = new Map();
 
-    // Inside generateRoutes function
-    // ... (other parts of the function) ...
-
+    // Main route processing loop with guard handling
     for (const route of allOptimizedOrToolsRoutes) {
       totalRouteCount++;
       route.routeNumber = totalRouteCount;
@@ -2792,7 +3253,7 @@ async function generateRoutes(data) {
       let routeModifiedByGuardSwap = false;
       route.swappedPairInfo = null; // Initialize on the route object
 
-      // --- Experiential Swap Attempt ---
+      // --- Guard Swap Attempt ---
       if (activateGuardSystemFromInput && route.employees.length > 0) {
         const checkIndex = isDropoff ? route.employees.length - 1 : 0;
         // Ensure criticalEmployee can be accessed safely
@@ -2868,10 +3329,6 @@ async function generateRoutes(data) {
       }
 
       // --- Re-Optimization Call (Conditional) ---
-      // Only perform OR-Tools re-optimization if it was a PICKUP trip AND a swap occurred.
-      // For DROP-OFF, if a swap occurred, `handleGuardRequirements` already provided the
-      // simply swapped order and its OSRM details. We don't re-optimize it further.
-      // --- Re-Optimization Call (Conditional) ---
       // Perform OR-Tools re-optimization if a swap occurred, for ANY trip type.
       if (routeModifiedByGuardSwap) {
         console.log(
@@ -2923,8 +3380,8 @@ async function generateRoutes(data) {
       // --- Post-processing after potential swap and re-optimization ---
       // Guard capacity check (if guardNeeded is true after all modifications)
       if (route.guardNeeded) {
-        // ... (your existing guard capacity trimming logic) ...
-        // Remember to recalculate OSRM details if employees are trimmed here.
+        // Guard capacity trimming logic would go here if needed
+        // For now, this is handled in assignVehicleAndFinalizeGroup
       }
 
       if (route.employees.length === 0) {
@@ -2963,8 +3420,6 @@ async function generateRoutes(data) {
       finalProcessedRoutes.push(route);
     } // End main processing loop for allOptimizedOrToolsRoutes
 
-    // ... (rest of generateRoutes) // End main processing loop for allOptimizedOrToolsRoutes
-
     routeDataContainer.routeData = [...finalProcessedRoutes];
     masterUnroutedPool.forEach((e) =>
       collectedUnroutedForReinsertionMap.set(e.empCode, e)
@@ -2982,8 +3437,10 @@ async function generateRoutes(data) {
         emp && emp.empCode && !successfullyRoutedEmpCodes.has(emp.empCode)
     );
 
-    // --- UNROUTED HANDLING WITH ITERATIVE TRIMMING (STRATEGY 2) ---
-    // Replace the existing unrouted handling section with:
+    // **NEW: Fleet status before unrouted processing**
+    logFleetStatus(availableFleetCounts, profile, "Before Unrouted Processing");
+
+    // --- UNROUTED HANDLING WITH ITERATIVE TRIMMING ---
     if (finalUnroutedForProcessing.length > 0) {
       const unroutedResult = await processUnroutedEmployeesWithSafeguards(
         finalUnroutedForProcessing,
@@ -2998,7 +3455,8 @@ async function generateRoutes(data) {
         city,
         totalRouteCount,
         routeDataContainer,
-        reportingTime
+        reportingTime,
+        fleetAnalysis
       );
 
       // Add successful routes to the container
@@ -3047,6 +3505,53 @@ async function generateRoutes(data) {
         isMedical: emp.isMedical || false,
         isPWD: emp.isPWD || false,
       }));
+
+    // **NEW: Final fleet utilization summary**
+    console.log('\n=== FINAL FLEET UTILIZATION SUMMARY ===');
+    let totalVehiclesUsed = 0;
+    let totalVehiclesAvailable = 0;
+    
+    if (profile.fleet && Array.isArray(profile.fleet)) {
+      profile.fleet.forEach(fleetType => {
+        const used = fleetType.count - (availableFleetCounts[fleetType.type] || 0);
+        const utilization = (used / fleetType.count * 100).toFixed(1);
+        totalVehiclesUsed += used;
+        totalVehiclesAvailable += fleetType.count;
+        
+        let status = '';
+        if (fleetType.type === 'm' && used < fleetType.count * 0.3) {
+          status = ' ⚠️ UNDERUTILIZED';
+        } else if (fleetType.type === 's' && used > fleetType.count * 0.8) {
+          status = ' ⚠️ OVERUTILIZED';
+        } else if (fleetType.type === 'm' && used > fleetType.count * 0.6) {
+          status = ' ✅ WELL UTILIZED';
+        }
+        
+        console.log(`${fleetType.type.toUpperCase()} type (cap:${fleetType.capacity}): ${used}/${fleetType.count} used (${utilization}% utilization)${status}`);
+      });
+      
+      const overallUtilization = (totalVehiclesUsed / totalVehiclesAvailable * 100).toFixed(1);
+      console.log(`OVERALL FLEET: ${totalVehiclesUsed}/${totalVehiclesAvailable} vehicles used (${overallUtilization}% utilization)`);
+    }
+    console.log('==========================================\n');
+
+    // **NEW: Add fleet utilization to response**
+    response.fleetUtilization = {
+      totalVehiclesUsed,
+      totalVehiclesAvailable,
+      overallUtilization: parseFloat((totalVehiclesUsed / totalVehiclesAvailable * 100).toFixed(1)),
+      byType: profile.fleet ? profile.fleet.map(fleetType => {
+        const used = fleetType.count - (availableFleetCounts[fleetType.type] || 0);
+        return {
+          type: fleetType.type,
+          capacity: fleetType.capacity,
+          total: fleetType.count,
+          used: used,
+          remaining: availableFleetCounts[fleetType.type] || 0,
+          utilization: parseFloat((used / fleetType.count * 100).toFixed(1))
+        };
+      }) : []
+    };
 
     return response;
   } catch (error) {
@@ -3183,13 +3688,13 @@ function calculatePickupTimes(
       );
 
       if (newDurationInSeconds >= 0) {
-        console.log(
-          `[Duration Sync] Route ${
-            route.uniqueKey
-          }: Original OSRM duration (travel only): ${originalOsrmDuration.toFixed(
-            0
-          )}s. New ETA-based duration (travel + service): ${newDurationInSeconds}s.`
-        );
+        // console.log(
+        //   `[Duration Sync] Route ${
+        //     route.uniqueKey
+        //   }: Original OSRM duration (travel only): ${originalOsrmDuration.toFixed(
+        //     0
+        //   )}s. New ETA-based duration (travel + service): ${newDurationInSeconds}s.`
+        // );
         // Overwrite the old duration with the new, more accurate one.
         route.routeDetails.totalDuration = newDurationInSeconds;
       }

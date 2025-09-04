@@ -370,4 +370,3 @@ if __name__ == "__main__":
         print(json.dumps(error_response), file=sys.stderr)
         print(json.dumps(error_response))
         sys.exit(1)
-

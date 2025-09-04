@@ -1,7 +1,7 @@
-# deployment/Dockerfile
-FROM node:18-bullseye
+# ---- Stage 1: Builder ----
+FROM node:18-bullseye AS builder
 
-# Install Python and system dependencies for OR-Tools
+# Install Python + build dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -13,44 +13,56 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a symbolic link for python command
+# Create symlink for python
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-# Install Python dependencies
+# Install Python dependencies (with wheels built here)
 RUN pip3 install --no-cache-dir \
     ortools==9.7.2996 \
     numpy \
     setuptools \
     wheel
 
-# Set Python executable environment variable
-ENV PYTHON_EXECUTABLE=python3
-ENV PYTHONPATH=/usr/local/lib/python3.9/site-packages
-
 # Create app directory
 WORKDIR /usr/src/app
 
-# Copy package files first (for better caching)
+# Copy only package.json for better caching
 COPY package*.json ./
 
-# Install Node.js dependencies
+# Install Node.js dependencies (production only)
 RUN npm ci --only=production
 
-# Copy all application files
+# Copy the rest of the app
 COPY . .
 
-# Ensure Python script is executable (correct path)
+# Make script executable
 RUN chmod +x services/or_tools_vrp_solver.py
 
-# Create logs directory
+
+# ---- Stage 2: Runtime ----
+FROM node:18-slim
+
+# Install Python runtime (but no compilers)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Copy node_modules from builder
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+
+# Copy built app
+COPY --from=builder /usr/src/app ./
+
+# Ensure logs directory exists
 RUN mkdir -p logs
 
-# Health check
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5001/api/health || exit 1
 
-# Expose port
 EXPOSE 5001
-
-# Start the application
 CMD ["node", "server.js"]

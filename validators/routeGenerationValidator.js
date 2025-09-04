@@ -135,4 +135,21 @@ const routeRequestSchema = z.object({
   saveToDatabase: z.boolean().optional()
 });
 
-module.exports = { routeRequestSchema };
+const recalculateRouteRequestSchema = z.object({
+  routes: z.array(z.object({
+    routeId: z.union([z.string(), z.number()]),
+    employees: employeesArraySchema,
+  })),
+  facility: facilitySchema,
+  shiftTime: z.string().regex(/^\d{4}$/, { message: "shiftTime must be in HHMM format" }),
+  pickupTimePerEmployee: z.number().positive(),
+  reportingTime: z.number().min(0),
+  city: z.string(),
+  tripType: z.string({ required_error: "tripType is required" })
+    .refine(
+      v => ['P', 'D', 'PICKUP', 'DROPOFF'].includes(v.toUpperCase()),
+      { message: 'tripType must be "P", "D", "PICKUP", or "DROPOFF"' }
+    ),
+});
+
+module.exports = { routeRequestSchema , recalculateRouteRequestSchema};

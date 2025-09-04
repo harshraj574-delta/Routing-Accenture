@@ -35,6 +35,8 @@ console.log('/api/employees registered');
 console.log('/api/profiles registered');
 console.log('/api/routes registered');
 console.log('/api/facilities registered');
+console.log('/api/route-generation/* registered (POST endpoints)');
+
 
 // Error handling
 app.use((err, req, res, next) => {

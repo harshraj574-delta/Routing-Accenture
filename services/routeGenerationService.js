@@ -1321,6 +1321,10 @@ function logFleetStatus(availableFleetCounts, profile, context = "") {
   console.log('');
 }
 
+// In routeGenerationService.js
+
+// In routeGenerationService.js
+
 async function processEmployeeBatch(
   employees,
   targetGroupSizeForHeuristic,
@@ -1370,7 +1374,6 @@ async function processEmployeeBatch(
   mainLoop: while (globalRemainingEmployees.length > 0) {
     batchRouteCounter++;
     
-    // **NEW: Get maximum possible group size based on current fleet availability**
     const maxPossibleGroupSize = getMaximumViableGroupSize(
       availableFleetCounts, 
       profile, 
@@ -1383,16 +1386,13 @@ async function processEmployeeBatch(
     const firstEmployeeForThisRoute = globalRemainingEmployees.shift();
     if (!firstEmployeeForThisRoute) break;
 
-    // **NEW: Progressive Group Size Reduction Logic with ALL Constraints**
     let successfulRouteBuilt = false;
     let finalEmployeesForRoute = [];
     let finalRouteDetails = null;
     
-    // Try different group sizes starting from maximum, reducing only when constraints are violated
     for (let attemptedGroupSize = maxPossibleGroupSize; attemptedGroupSize >= 1 && !successfulRouteBuilt; attemptedGroupSize--) {
       let currentHeuristicRouteMaxOccupancy = attemptedGroupSize;
       
-      // **CONSTRAINT 1: Special Needs (Medical/PWD) - Max 2 employees**
       if (isSpecialNeedsUser(firstEmployeeForThisRoute)) {
         routeIsCurrentlySpecialNeedsHeuristic = true;
         currentHeuristicRouteMaxOccupancy = Math.min(currentHeuristicRouteMaxOccupancy, 2);
@@ -1404,8 +1404,7 @@ async function processEmployeeBatch(
         (e) => e.empCode !== firstEmployeeForThisRoute.empCode
       );
       
-      // Build group up to attempted size with all constraints
-      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 1.5;
+      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 2.5;
       
       while (
         preliminaryEmployeesForThisAttempt.length < currentHeuristicRouteMaxOccupancy &&
@@ -1420,7 +1419,6 @@ async function processEmployeeBatch(
         tempRemainingForThisAttempt.forEach((candidateEmp, idx) => {
           const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
           
-          // **CONSTRAINT: Special needs mixing rules**
           if (routeIsCurrentlySpecialNeedsHeuristic && !candidateIsSpecial) return;
           if (
             !routeIsCurrentlySpecialNeedsHeuristic &&
@@ -1434,8 +1432,40 @@ async function processEmployeeBatch(
             [candidateEmp.location.lat, candidateEmp.location.lng]
           );
           if (distToLast > MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC) return;
-          
-          const score = 1 / (1 + distToLast);
+
+          // =================== MODIFICATION START ===================
+          let directionalPenalty = 0;
+          // The penalty weight is increased significantly to prioritize direction.
+          // You can tune this value in your profile settings.
+          const directionPenaltyWeight = profile.heuristicDirectionPenaltyWeight || 5.0; 
+
+          if (directionPenaltyWeight > 0) {
+              const distFromLastToFacility = haversineDistance(
+                  [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
+                  facilityCoordinates
+              );
+              const distFromCandidateToFacility = haversineDistance(
+                  [candidateEmp.location.lat, candidateEmp.location.lng],
+                  facilityCoordinates
+              );
+
+              if (tripType.toLowerCase() === 'pickup') {
+                  const distanceIncrease = distFromCandidateToFacility - distFromLastToFacility;
+                  if (distanceIncrease > 0) {
+                      directionalPenalty = directionPenaltyWeight * distanceIncrease;
+                  }
+              } else { // 'dropoff'
+                  const distanceDecrease = distFromLastToFacility - distFromCandidateToFacility;
+                  if (distanceDecrease > 0) {
+                      directionalPenalty = directionPenaltyWeight * distanceDecrease;
+                  }
+              }
+          }
+
+          const combinedCost = distToLast + directionalPenalty;
+          const score = 1 / (1 + combinedCost);
+          // =================== MODIFICATION END =====================
+
           if (score > bestScore) {
             bestScore = score;
             bestCandidate = candidateEmp;
@@ -1447,13 +1477,12 @@ async function processEmployeeBatch(
 
         const tentativePrelimEmployees = [...preliminaryEmployeesForThisAttempt, bestCandidate];
         
-        // **CONSTRAINT 2: NMT Limit Check DURING group building**
         const hasNMTInGroup = tentativePrelimEmployees.some(emp => emp.isNMT === true);
         if (hasNMTInGroup) {
           const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
           if (tentativePrelimEmployees.length > nmtLimit) {
             console.log(`[NMT Group Building] Route ${batchRouteCounter}: Stopping at ${preliminaryEmployeesForThisAttempt.length} employees due to NMT limit (${nmtLimit})`);
-            break; // Stop adding more employees to this group
+            break; 
           }
         }
         
@@ -1476,18 +1505,16 @@ async function processEmployeeBatch(
           continue;
         }
         
-        // **CONSTRAINT 3: Duration Check**
         if (maxDuration) {
-    const serviceTime = tentativePrelimEmployees.length * pickupTimePerEmployee;
-    const estimatedTotalDuration = tentativeDetails.totalDuration + serviceTime;
-
-    if (estimatedTotalDuration > maxDuration) {
-        console.log(`[Duration Exceeded] Route ${batchRouteCounter}: Group size ${tentativePrelimEmployees.length} exceeds maxDuration (Travel: ${Math.round(tentativeDetails.totalDuration)}s, Service: ${serviceTime}s, Total: ${Math.round(estimatedTotalDuration)}s > ${maxDuration}s). Stopping group building.`);
-        break; // Break inner loop to try smaller group size
-    }
-}
+          const serviceTime = tentativePrelimEmployees.length * pickupTimePerEmployee;
+          const estimatedTotalDuration = tentativeDetails.totalDuration + serviceTime;
+      
+          if (estimatedTotalDuration > maxDuration) {
+              console.log(`[Duration Exceeded] Route ${batchRouteCounter}: Group size ${tentativePrelimEmployees.length} exceeds maxDuration (Travel: ${Math.round(tentativeDetails.totalDuration)}s, Service: ${serviceTime}s, Total: ${Math.round(estimatedTotalDuration)}s > ${maxDuration}s). Stopping group building.`);
+              break; 
+          }
+        }
         
-        // **CONSTRAINT 4: Route Deviation Check**
         const tempRouteForValidation = {
           employees: tentativePrelimEmployees,
           routeDetails: tentativeDetails,
@@ -1503,7 +1530,6 @@ async function processEmployeeBatch(
         preliminaryEmployeesForThisAttempt.push(bestCandidate);
         tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
 
-        // Update special needs status if new employee is special
         if (isSpecialNeedsUser(bestCandidate) && !routeIsCurrentlySpecialNeedsHeuristic) {
           routeIsCurrentlySpecialNeedsHeuristic = true;
           currentHeuristicRouteMaxOccupancy = Math.min(currentHeuristicRouteMaxOccupancy, 2);
@@ -1511,7 +1537,6 @@ async function processEmployeeBatch(
         }
       }
       
-      // **Final validation for this group size attempt**
       if (preliminaryEmployeesForThisAttempt.length > 0) {
         const finalCoords = preliminaryEmployeesForThisAttempt.map((emp) => [emp.location.lat, emp.location.lng]);
         const allFinalCoords = isDropoff
@@ -1543,7 +1568,6 @@ async function processEmployeeBatch(
             finalEmployeesForRoute = preliminaryEmployeesForThisAttempt;
             finalRouteDetails = routeDetails;
             
-            // **Log constraint-based decisions**
             const hasNMT = finalEmployeesForRoute.some(emp => emp.isNMT === true);
             const hasSpecialNeeds = finalEmployeesForRoute.some(emp => isSpecialNeedsUser(emp));
             const constraintInfo = [];
@@ -1555,7 +1579,6 @@ async function processEmployeeBatch(
               console.log(`[Route Success] Route ${batchRouteCounter}: ${finalEmployeesForRoute.length} employees, duration: ${Math.round(routeDetails.totalDuration)}s`);
             }
             
-            // Remove used employees from global pool
             const usedEmpCodes = new Set(finalEmployeesForRoute.map(e => e.empCode));
             globalRemainingEmployees = globalRemainingEmployees.filter(emp => !usedEmpCodes.has(emp.empCode));
             break;
@@ -1571,33 +1594,24 @@ async function processEmployeeBatch(
       }
     }
 
-
-    
     if (!successfulRouteBuilt) {
-      // If no successful route could be built, defer the first employee
       deferredForInitialOSRM.push(firstEmployeeForThisRoute);
       continue;
     }
-
-        // --- NEW LOGIC: PRE-TRIM FOR GUARD IF NEEDED ---
+    
     if (activateGuardSystem && finalEmployeesForRoute.length > 0) {
       const isDropoff = tripType.toLowerCase() === "dropoff";
       const critIdx = isDropoff ? finalEmployeesForRoute.length - 1 : 0;
       const guardWillBeNeeded = finalEmployeesForRoute[critIdx]?.gender === "F";
 
-      // If a guard is needed AND the group is already at the max attempted size,
-      // it will overflow. Trim one employee now.
       if (guardWillBeNeeded && finalEmployeesForRoute.length === maxPossibleGroupSize) {
         console.log(`[Guard Pre-Trim] Route ${batchRouteCounter}: Group is at full capacity (${finalEmployeesForRoute.length}) and needs a guard. Trimming one employee.`);
         
-        // Trim the least ideal employee (last for pickup, first for dropoff)
         const trimmedEmp = isDropoff ? finalEmployeesForRoute.shift() : finalEmployeesForRoute.pop();
         
         if (trimmedEmp) {
-          // Add the trimmed employee back to the main pool to be routed later
           globalRemainingEmployees.unshift(trimmedEmp);
           
-          // We need to recalculate route details for the smaller group
           const finalCoords = finalEmployeesForRoute.map((emp) => [emp.location.lat, emp.location.lng]);
           const allFinalCoords = isDropoff
             ? [facilityCoordinates, ...finalCoords]
@@ -1615,7 +1629,6 @@ async function processEmployeeBatch(
       }
     }
     
-    // **Vehicle assignment for successful route**
     const routeShellForVehicleAssignment = {
       zone: firstEmployeeForThisRoute.zone,
       tripType: tripType,
@@ -1635,12 +1648,11 @@ async function processEmployeeBatch(
 
     if (employeesTrimmedOff.length > 0) {
       employeesAddedToMasterUnroutedThisBatch.push(...employeesTrimmedOff);
-      // Re-add trimmed employees to global pool for next iteration
       globalRemainingEmployees.unshift(...employeesTrimmedOff);
     }
 
     if (routeShellForVehicleAssignment.error || routeShellForVehicleAssignment.employees.length === 0) {
-      // Route creation failed, employees already added to unrouted
+      // Route creation failed
     } else {
       updateRouteWithDetails(routeShellForVehicleAssignment, finalRouteDetails);
       routes.push(routeShellForVehicleAssignment);
@@ -1920,7 +1932,7 @@ async function solveZoneWithORTools(
       facility_coords: [facilityLocation.lat, facilityLocation.lng],
       trip_type: tripType.toUpperCase(),
       direction_penalty_weight:
-        facilityData.profile?.directionPenaltyWeight || 2.0,
+        facilityData.profile?.directionPenaltyWeight || 5.0,
     };
 
     const pythonExecutable = process.env.PYTHON_EXECUTABLE || "python";
@@ -2217,6 +2229,47 @@ async function checkRouteDeviationForUnrouted(
   }
 
   return false;
+}
+
+async function calculateFarthestEmployeeDistance(route, facility, city, isDropoff) {
+  let farthestEmployeeDistance = 0;
+  if (!route || !route.employees || route.employees.length === 0 || !facility) {
+    return farthestEmployeeDistance;
+  }
+
+  const fastApiCity = getFastApiCityKey(city);
+  const farthestEmployee = isDropoff
+    ? route.employees[route.employees.length - 1]
+    : route.employees[0];
+
+  if (farthestEmployee?.geoY && farthestEmployee?.geoX) {
+    const coords = isDropoff
+      ? [[facility.geoX, facility.geoY], [farthestEmployee.geoX, farthestEmployee.geoY]]
+      : [[farthestEmployee.geoX, farthestEmployee.geoY], [facility.geoX, facility.geoY]];
+    
+    try {
+      const response = await fetchApi(`https://mapapi.etmsonline.in/route`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: fastApiCity,
+          coordinates: coords,
+          overview: "false", steps: false, geometries: "polyline",
+        }),
+        timeout: OSRM_PROBE_TIMEOUT,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.code === "Ok" && data.routes?.[0]?.distance != null) {
+          farthestEmployeeDistance = data.routes[0].distance / 1000; // Convert to km
+        }
+      }
+    } catch (err) {
+      console.warn(`[FarthestDistance] OSRM error for route: ${err.message}`);
+    }
+  }
+  return parseFloat(farthestEmployeeDistance.toFixed(2));
 }
 
 // Remove the distance-based pre-filtering and keep it simple
@@ -4244,4 +4297,9 @@ function createEmptyResponse(data) {
 module.exports = {
   generateRoutes,
   isOsrmAvailable,
+  calculateRouteDetails,
+  calculatePickupTimes,
+  getFastApiCityKey, 
+  OSRM_PROBE_TIMEOUT,
+  calculateFarthestEmployeeDistance 
 };

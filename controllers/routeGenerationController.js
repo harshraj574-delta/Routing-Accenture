@@ -1,9 +1,40 @@
 const { v4: uuidv4 } = require('uuid');
 const routeGenerationService = require('../services/routeGenerationService');
-const { routeRequestSchema, recalculateRouteRequestSchema } = require('../validators/routeGenerationValidator');
+const { routeRequestSchema, recalculateRouteRequestSchema, etaRequestSchema } = require('../validators/routeGenerationValidator');
 
 const routeGenerationController = {
   // ... (generateRoutes function remains unchanged) ...
+
+  getEta: async (req, res) => {
+    try {
+      const parseResult = etaRequestSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        const errorMessages = parseResult.error.errors.map(e => e.message);
+        return res.status(400).json({
+          errorCode: "400",
+          error: errorMessages.join('; ')
+        });
+      }
+      const { routes, shiftTime, city } = parseResult.data;
+
+      const etaResults = await Promise.all(routes.map(async (route) => {
+        const { routeId, currentGeocodes, destinationGeocodes } = route;
+        const duration = await routeGenerationService.calculateEta(
+          currentGeocodes,
+          destinationGeocodes,
+          shiftTime,
+          city
+        );
+        return { routeId, duration };
+      }));
+
+      return res.status(200).json({ etas: etaResults });
+    } catch (error) {
+      console.error('Error calculating ETA:', error);
+      res.status(500).json({ error: 'Failed to calculate ETA', details: error.message });
+    }
+  },
+
   generateRoutes: async (req, res) => {
     let transaction;
     try {
@@ -161,6 +192,8 @@ const routeGenerationController = {
       res.status(500).json({ error: 'Failed to recalculate route', details: error.message });
     }
   }
+
+
 };
 
 module.exports = routeGenerationController;

@@ -1,7 +1,7 @@
-# ---- Stage 1: Builder ----
-FROM node:18-bullseye AS builder
+# deployment/Dockerfile
+FROM node:18-bullseye
 
-# Install Python + build dependencies
+# Install Python and system dependencies for OR-Tools
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -13,56 +13,44 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symlink for python
+# Create a symbolic link for python command
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-# Install Python dependencies (with wheels built here)
+# Install Python dependencies
 RUN pip3 install --no-cache-dir \
     ortools==9.7.2996 \
     numpy \
     setuptools \
     wheel
 
+# Set Python executable environment variable
+ENV PYTHON_EXECUTABLE=python3
+ENV PYTHONPATH=/usr/local/lib/python3.9/site-packages
+
 # Create app directory
 WORKDIR /usr/src/app
 
-# Copy only package.json for better caching
+# Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install Node.js dependencies (production only)
+# Install Node.js dependencies
 RUN npm ci --only=production
 
-# Copy the rest of the app
+# Copy all application files
 COPY . .
 
-# Make script executable
+# Ensure Python script is executable (correct path)
 RUN chmod +x services/or_tools_vrp_solver.py
 
-
-# ---- Stage 2: Runtime ----
-FROM node:18-slim
-
-# Install Python runtime (but no compilers)
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /usr/src/app
-
-# Copy node_modules from builder
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-
-# Copy built app
-COPY --from=builder /usr/src/app ./
-
-# Ensure logs directory exists
+# Create logs directory
 RUN mkdir -p logs
 
-# Healthcheck
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5001/api/health || exit 1
+  CMD curl -f http://localhost:5001/health || exit 1
 
+# Expose port
 EXPOSE 5001
+
+# Start the application
 CMD ["node", "server.js"]

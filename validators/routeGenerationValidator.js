@@ -152,4 +152,19 @@ const recalculateRouteRequestSchema = z.object({
     ),
 });
 
-module.exports = { routeRequestSchema , recalculateRouteRequestSchema};
+const geocodesSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180)
+});
+
+const etaRequestSchema = z.object({
+  routes: z.array(z.object({
+    routeId: z.union([z.string(), z.number()]),
+    currentGeocodes: geocodesSchema,
+    destinationGeocodes: geocodesSchema
+  })).min(1),
+  shiftTime: z.string().regex(/^\d{4}$/, { message: "shiftTime must be in HHMM format" }),
+  city: z.string()
+});
+
+module.exports = { routeRequestSchema , recalculateRouteRequestSchema, etaRequestSchema };

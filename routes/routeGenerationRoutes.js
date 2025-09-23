@@ -13,6 +13,9 @@ router.post('/generate', routeGenerationController.generateRoutes);
 // Recalculate routes based on data in request body
 router.post('/recalculate', routeGenerationController.recalculateRoute);
 
+// New endpoint to get ETA between two points
+router.post('/eta', routeGenerationController.getEta);
+
 // Simple GET endpoint for testing (returns info about the endpoint)
 router.get('/recalculate', (req, res) => {
   res.json({ 

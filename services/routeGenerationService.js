@@ -3,12 +3,13 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { spawn } = require("child_process"); // For calling Python
 
+
 // const TRAFFIC_BUFFER_PERCENTAGE = 0.4; // 40% buffer for traffic
 const MAX_SWAP_DISTANCE_KM = 1.5; // or your business threshold
 
 const OSRM_PROBE_TIMEOUT_HEURISTIC = 3000;
 const OSRM_PROBE_TIMEOUT = 8000;
-const BYPASS_ROUTE_DEVIATION_CHECKS = true; // Set to true to bypass all deviation checks
+const BYPASS_ROUTE_DEVIATION_CHECKS = false; // Set to true to bypass all deviation checks
 
 
 
@@ -465,6 +466,44 @@ async function checkRouteDeviation(route, facility, profile) {
   //   )}km. ActualRouteDist: ${relevantRouteDistanceKm.toFixed(3)}km.`
   // );
   return true;
+}
+
+async function calculateEta(currentGeocodes, destinationGeocodes, shiftTime, city) {
+  const fastApiCity = getFastApiCityKey(city);
+  const trafficBuffer = getTrafficBufferForShiftTime(shiftTime);
+
+  const coordinates = [
+    [currentGeocodes.lng, currentGeocodes.lat],
+    [destinationGeocodes.lng, destinationGeocodes.lat]
+  ];
+
+  try {
+    const response = await fetchApi(`https://mapapi.etmsonline.in/table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: fastApiCity,
+        coordinates: coordinates,
+        annotations: 'duration'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OSRM API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.code === 'Ok' && data.durations && data.durations.length > 1) {
+      const baseDuration = data.durations[0][1];
+      return Math.round(baseDuration * (1 + trafficBuffer));
+    } else {
+      throw new Error('Invalid response from OSRM API');
+    }
+  } catch (error) {
+    console.error('Error in calculateEta:', error);
+    return -1; // Return -1 or handle the error as you see fit
+  }
 }
 
 async function calculateRouteDetails(
@@ -1404,7 +1443,7 @@ async function processEmployeeBatch(
         (e) => e.empCode !== firstEmployeeForThisRoute.empCode
       );
       
-      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 2.5;
+      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 1.5;
       
       while (
         preliminaryEmployeesForThisAttempt.length < currentHeuristicRouteMaxOccupancy &&
@@ -4294,6 +4333,44 @@ function createEmptyResponse(data) {
   };
 }
 
+async function calculateEta(currentGeocodes, destinationGeocodes, shiftTime, city) {
+  const fastApiCity = getFastApiCityKey(city);
+  const trafficBuffer = getTrafficBufferForShiftTime(shiftTime);
+
+  const coordinates = [
+    [currentGeocodes.lng, currentGeocodes.lat],
+    [destinationGeocodes.lng, destinationGeocodes.lat]
+  ];
+
+  try {
+    const response = await fetchApi(`https://mapapi.etmsonline.in/table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        city: fastApiCity,
+        coordinates: coordinates,
+        annotations: 'duration'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OSRM API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.code === 'Ok' && data.durations && data.durations.length > 1) {
+      const baseDuration = data.durations[0][1];
+      return Math.round(baseDuration * (1 + trafficBuffer));
+    } else {
+      throw new Error('Invalid response from OSRM API');
+    }
+  } catch (error) {
+    console.error('Error in calculateEta:', error);
+    return -1; // Return -1 or handle the error as you see fit
+  }
+}
+
 module.exports = {
   generateRoutes,
   isOsrmAvailable,
@@ -4301,5 +4378,6 @@ module.exports = {
   calculatePickupTimes,
   getFastApiCityKey, 
   OSRM_PROBE_TIMEOUT,
-  calculateFarthestEmployeeDistance 
+  calculateFarthestEmployeeDistance,
+  calculateEta
 };

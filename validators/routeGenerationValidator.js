@@ -6,9 +6,10 @@ const employeeSchema = z.object({
   geoY: z.number().optional(),
   gender: z.string().optional(),
   isMedical: z.boolean().optional(),
-  isPWD: z.boolean().optional().default(false) ,
+  isPWD: z.boolean().optional().default(false),
   isNMT: z.boolean().optional().default(false),
-  isOOB: z.boolean().optional().default(false)
+  isOOB: z.boolean().optional().default(false),
+  isNewlyAdded: z.boolean().optional().default(false)  // Flag for insertion-based reoptimization
 });
 
 const employeesArraySchema = z.array(employeeSchema).min(1, { message: "At least one employee is required" }).superRefine((employees, ctx) => {
@@ -73,12 +74,12 @@ const nightShiftTimingsSchema = z.object({
 });
 
 const routeDeviationRuleSchema = z.object({
-    minDistKm: z.number().nonnegative(),
-    maxDistKm: z.number().positive(),
-    // thresholdPercent: z.number().min(0).max(100), // Optional, if you use it
-    // exampleDistanceKm: z.number().positive(),    // Optional, if you use it
-    // acceptableDeviationKm: z.number().nonnegative(), // Optional, if you use it
-    maxTotalOneWayKm: z.number().positive({ message: "maxTotalOneWayKm is required and must be positive" }),
+  minDistKm: z.number().nonnegative(),
+  maxDistKm: z.number().positive(),
+  // thresholdPercent: z.number().min(0).max(100), // Optional, if you use it
+  // exampleDistanceKm: z.number().positive(),    // Optional, if you use it
+  // acceptableDeviationKm: z.number().nonnegative(), // Optional, if you use it
+  maxTotalOneWayKm: z.number().positive({ message: "maxTotalOneWayKm is required and must be positive" }),
 });
 
 const fleetVehicleSchema = z.object({
@@ -97,9 +98,9 @@ const profileSchema = z.object({
   nightShiftGuardTimings: z.record(z.string(), nightShiftTimingsSchema)
     .optional() // Making it optional so your code can use defaults if not provided
     .refine(val => { // Optional: Validate keys if you want to be strict
-        if (!val) return true; // Allow it to be undefined
-        const allowedKeys = ["PICKUP", "DROPOFF", "CDC_PICKUP", "CDC_DROPOFF", "DDC_PICKUP", "DDC_DROPOFF"];
-        return Object.keys(val).every(key => allowedKeys.includes(key.toUpperCase()));
+      if (!val) return true; // Allow it to be undefined
+      const allowedKeys = ["PICKUP", "DROPOFF", "CDC_PICKUP", "CDC_DROPOFF", "DDC_PICKUP", "DDC_DROPOFF"];
+      return Object.keys(val).every(key => allowedKeys.includes(key.toUpperCase()));
     }, { message: "Invalid keys in nightShiftGuardTimings. Allowed keys are like PICKUP, CDC_DROPOFF, etc." }),
   facilityType: z.enum(["CDC", "DDC"]).optional(), // To select correct rule set
   routeDeviationRules: z.record(z.string(), z.array(routeDeviationRuleSchema).min(1)) // e.g., "CDC": [rules]
@@ -111,6 +112,26 @@ const profileSchema = z.object({
   isAutoClubbing: z.boolean().optional(),
   maxDuration: z.number({ required_error: "maxDuration is required and must be a number" }),
   fleet: z.array(fleetVehicleSchema).optional(),
+  // Route Consolidation Configuration
+  enableRouteConsolidation: z.boolean().optional().default(true),
+  consolidationMaxInsertionDistanceKm: z.number().positive().optional().default(5),
+  consolidationLowOccupancyThreshold: z.number().int().positive().optional().default(2),
+  consolidationMinHostOccupancy: z.number().int().positive().optional().default(1),
+  consolidationLinearTolerance: z.number().min(0).max(180).optional().default(90),
+  enableBidirectionalConsolidation: z.boolean().optional().default(true),
+  // Heuristic Configuration
+  heuristicMaxStopDistance: z.number().positive().optional().default(4.0),
+  heuristicLinearTolerance: z.number().min(0).max(180).optional().default(75),
+  heuristicDirectionPenaltyWeight: z.number().optional().default(5.0),
+  heuristicCandidatePoolSize: z.number().int().positive().optional().default(6),
+  heuristicOsrmEvaluationTopK: z.number().int().positive().optional().default(3),
+  heuristicBearingPenaltyWeight: z.number().nonnegative().optional().default(1.5),
+  heuristicFacilityOrderPenaltyWeight: z.number().nonnegative().optional().default(4.0),
+  heuristicDistanceSpreadPenaltyWeight: z.number().nonnegative().optional().default(0.8),
+  heuristicDurationWeight: z.number().nonnegative().optional().default(0.0025),
+  // Singleton Aggregation Configuration
+  singletonAggregationRadius: z.number().positive().optional().default(6),
+  singletonMaxClusterSize: z.number().int().positive().optional().default(4),
   // ...other fields
 }).strict();
 
@@ -143,7 +164,7 @@ const recalculateRouteRequestSchema = z.object({
   facility: facilitySchema,
   shiftTime: z.string().regex(/^\d{4}$/, { message: "shiftTime must be in HHMM format" }),
   pickupTimePerEmployee: z.number().positive(),
-  reportingTime: z.number().min(0),
+  reportingTime: z.coerce.number().min(0),
   city: z.string(),
   tripType: z.string({ required_error: "tripType is required" })
     .refine(
@@ -167,4 +188,4 @@ const etaRequestSchema = z.object({
   city: z.string()
 });
 
-module.exports = { routeRequestSchema , recalculateRouteRequestSchema, etaRequestSchema };
+module.exports = { routeRequestSchema, recalculateRouteRequestSchema, etaRequestSchema };

@@ -14,14 +14,23 @@ app.use(cors({
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 
-// Import routes
-const routeGenerationRoutes = require('./routes/routeGenerationRoutes');
+// Import routes - Versioned API (Industry Standard)
+const routeGenerationRoutes = require('./routes/routeGenerationRoutes');     // Default (points to v2)
+const routeGenerationRoutesV1 = require('./routes/routeGenerationRoutes_v1'); // Legacy algorithm
+const routeGenerationRoutesV2 = require('./routes/routeGenerationRoutes_v2'); // Enhanced algorithm
 
 // Add this right before you define your routes
 console.log('----- Available route files -----');
-console.log('routeGenerationRoutes exists:', !!routeGenerationRoutes);
+console.log('routeGenerationRoutes (default) exists:', !!routeGenerationRoutes);
+console.log('routeGenerationRoutesV1 exists:', !!routeGenerationRoutesV1);
+console.log('routeGenerationRoutesV2 exists:', !!routeGenerationRoutesV2);
 
-// Define routes with explicit paths
+// Define versioned API routes (Industry Standard Practice)
+// v1 - Legacy routing algorithm (original)
+app.use('/api/v1/route-generation', routeGenerationRoutesV1);
+// v2 - Enhanced routing algorithm (with angular clustering, linear direction, singleton aggregation)
+app.use('/api/v2/route-generation', routeGenerationRoutesV2);
+// Default endpoint (backward compatible - uses new v2 algorithm)
 app.use('/api/route-generation', routeGenerationRoutes);
 
 // Health check endpoint
@@ -29,13 +38,53 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Version info endpoint
+app.get('/api/versions', (req, res) => {
+  res.json({
+    availableVersions: ['v1', 'v2'],
+    defaultVersion: 'v2',
+    endpoints: {
+      v1: {
+        base: '/api/v1/route-generation',
+        description: 'Legacy routing algorithm (original)',
+        endpoints: [
+          'POST /generate - Generate routes',
+          'POST /recalculate - Recalculate existing routes',
+          'POST /eta - Get ETA between points',
+          'GET /test - Test endpoint'
+        ]
+      },
+      v2: {
+        base: '/api/v2/route-generation',
+        description: 'Enhanced routing with angular clustering & linear direction optimization',
+        endpoints: [
+          'POST /generate - Generate routes',
+          'POST /recalculate - Recalculate existing routes',
+          'POST /eta - Get ETA between points',
+          'GET /test - Test endpoint'
+        ],
+        improvements: [
+          'Angular sector clustering for linear routes',
+          'Singleton aggregation to reduce single-employee routes',
+          'Linear direction optimization (prevents zig-zagging)',
+          'Improved vehicle utilization'
+        ]
+      },
+      default: {
+        base: '/api/route-generation',
+        description: 'Default endpoint (backward compatible) - Uses v2 algorithm'
+      }
+    }
+  });
+});
+
 // After defining routes, log what's registered
 console.log('----- Registered API routes -----');
-console.log('/api/employees registered');
-console.log('/api/profiles registered');
-console.log('/api/routes registered');
-console.log('/api/facilities registered');
-console.log('/api/route-generation/* registered (POST endpoints)');
+console.log('/api/v1/route-generation/* registered (Legacy Algorithm)');
+console.log('/api/v2/route-generation/* registered (Enhanced Algorithm)');
+console.log('/api/route-generation/* registered (Default - V2)');
+console.log('/api/versions - Version info endpoint');
+console.log('/api/health - Health check endpoint');
 
 
 // Error handling
@@ -55,8 +104,8 @@ const PORT = process.env.PORT || 5001;
 
 // Test database connection and sync models before starting server
 
-    app.listen(PORT,() => {
-      console.log(`Server running on port ${PORT}`);
-    });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = { app };

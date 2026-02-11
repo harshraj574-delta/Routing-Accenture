@@ -5,7 +5,7 @@ const { spawn } = require("child_process");
 
 
 // const TRAFFIC_BUFFER_PERCENTAGE = 0.4; // 40% buffer for traffic
-const MAX_SWAP_DISTANCE_KM = 1.5;
+const MAX_SWAP_DISTANCE_KM = 1.5; // or your business threshold
 
 const OSRM_PROBE_TIMEOUT_HEURISTIC = 3000;
 const OSRM_PROBE_TIMEOUT = 8000;
@@ -175,246 +175,6 @@ function haversineDistance([lat1, lon1], [lat2, lon2]) {
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
-// ==================== ANGULAR SECTOR CLUSTERING FOR LINEAR ROUTES ====================
-/**
- * Calculate bearing (direction) from point A to point B in degrees (0-360)
- * 0° = North, 90° = East, 180° = South, 270° = West
- */
-function calculateBearing(fromLat, fromLng, toLat, toLng) {
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const toDeg = (rad) => (rad * 180) / Math.PI;
-
-  const dLng = toRad(toLng - fromLng);
-  const lat1 = toRad(fromLat);
-  const lat2 = toRad(toLat);
-
-  const y = Math.sin(dLng) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-
-  let bearing = toDeg(Math.atan2(y, x));
-  return (bearing + 360) % 360; // Normalize to 0-360
-}
-
-/**
- * Assign employees to angular sectors based on their direction from facility
- * This ensures employees in the same direction are grouped together for linear routes
- * @param {Array} employees - List of employees with location data
- * @param {Object} facility - Facility with geoY (lat) and geoX (lng)
- * @param {number} numSectors - Number of sectors to divide into (default 8 = 45° each)
- * @returns {Map} Map of sectorIndex -> [employees in that sector]
- */
-function assignAngularSectors(employees, facility, numSectors = 8) {
-  const sectorSize = 360 / numSectors;
-  const sectors = new Map();
-
-  for (let i = 0; i < numSectors; i++) {
-    sectors.set(i, []);
-  }
-
-  for (const emp of employees) {
-    if (!emp.location?.lat || !emp.location?.lng) continue;
-
-    const bearing = calculateBearing(
-      facility.geoY, facility.geoX,
-      emp.location.lat, emp.location.lng
-    );
-
-    const sectorIndex = Math.floor(bearing / sectorSize) % numSectors;
-    const empWithBearing = {
-      ...emp,
-      bearingFromFacility: bearing,
-      distToFacility: haversineDistance(
-        [emp.location.lat, emp.location.lng],
-        [facility.geoY, facility.geoX]
-      )
-    };
-    sectors.get(sectorIndex).push(empWithBearing);
-  }
-
-  // Sort each sector by distance to facility (farthest first for pickup, closest first for dropoff)
-  sectors.forEach((emps, sectorIdx) => {
-    sectors.set(sectorIdx, emps.sort((a, b) => b.distToFacility - a.distToFacility));
-  });
-
-  return sectors;
-}
-
-/**
- * Check if candidate employee maintains linear direction
- * For PICKUP: checks if candidate is "on the way" toward facility
- * For DROP: checks if candidate is "on the way" away from facility (continuing outward)
- */
-function isLinearDirection(currentEmp, candidateEmp, facility, toleranceDegrees = 60, tripType = 'pickup') {
-  const isDropoff = tripType.toLowerCase() === 'dropoff';
-
-  if (isDropoff) {
-    // For DROP: we're moving AWAY from facility, so check if candidate continues that direction
-    // Calculate bearing from facility to current employee (the "outward" direction)
-    const bearingOutward = calculateBearing(
-      facility.geoY, facility.geoX,
-      currentEmp.location.lat, currentEmp.location.lng
-    );
-
-    // Calculate bearing from current to candidate
-    const bearingToCandidate = calculateBearing(
-      currentEmp.location.lat, currentEmp.location.lng,
-      candidateEmp.location.lat, candidateEmp.location.lng
-    );
-
-    // Calculate angular difference - candidate should continue the outward direction
-    let diff = Math.abs(bearingOutward - bearingToCandidate);
-    if (diff > 180) diff = 360 - diff;
-
-    return diff <= toleranceDegrees;
-  } else {
-    // For PICKUP: we're moving TOWARD facility
-    // Calculate bearing from current to facility
-    const bearingToFacility = calculateBearing(
-      currentEmp.location.lat, currentEmp.location.lng,
-      facility.geoY, facility.geoX
-    );
-
-    // Calculate bearing from current to candidate
-    const bearingToCandidate = calculateBearing(
-      currentEmp.location.lat, currentEmp.location.lng,
-      candidateEmp.location.lat, candidateEmp.location.lng
-    );
-
-    // Calculate angular difference
-    let diff = Math.abs(bearingToFacility - bearingToCandidate);
-    if (diff > 180) diff = 360 - diff;
-
-    // If candidate is within tolerance of the direction to facility, it's linear
-    return diff <= toleranceDegrees;
-  }
-}
-
-// ==================== SINGLETON AGGREGATION ====================
-/**
- * Aggregate singleton routes into larger routes where possible
- * @param {Array} routes - List of routes, some may be singletons
- * @param {Object} facility - Facility location
- * @param {string} tripType - 'pickup' or 'dropoff'
- * @param {number} maxClusterRadius - Maximum distance to cluster singletons together
- * @param {number} maxClusterSize - Maximum employees per aggregated route
- * @returns {Array} - Routes with singletons aggregated where possible
- */
-function aggregateSingletonRoutes(routes, facility, tripType, maxClusterRadius = 5, maxClusterSize = 4) {
-  const singletons = routes.filter(r => r.employees && r.employees.length === 1);
-  const nonSingletons = routes.filter(r => !r.employees || r.employees.length !== 1);
-
-  if (singletons.length < 2) {
-    return routes; // Nothing to aggregate
-  }
-
-  console.log(`\n[Singleton Aggregation] Found ${singletons.length} singleton routes to process`);
-
-  // Extract employees from singletons with their route info
-  const singletonEmployees = singletons.map(route => ({
-    employee: route.employees[0],
-    originalRoute: route,
-    bearing: calculateBearing(
-      facility.geoY, facility.geoX,
-      route.employees[0].location.lat, route.employees[0].location.lng
-    ),
-    distToFacility: haversineDistance(
-      [route.employees[0].location.lat, route.employees[0].location.lng],
-      [facility.geoY, facility.geoX]
-    )
-  }));
-
-  // Sort by bearing to group employees in similar directions
-  singletonEmployees.sort((a, b) => a.bearing - b.bearing);
-
-  // Cluster using simple greedy approach based on angular proximity and distance
-  const clusters = [];
-  const used = new Set();
-
-  for (let i = 0; i < singletonEmployees.length; i++) {
-    if (used.has(i)) continue;
-
-    const cluster = [singletonEmployees[i]];
-    used.add(i);
-
-    // Find nearby singletons in similar direction
-    for (let j = i + 1; j < singletonEmployees.length && cluster.length < maxClusterSize; j++) {
-      if (used.has(j)) continue;
-
-      const candidate = singletonEmployees[j];
-      const lastInCluster = cluster[cluster.length - 1];
-
-      // Check angular proximity (within 45 degrees)
-      let bearingDiff = Math.abs(candidate.bearing - lastInCluster.bearing);
-      if (bearingDiff > 180) bearingDiff = 360 - bearingDiff;
-
-      if (bearingDiff > 45) continue;
-
-      // Check distance proximity
-      const distBetween = haversineDistance(
-        [lastInCluster.employee.location.lat, lastInCluster.employee.location.lng],
-        [candidate.employee.location.lat, candidate.employee.location.lng]
-      );
-
-      if (distBetween <= maxClusterRadius) {
-        cluster.push(candidate);
-        used.add(j);
-      }
-    }
-
-    if (cluster.length > 1) {
-      clusters.push(cluster);
-    } else {
-      // Keep as singleton
-      clusters.push(cluster);
-    }
-  }
-
-  // Convert clusters back to routes
-  const aggregatedRoutes = [];
-  let aggregatedCount = 0;
-
-  for (const cluster of clusters) {
-    if (cluster.length === 1) {
-      // Keep original singleton route
-      aggregatedRoutes.push(cluster[0].originalRoute);
-    } else {
-      // Create new aggregated route from the first singleton's route structure
-      const baseRoute = cluster[0].originalRoute;
-
-      // Sort cluster employees by distance for proper ordering
-      const isDropoff = tripType.toLowerCase() === 'dropoff';
-      const sortedEmployees = cluster
-        .map(c => c.employee)
-        .sort((a, b) => isDropoff
-          ? haversineDistance([a.location.lat, a.location.lng], [facility.geoY, facility.geoX]) -
-          haversineDistance([b.location.lat, b.location.lng], [facility.geoY, facility.geoX])
-          : haversineDistance([b.location.lat, b.location.lng], [facility.geoY, facility.geoX]) -
-          haversineDistance([a.location.lat, a.location.lng], [facility.geoY, facility.geoX])
-        )
-        .map((emp, idx) => ({ ...emp, order: idx + 1 }));
-
-      aggregatedRoutes.push({
-        ...baseRoute,
-        employees: sortedEmployees,
-        uniqueKey: `AGGREGATED_${uuidv4()}`,
-        aggregatedSingletons: cluster.map(c => c.originalRoute.uniqueKey),
-        // Force recalculation of route geometry for merged singleton routes.
-        // Without this, the aggregated route can retain base singleton polyline.
-        encodedPolyline: "",
-        routeDetails: null
-      });
-
-      aggregatedCount += cluster.length;
-      console.log(`[Singleton Aggregation] Merged ${cluster.length} singletons: ${sortedEmployees.map(e => e.empCode).join(', ')}`);
-    }
-  }
-
-  console.log(`[Singleton Aggregation] Complete. Aggregated ${aggregatedCount} singletons into ${clusters.filter(c => c.length > 1).length} routes`);
-
-  return [...nonSingletons, ...aggregatedRoutes];
-}
-// ==================== END ANGULAR SECTOR CLUSTERING ====================
 
 function isPointInPolygon(point, polygon) {
   if (!point || !polygon || !Array.isArray(polygon) || polygon.length < 3)
@@ -982,12 +742,8 @@ async function generateDistanceDurationMatrix(
   if (allPointsCoords.length <= 1) {
     return { distanceMatrix: [[]], durationMatrix: [[]], pointMap: [] };
   }
-  // Prepare coordinates as [lng, lat] pairs for OSRM (OSRM uses [lng, lat] format!)
-  const coords = allPointsCoords.map((p) => [p.lng, p.lat]);
-
-  console.log(`[DEBUG-OSRM-REQ] City: ${fastApiCity}, Coords count: ${coords.length}`);
-  console.log(`[DEBUG-OSRM-REQ] First 3 coords: ${JSON.stringify(coords.slice(0, 3))}`);
-
+  // Prepare coordinates as [lat, lng] pairs for FastAPI
+  const coords = allPointsCoords.map((p) => [p.lat, p.lng]);
   const matrixTimeout = OSRM_PROBE_TIMEOUT + allPointsCoords.length * 200;
   const response = await fetchApi(`${FASTAPI_GATEWAY_URL}/table`, {
     method: "POST",
@@ -1012,9 +768,6 @@ async function generateDistanceDurationMatrix(
       "Invalid OSRM table response for matrix (structure or code)"
     );
   }
-
-  console.log(`[DEBUG-OSRM] Response code: ${data.code}, distances[0][1]=${data.distances?.[0]?.[1]}, durations[0][1]=${data.durations?.[0]?.[1]}`);
-
   const pointMap = [
     { empCode: "FACILITY", isFacility: true, ...facilityLocation },
     ...locationsForMatrix,
@@ -1600,105 +1353,9 @@ function logFleetStatus(availableFleetCounts, profile, context = "") {
   console.log('');
 }
 
-function calculateAngularDifferenceDegrees(bearingA, bearingB) {
-  let diff = Math.abs(bearingA - bearingB);
-  if (diff > 180) diff = 360 - diff;
-  return diff;
-}
+// In routeGenerationService.js
 
-function calculateHeuristicCandidateCost({
-  currentLastEmpInPrelim,
-  candidateEmp,
-  facilityCoordinates,
-  tripType,
-  profile,
-  maxNextStopDistanceKm,
-}) {
-  const directionPenaltyWeight = profile.heuristicDirectionPenaltyWeight || 5.0;
-  const bearingPenaltyWeight = profile.heuristicBearingPenaltyWeight || 1.5;
-  const facilityOrderPenaltyWeight = profile.heuristicFacilityOrderPenaltyWeight || 4.0;
-  const distanceSpreadPenaltyWeight = profile.heuristicDistanceSpreadPenaltyWeight || 0.8;
-
-  const distToLast = haversineDistance(
-    [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
-    [candidateEmp.location.lat, candidateEmp.location.lng]
-  );
-
-  if (distToLast > maxNextStopDistanceKm) {
-    return { feasible: false, reason: "max_next_stop_distance", cost: Infinity };
-  }
-
-  const distFromLastToFacility = haversineDistance(
-    [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
-    facilityCoordinates
-  );
-  const distFromCandidateToFacility = haversineDistance(
-    [candidateEmp.location.lat, candidateEmp.location.lng],
-    facilityCoordinates
-  );
-
-  let directionalPenalty = 0;
-  let facilityOrderPenalty = 0;
-  if (tripType.toLowerCase() === "pickup") {
-    const distanceIncrease = distFromCandidateToFacility - distFromLastToFacility;
-    if (distanceIncrease > 0) {
-      directionalPenalty = directionPenaltyWeight * distanceIncrease;
-      facilityOrderPenalty = facilityOrderPenaltyWeight * distanceIncrease;
-    }
-  } else {
-    const distanceDecrease = distFromLastToFacility - distFromCandidateToFacility;
-    if (distanceDecrease > 0) {
-      directionalPenalty = directionPenaltyWeight * distanceDecrease;
-      facilityOrderPenalty = facilityOrderPenaltyWeight * distanceDecrease;
-    }
-  }
-
-  const bearingFromLastToCandidate = calculateBearing(
-    currentLastEmpInPrelim.location.lat,
-    currentLastEmpInPrelim.location.lng,
-    candidateEmp.location.lat,
-    candidateEmp.location.lng
-  );
-  const bearingFromLastToFacility = calculateBearing(
-    currentLastEmpInPrelim.location.lat,
-    currentLastEmpInPrelim.location.lng,
-    facilityCoordinates[0],
-    facilityCoordinates[1]
-  );
-
-  const referenceBearing = tripType.toLowerCase() === "pickup"
-    ? bearingFromLastToFacility
-    : calculateBearing(
-      facilityCoordinates[0],
-      facilityCoordinates[1],
-      currentLastEmpInPrelim.location.lat,
-      currentLastEmpInPrelim.location.lng
-    );
-  const bearingDiff = calculateAngularDifferenceDegrees(bearingFromLastToCandidate, referenceBearing);
-  const bearingPenalty = (bearingDiff / 180) * bearingPenaltyWeight * Math.max(distToLast, 0.5);
-
-  const distanceSpreadPenalty =
-    distanceSpreadPenaltyWeight * Math.abs(distFromCandidateToFacility - distFromLastToFacility);
-
-  const totalCost =
-    distToLast +
-    directionalPenalty +
-    facilityOrderPenalty +
-    bearingPenalty +
-    distanceSpreadPenalty;
-
-  return {
-    feasible: true,
-    cost: totalCost,
-    components: {
-      distToLast,
-      directionalPenalty,
-      facilityOrderPenalty,
-      bearingPenalty,
-      distanceSpreadPenalty,
-    },
-  };
-}
+// In routeGenerationService.js
 
 async function processEmployeeBatch(
   employees,
@@ -1723,18 +1380,8 @@ async function processEmployeeBatch(
   const validEmployees = employees.filter(
     (emp) => emp.location?.lat != null && emp.location?.lng != null
   );
-
-  // CRITICAL FIX: Employees without valid location should be added to unrouted pool
-  const invalidLocationEmployees = employees.filter(
-    (emp) => emp.location?.lat == null || emp.location?.lng == null
-  );
-  if (invalidLocationEmployees.length > 0) {
-    console.warn(`[processEmployeeBatch] ${invalidLocationEmployees.length} employees have invalid/missing location. Adding to unrouted pool.`);
-    employeesAddedToMasterUnroutedThisBatch.push(...invalidLocationEmployees);
-  }
-
   if (validEmployees.length === 0) {
-    return { routes, employeesAddedToMasterUnrouted: employeesAddedToMasterUnroutedThisBatch };
+    return { routes, employeesAddedToMasterUnrouted: [] };
   }
 
   let globalRemainingEmployees = [...validEmployees]
@@ -1789,8 +1436,7 @@ async function processEmployeeBatch(
         (e) => e.empCode !== firstEmployeeForThisRoute.empCode
       );
 
-      // Use configurable max distance or default to 4km (increased from 2.25km to reduce singletons)
-      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = profile.heuristicMaxStopDistance || 4.0;
+      const MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC = MAX_SWAP_DISTANCE_KM * 1.5;
 
       while (
         preliminaryEmployeesForThisAttempt.length < currentHeuristicRouteMaxOccupancy &&
@@ -1798,7 +1444,9 @@ async function processEmployeeBatch(
       ) {
         const currentLastEmpInPrelim =
           preliminaryEmployeesForThisAttempt[preliminaryEmployeesForThisAttempt.length - 1];
-        const candidatePool = [];
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+        let bestCandidateIndex = -1;
 
         tempRemainingForThisAttempt.forEach((candidateEmp, idx) => {
           const candidateIsSpecial = isSpecialNeedsUser(candidateEmp);
@@ -1815,137 +1463,106 @@ async function processEmployeeBatch(
             [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
             [candidateEmp.location.lat, candidateEmp.location.lng]
           );
+          if (distToLast > MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC) return;
 
-          // **LINEAR DIRECTION CHECK** - Ensure candidate is "on the way" (toward facility for PICKUP, away for DROP)
-          // Use configurable tolerance (default 75 degrees allows some flexibility while preventing major detours)
-          const linearToleranceDegrees = profile.heuristicLinearTolerance || 75;
-          if (!isLinearDirection(currentLastEmpInPrelim, candidateEmp, facility, linearToleranceDegrees, tripType)) {
-            // Candidate would cause zig-zag, skip unless it's very close (within 1km)
-            if (distToLast > 1.0) return;
-          }
+          // =================== MODIFICATION START ===================
+          let directionalPenalty = 0;
+          // The penalty weight is increased significantly to prioritize direction.
+          // You can tune this value in your profile settings.
+          const directionPenaltyWeight = profile.heuristicDirectionPenaltyWeight || 5.0;
 
-          const heuristicCost = calculateHeuristicCandidateCost({
-            currentLastEmpInPrelim,
-            candidateEmp,
-            facilityCoordinates,
-            tripType,
-            profile,
-            maxNextStopDistanceKm: MAX_NEXT_STOP_DISTANCE_KM_HEURISTIC,
-          });
-          if (!heuristicCost.feasible) return;
+          if (directionPenaltyWeight > 0) {
+            const distFromLastToFacility = haversineDistance(
+              [currentLastEmpInPrelim.location.lat, currentLastEmpInPrelim.location.lng],
+              facilityCoordinates
+            );
+            const distFromCandidateToFacility = haversineDistance(
+              [candidateEmp.location.lat, candidateEmp.location.lng],
+              facilityCoordinates
+            );
 
-          candidatePool.push({
-            candidateEmp,
-            idx,
-            distToLast,
-            heuristicCost: heuristicCost.cost,
-          });
-        });
-
-        if (candidatePool.length === 0) break;
-
-        candidatePool.sort((a, b) => a.heuristicCost - b.heuristicCost);
-
-        const heuristicCandidatePoolSize = profile.heuristicCandidatePoolSize || 6;
-        const heuristicOsrmEvaluationTopK = profile.heuristicOsrmEvaluationTopK || 3;
-        const shortListedCandidates = candidatePool.slice(
-          0,
-          Math.min(heuristicCandidatePoolSize, candidatePool.length)
-        );
-
-        let chosenCandidateOutcome = null;
-        const failedCandidateIndices = new Set();
-        let osrmEvaluationsDone = 0;
-
-        for (const candidateInfo of shortListedCandidates) {
-          if (osrmEvaluationsDone >= heuristicOsrmEvaluationTopK) break;
-          osrmEvaluationsDone++;
-
-          const tentativePrelimEmployees = [
-            ...preliminaryEmployeesForThisAttempt,
-            candidateInfo.candidateEmp,
-          ];
-
-          const hasNMTInGroup = tentativePrelimEmployees.some(emp => emp.isNMT === true);
-          if (hasNMTInGroup) {
-            const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
-            if (tentativePrelimEmployees.length > nmtLimit) {
-              continue;
+            if (tripType.toLowerCase() === 'pickup') {
+              const distanceIncrease = distFromCandidateToFacility - distFromLastToFacility;
+              if (distanceIncrease > 0) {
+                directionalPenalty = directionPenaltyWeight * distanceIncrease;
+              }
+            } else { // 'dropoff'
+              const distanceDecrease = distFromLastToFacility - distFromCandidateToFacility;
+              if (distanceDecrease > 0) {
+                directionalPenalty = directionPenaltyWeight * distanceDecrease;
+              }
             }
           }
 
-          const tentativeCoords = tentativePrelimEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
-          const allTentativeCoords = isDropoff
-            ? [facilityCoordinates, ...tentativeCoords]
-            : [...tentativeCoords, facilityCoordinates];
+          const combinedCost = distToLast + directionalPenalty;
+          const score = 1 / (1 + combinedCost);
+          // =================== MODIFICATION END =====================
 
-          const tentativeDetails = await calculateRouteDetails(
-            allTentativeCoords,
-            tentativePrelimEmployees,
-            pickupTimePerEmployee,
-            tripType,
-            city,
-            shiftTime
-          );
-
-          if (tentativeDetails.error) {
-            failedCandidateIndices.add(candidateInfo.idx);
-            continue;
+          if (score > bestScore) {
+            bestScore = score;
+            bestCandidate = candidateEmp;
+            bestCandidateIndex = idx;
           }
+        });
 
+        if (!bestCandidate) break;
+
+        const tentativePrelimEmployees = [...preliminaryEmployeesForThisAttempt, bestCandidate];
+
+        const hasNMTInGroup = tentativePrelimEmployees.some(emp => emp.isNMT === true);
+        if (hasNMTInGroup) {
+          const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
+          if (tentativePrelimEmployees.length > nmtLimit) {
+            console.log(`[NMT Group Building] Route ${batchRouteCounter}: Stopping at ${preliminaryEmployeesForThisAttempt.length} employees due to NMT limit (${nmtLimit})`);
+            break;
+          }
+        }
+
+        const tentativeCoords = tentativePrelimEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
+        const allTentativeCoords = isDropoff
+          ? [facilityCoordinates, ...tentativeCoords]
+          : [...tentativeCoords, facilityCoordinates];
+
+        const tentativeDetails = await calculateRouteDetails(
+          allTentativeCoords,
+          tentativePrelimEmployees,
+          pickupTimePerEmployee,
+          tripType,
+          city,
+          shiftTime
+        );
+
+        if (tentativeDetails.error) {
+          tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
+          continue;
+        }
+
+        if (maxDuration) {
           const serviceTime = tentativePrelimEmployees.length * pickupTimePerEmployee;
           const estimatedTotalDuration = tentativeDetails.totalDuration + serviceTime;
 
-          if (maxDuration && estimatedTotalDuration > maxDuration) {
-            continue;
-          }
-
-          const tempRouteForValidation = {
-            employees: tentativePrelimEmployees,
-            routeDetails: tentativeDetails,
-            uniqueKey: `temp_val_progressive_${batchRouteCounter}_${attemptedGroupSize}`,
-            tripType: tripType,
-          };
-
-          if (!(await checkRouteDeviation(tempRouteForValidation, facility, profile))) {
-            continue;
-          }
-
-          const durationWeight = profile.heuristicDurationWeight || 0.0025;
-          const blendedScore =
-            candidateInfo.heuristicCost +
-            durationWeight * estimatedTotalDuration;
-
-          if (!chosenCandidateOutcome || blendedScore < chosenCandidateOutcome.blendedScore) {
-            chosenCandidateOutcome = {
-              bestCandidate: candidateInfo.candidateEmp,
-              bestCandidateIndex: candidateInfo.idx,
-              tentativeDetails,
-              tentativePrelimEmployees,
-              blendedScore,
-            };
+          if (estimatedTotalDuration > maxDuration) {
+            console.log(`[Duration Exceeded] Route ${batchRouteCounter}: Group size ${tentativePrelimEmployees.length} exceeds maxDuration (Travel: ${Math.round(tentativeDetails.totalDuration)}s, Service: ${serviceTime}s, Total: ${Math.round(estimatedTotalDuration)}s > ${maxDuration}s). Stopping group building.`);
+            break;
           }
         }
 
-        if (!chosenCandidateOutcome) {
-          const failedIdxDesc = Array.from(failedCandidateIndices)
-            .filter((idx) => idx >= 0 && idx < tempRemainingForThisAttempt.length)
-            .sort((a, b) => b - a);
+        const tempRouteForValidation = {
+          employees: tentativePrelimEmployees,
+          routeDetails: tentativeDetails,
+          uniqueKey: `temp_val_progressive_${batchRouteCounter}_${attemptedGroupSize}`,
+          tripType: tripType,
+        };
 
-          for (const failedIdx of failedIdxDesc) {
-            tempRemainingForThisAttempt.splice(failedIdx, 1);
-          }
-
-          if (failedIdxDesc.length > 0) {
-            continue;
-          }
-          break;
+        if (!(await checkRouteDeviation(tempRouteForValidation, facility, profile))) {
+          tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
+          continue;
         }
 
-        preliminaryEmployeesForThisAttempt.push(chosenCandidateOutcome.bestCandidate);
-        tempRemainingForThisAttempt.splice(chosenCandidateOutcome.bestCandidateIndex, 1);
+        preliminaryEmployeesForThisAttempt.push(bestCandidate);
+        tempRemainingForThisAttempt.splice(bestCandidateIndex, 1);
 
-        if (isSpecialNeedsUser(chosenCandidateOutcome.bestCandidate) && !routeIsCurrentlySpecialNeedsHeuristic) {
+        if (isSpecialNeedsUser(bestCandidate) && !routeIsCurrentlySpecialNeedsHeuristic) {
           routeIsCurrentlySpecialNeedsHeuristic = true;
           currentHeuristicRouteMaxOccupancy = Math.min(currentHeuristicRouteMaxOccupancy, 2);
           console.log(`[Special Needs Update] Route ${batchRouteCounter}: Reduced max occupancy to 2 due to special needs employee added`);
@@ -2067,9 +1684,7 @@ async function processEmployeeBatch(
     }
 
     if (routeShellForVehicleAssignment.error || routeShellForVehicleAssignment.employees.length === 0) {
-      // Route creation failed - add employees back to unrouted pool
-      console.warn(`[processEmployeeBatch] Route creation failed for batch ${batchRouteCounter}. Adding ${finalEmployeesForRoute.length} employees to unrouted pool.`);
-      employeesAddedToMasterUnroutedThisBatch.push(...finalEmployeesForRoute);
+      // Route creation failed
     } else {
       updateRouteWithDetails(routeShellForVehicleAssignment, finalRouteDetails);
       routes.push(routeShellForVehicleAssignment);
@@ -3380,517 +2995,6 @@ async function processUnroutedEmployeesWithSafeguards(
   };
 }
 
-// ==================== ROUTE CONSOLIDATION OPTIMIZATION ====================
-// Constants for route consolidation
-const DEFAULT_CONSOLIDATION_MAX_INSERTION_DISTANCE_KM = 2.5;
-const DEFAULT_CONSOLIDATION_LOW_OCCUPANCY_THRESHOLD = 2;
-const DEFAULT_CONSOLIDATION_MIN_HOST_OCCUPANCY = 3;
-
-/**
- * Find the best insertion point for an employee in an existing route
- * @param {Array} hostEmployees - Employees in the host route
- * @param {Object} candidateEmployee - Employee to insert
- * @param {string} tripType - 'pickup' or 'dropoff'
- * @param {Array} facilityCoordinates - [lat, lng] of facility
- * @returns {Object} - { insertionIndex, distanceImpact }
- */
-function findBestInsertionPoint(hostEmployees, candidateEmployee, tripType, facilityCoordinates) {
-  const isDropoff = tripType.toLowerCase() === 'dropoff';
-  const candidateLoc = [candidateEmployee.location.lat, candidateEmployee.location.lng];
-  const candidateDistToFacility = haversineDistance(candidateLoc, facilityCoordinates);
-
-  let bestIndex = -1;
-  let bestScore = Infinity;
-
-  for (let i = 0; i <= hostEmployees.length; i++) {
-    // Calculate the employee distances at positions before and after insertion point
-    const prevEmp = i > 0 ? hostEmployees[i - 1] : null;
-    const nextEmp = i < hostEmployees.length ? hostEmployees[i] : null;
-
-    let prevDistToFacility = prevEmp
-      ? haversineDistance([prevEmp.location.lat, prevEmp.location.lng], facilityCoordinates)
-      : (isDropoff ? 0 : Infinity);
-
-    let nextDistToFacility = nextEmp
-      ? haversineDistance([nextEmp.location.lat, nextEmp.location.lng], facilityCoordinates)
-      : (isDropoff ? Infinity : 0);
-
-    // For pickup: employees should be ordered from farthest to closest to facility
-    // For dropoff: employees should be ordered from closest to farthest from facility
-    let directionalScore = 0;
-
-    if (isDropoff) {
-      // For dropoff, candidate should be between prev (closer) and next (farther)
-      if (candidateDistToFacility >= prevDistToFacility && candidateDistToFacility <= nextDistToFacility) {
-        directionalScore = 0; // Perfect placement
-      } else {
-        directionalScore = Math.abs(candidateDistToFacility - (prevDistToFacility + nextDistToFacility) / 2);
-      }
-    } else {
-      // For pickup, candidate should be between prev (farther) and next (closer)
-      if (candidateDistToFacility <= prevDistToFacility && candidateDistToFacility >= nextDistToFacility) {
-        directionalScore = 0; // Perfect placement
-      } else {
-        directionalScore = Math.abs(candidateDistToFacility - (prevDistToFacility + nextDistToFacility) / 2);
-      }
-    }
-
-    // Calculate detour distance
-    let detourDistance = 0;
-    if (prevEmp) {
-      detourDistance += haversineDistance(
-        [prevEmp.location.lat, prevEmp.location.lng],
-        candidateLoc
-      );
-    }
-    if (nextEmp) {
-      detourDistance += haversineDistance(
-        candidateLoc,
-        [nextEmp.location.lat, nextEmp.location.lng]
-      );
-    }
-    if (prevEmp && nextEmp) {
-      // Subtract direct distance between prev and next
-      detourDistance -= haversineDistance(
-        [prevEmp.location.lat, prevEmp.location.lng],
-        [nextEmp.location.lat, nextEmp.location.lng]
-      );
-    }
-
-    // Combined score: prefer minimal detour and correct directional ordering
-    const score = detourDistance + directionalScore * 2;
-
-    if (score < bestScore) {
-      bestScore = score;
-      bestIndex = i;
-    }
-  }
-
-  return {
-    insertionIndex: bestIndex,
-    distanceImpact: bestScore
-  };
-}
-
-/**
- * Check if an employee can be inserted into a route without violating constraints
- */
-async function canInsertEmployeeIntoRoute(
-  hostRoute,
-  candidateEmployee,
-  insertionIndex,
-  facility,
-  tripType,
-  maxDuration,
-  pickupTimePerEmployee,
-  profile,
-  city,
-  shiftTime
-) {
-  // Check capacity constraint
-  const newOccupancy = hostRoute.employees.length + 1 + (hostRoute.guardNeeded ? 1 : 0);
-  if (newOccupancy > hostRoute.vehicleCapacity) {
-    return { canInsert: false, reason: 'capacity_exceeded' };
-  }
-
-  // Check NMT constraint
-  const hasNMT = hostRoute.employees.some(e => e.isNMT) || candidateEmployee.isNMT;
-  if (hasNMT) {
-    const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
-    if (hostRoute.employees.length + 1 > nmtLimit) {
-      return { canInsert: false, reason: 'nmt_limit' };
-    }
-  }
-
-  // Check special needs constraint
-  const hasSpecialNeeds = hostRoute.employees.some(isSpecialNeedsUser) || isSpecialNeedsUser(candidateEmployee);
-  if (hasSpecialNeeds) {
-    const specialLimit = hostRoute.guardNeeded ? 1 : 2;
-    if (hostRoute.employees.length + 1 > specialLimit) {
-      return { canInsert: false, reason: 'special_needs_limit' };
-    }
-  }
-
-  // Create tentative employee list with insertion
-  const tentativeEmployees = [...hostRoute.employees];
-  tentativeEmployees.splice(insertionIndex, 0, candidateEmployee);
-
-  // Calculate new route details
-  const isDropoff = tripType.toLowerCase() === 'dropoff';
-  const facilityCoordinates = [facility.geoY, facility.geoX];
-  const employeeCoords = tentativeEmployees.map(e => [e.location.lat, e.location.lng]);
-  const allCoords = isDropoff
-    ? [facilityCoordinates, ...employeeCoords]
-    : [...employeeCoords, facilityCoordinates];
-
-  const tentativeDetails = await calculateRouteDetails(
-    allCoords,
-    tentativeEmployees,
-    pickupTimePerEmployee,
-    tripType,
-    city,
-    shiftTime
-  );
-
-  if (tentativeDetails.error) {
-    return { canInsert: false, reason: 'osrm_error' };
-  }
-
-  // Check duration constraint
-  const serviceTime = tentativeEmployees.length * pickupTimePerEmployee;
-  const totalDuration = tentativeDetails.totalDuration + serviceTime;
-  if (maxDuration && totalDuration > maxDuration) {
-    return { canInsert: false, reason: 'duration_exceeded', actualDuration: totalDuration };
-  }
-
-  // Check deviation constraint
-  const tentativeRoute = {
-    employees: tentativeEmployees,
-    routeDetails: tentativeDetails,
-    uniqueKey: `consolidation_test_${hostRoute.uniqueKey}`,
-    tripType: tripType
-  };
-
-  const passesDeviation = await checkRouteDeviation(tentativeRoute, facility, profile);
-  if (!passesDeviation) {
-    return { canInsert: false, reason: 'deviation_exceeded' };
-  }
-
-  return {
-    canInsert: true,
-    newEmployees: tentativeEmployees,
-    newRouteDetails: tentativeDetails,
-    totalDuration: totalDuration
-  };
-}
-
-/**
- * Consolidate routes by merging low-occupancy routes into higher-occupancy routes
- * when employees are in the direction of the facility and can be added without
- * violating constraints.
- * 
- * @param {Array} routes - List of formed routes
- * @param {Object} facility - Facility data
- * @param {string} tripType - 'pickup' or 'dropoff'
- * @param {number} maxDuration - Maximum allowed route duration
- * @param {number} pickupTimePerEmployee - Time per employee stop
- * @param {Object} profile - Profile configuration
- * @param {string} city - City name for OSRM
- * @param {string} shiftTime - Shift time for traffic calculation
- * @returns {Object} - { routes: consolidatedRoutes, mergedRouteCount, mergeDetails }
- */
-async function consolidateRoutes(
-  routes,
-  facility,
-  tripType,
-  maxDuration,
-  pickupTimePerEmployee,
-  profile,
-  city,
-  shiftTime
-) {
-  // Get configuration from profile or use defaults
-  const maxInsertionDistanceKm = profile.consolidationMaxInsertionDistanceKm || DEFAULT_CONSOLIDATION_MAX_INSERTION_DISTANCE_KM;
-  const lowOccupancyThreshold = profile.consolidationLowOccupancyThreshold || DEFAULT_CONSOLIDATION_LOW_OCCUPANCY_THRESHOLD;
-  const minHostOccupancy = profile.consolidationMinHostOccupancy || DEFAULT_CONSOLIDATION_MIN_HOST_OCCUPANCY;
-  const enableConsolidation = profile.enableRouteConsolidation !== false;
-
-  if (!enableConsolidation) {
-    console.log('[Route Consolidation] Disabled via profile configuration.');
-    return { routes, mergedRouteCount: 0, mergeDetails: [] };
-  }
-
-  console.log(`\n[Route Consolidation] Starting consolidation phase...`);
-  console.log(`[Route Consolidation] Config: maxInsertionDistance=${maxInsertionDistanceKm}km, lowOccupancyThreshold=${lowOccupancyThreshold}, minHostOccupancy=${minHostOccupancy}`);
-
-  const facilityCoordinates = [facility.geoY, facility.geoX];
-  const isDropoff = tripType.toLowerCase() === 'dropoff';
-
-  // Separate routes into potential hosts and candidates for merging
-  const validRoutes = routes.filter(r => !r.error && r.employees && r.employees.length > 0);
-
-  // Identify low-occupancy routes (candidates for merging into others)
-  const lowOccupancyRoutes = validRoutes.filter(r => r.employees.length <= lowOccupancyThreshold);
-
-  // Identify potential host routes (higher occupancy but not at capacity)
-  // **ENHANCED: Also allow low-occupancy routes to host if they have room (bi-directional merging)**
-  const potentialHostRoutes = validRoutes.filter(r => {
-    const currentOccupancy = r.employees.length + (r.guardNeeded ? 1 : 0);
-    // Allow routes with at least minHostOccupancy OR any route with capacity
-    // This enables bi-directional merging of small routes
-    return (r.employees.length >= minHostOccupancy || profile.enableBidirectionalConsolidation) &&
-      currentOccupancy < r.vehicleCapacity;
-  });
-
-  console.log(`[Route Consolidation] Found ${lowOccupancyRoutes.length} low-occupancy routes, ${potentialHostRoutes.length} potential host routes`);
-
-  if (lowOccupancyRoutes.length === 0 || potentialHostRoutes.length === 0) {
-    // **NEW: If no standard hosts, try to merge low-occupancy routes with each other**
-    if (lowOccupancyRoutes.length >= 2 && profile.enableBidirectionalConsolidation !== false) {
-      console.log('[Route Consolidation] Trying bi-directional merging of low-occupancy routes...');
-    } else {
-      console.log('[Route Consolidation] No consolidation opportunities found.');
-      return { routes, mergedRouteCount: 0, mergeDetails: [] };
-    }
-  }
-
-  const mergeDetails = [];
-  const routesToRemove = new Set();
-  const modifiedHostRoutes = new Map(); // Track which host routes have been modified
-  const mergedEmployeeCodes = new Set(); // **CRITICAL: Track employees that have been merged to prevent duplicates**
-  const sourceRoutesToUpdate = new Map(); // Track which employees to remove from source routes
-
-  // Process each low-occupancy route
-  for (const candidateRoute of lowOccupancyRoutes) {
-    if (routesToRemove.has(candidateRoute.uniqueKey)) continue;
-
-    // Try to merge all employees from this route into a host
-    const employeesToMerge = [...candidateRoute.employees];
-    let allEmployeesMerged = true;
-    let targetHostRoute = null;
-    const successfullyMergedFromThisRoute = [];
-
-    for (const employee of employeesToMerge) {
-      // Skip if this employee was already merged from a different route
-      if (mergedEmployeeCodes.has(employee.empCode)) {
-        console.log(`[Route Consolidation] ✗ Employee ${employee.empCode} already merged, skipping`);
-        continue;
-      }
-
-      let bestHost = null;
-      let bestInsertionResult = null;
-      let bestScore = Infinity;
-
-      // Find the best host route for this employee
-      for (const hostRoute of potentialHostRoutes) {
-        if (routesToRemove.has(hostRoute.uniqueKey)) continue;
-        if (hostRoute.uniqueKey === candidateRoute.uniqueKey) continue;
-
-        // Get current state of host route (may have been modified by previous merges)
-        const currentHostState = modifiedHostRoutes.get(hostRoute.uniqueKey) || hostRoute;
-
-        // Check if capacity allows another employee
-        const currentOccupancy = currentHostState.employees.length + (currentHostState.guardNeeded ? 1 : 0);
-        if (currentOccupancy >= hostRoute.vehicleCapacity) continue;
-
-        // Check proximity to any employee in the host route
-        let minDistanceToHost = Infinity;
-        let closestHostEmp = null;
-        for (const hostEmp of currentHostState.employees) {
-          const dist = haversineDistance(
-            [employee.location.lat, employee.location.lng],
-            [hostEmp.location.lat, hostEmp.location.lng]
-          );
-          if (dist < minDistanceToHost) {
-            minDistanceToHost = dist;
-            closestHostEmp = hostEmp;
-          }
-        }
-
-        if (minDistanceToHost > maxInsertionDistanceKm) continue;
-
-        // **LINEAR DIRECTION CHECK** - Ensure merge maintains linear route (no zig-zag)
-        if (closestHostEmp) {
-          const linearTolerance = profile.consolidationLinearTolerance || 90;
-          if (!isLinearDirection(closestHostEmp, employee, facility, linearTolerance, tripType)) {
-            // Merging would create zig-zag, skip unless very close
-            if (minDistanceToHost > 1.5) continue;
-          }
-        }
-
-        // Find best insertion point
-        const insertionPoint = findBestInsertionPoint(
-          currentHostState.employees,
-          employee,
-          tripType,
-          facilityCoordinates
-        );
-
-        // Check if insertion is valid
-        const insertionResult = await canInsertEmployeeIntoRoute(
-          currentHostState,
-          employee,
-          insertionPoint.insertionIndex,
-          facility,
-          tripType,
-          maxDuration,
-          pickupTimePerEmployee,
-          profile,
-          city,
-          shiftTime
-        );
-
-        if (insertionResult.canInsert) {
-          const score = insertionPoint.distanceImpact;
-          if (score < bestScore) {
-            bestScore = score;
-            bestHost = hostRoute;
-            bestInsertionResult = insertionResult;
-          }
-        }
-      }
-
-      if (bestHost && bestInsertionResult) {
-        // Update the host route state
-        const updatedHostState = {
-          ...bestHost,
-          employees: bestInsertionResult.newEmployees,
-          routeDetails: bestInsertionResult.newRouteDetails
-        };
-        modifiedHostRoutes.set(bestHost.uniqueKey, updatedHostState);
-        targetHostRoute = bestHost;
-
-        // **CRITICAL: Mark this employee as merged to prevent duplicates**
-        mergedEmployeeCodes.add(employee.empCode);
-        successfullyMergedFromThisRoute.push(employee.empCode);
-
-        console.log(`[Route Consolidation] ✓ Employee ${employee.empCode} from route ${candidateRoute.uniqueKey} → route ${bestHost.uniqueKey} (distance impact: ${bestScore.toFixed(2)}km)`);
-      } else {
-        allEmployeesMerged = false;
-        console.log(`[Route Consolidation] ✗ Could not merge employee ${employee.empCode} from route ${candidateRoute.uniqueKey}`);
-      }
-    }
-
-    // If all employees were merged, mark the candidate route for removal
-    if (allEmployeesMerged && employeesToMerge.length > 0) {
-      routesToRemove.add(candidateRoute.uniqueKey);
-      mergeDetails.push({
-        mergedRoute: candidateRoute.uniqueKey,
-        intoRoute: targetHostRoute?.uniqueKey,
-        employeeCount: employeesToMerge.length
-      });
-      console.log(`[Route Consolidation] ✓✓ Route ${candidateRoute.uniqueKey} fully merged into ${targetHostRoute?.uniqueKey}`);
-    } else if (successfullyMergedFromThisRoute.length > 0) {
-      // **CRITICAL: Track partial merges - these employees need to be removed from source route**
-      sourceRoutesToUpdate.set(candidateRoute.uniqueKey, successfullyMergedFromThisRoute);
-      console.log(`[Route Consolidation] ⚠ Route ${candidateRoute.uniqueKey} partially merged. Employees to remove: ${successfullyMergedFromThisRoute.join(', ')}`);
-    }
-  }
-
-  // Build final route list
-  const consolidatedRoutes = [];
-  for (const route of routes) {
-    if (routesToRemove.has(route.uniqueKey)) {
-      continue; // Skip fully merged routes
-    }
-
-    // Use modified state if available (this route received employees)
-    const modifiedState = modifiedHostRoutes.get(route.uniqueKey);
-
-    // Check if this route had employees that were partially merged out
-    const employeesToRemove = sourceRoutesToUpdate.get(route.uniqueKey);
-    if (modifiedState) {
-      // Reassign employee order numbers after merge
-      const orderedEmployees = modifiedState.employees.map((emp, idx) => ({
-        ...emp,
-        order: idx + 1
-      }));
-
-      consolidatedRoutes.push({
-        ...route,
-        employees: orderedEmployees,
-        routeDetails: modifiedState.routeDetails,
-        // **CRITICAL: Update the encodedPolyline to match the new merged route**
-        encodedPolyline: modifiedState.routeDetails.encodedPolyline,
-        consolidatedFrom: mergeDetails.filter(m => m.intoRoute === route.uniqueKey).map(m => m.mergedRoute)
-      });
-
-      console.log(`[Route Consolidation] Final employee order for ${route.uniqueKey}: ${orderedEmployees.map(e => `${e.empCode}(#${e.order})`).join(', ')}`);
-    } else if (employeesToRemove && employeesToRemove.length > 0) {
-      // **CRITICAL: This route had some employees merged out - remove them to prevent duplicates**
-      const remainingEmployees = route.employees
-        .filter(emp => !employeesToRemove.includes(emp.empCode))
-        .map((emp, idx) => ({ ...emp, order: idx + 1 }));
-
-      if (remainingEmployees.length > 0) {
-        // Recalculate route details for remaining employees
-        const isDropoffTrip = tripType.toLowerCase() === 'dropoff';
-        const employeeCoords = remainingEmployees.map(e => [e.location.lat, e.location.lng]);
-        const allCoords = isDropoffTrip
-          ? [facilityCoordinates, ...employeeCoords]
-          : [...employeeCoords, facilityCoordinates];
-
-        let newRouteDetails = route.routeDetails;
-        try {
-          newRouteDetails = await calculateRouteDetails(
-            allCoords,
-            remainingEmployees,
-            pickupTimePerEmployee,
-            tripType,
-            city,
-            shiftTime
-          );
-        } catch (err) {
-          console.warn(`[Route Consolidation] Failed to recalculate route ${route.uniqueKey}: ${err.message}`);
-        }
-
-        consolidatedRoutes.push({
-          ...route,
-          employees: remainingEmployees,
-          routeDetails: newRouteDetails,
-          encodedPolyline: newRouteDetails.encodedPolyline || route.encodedPolyline,
-          partiallyMerged: true
-        });
-
-        console.log(`[Route Consolidation] Route ${route.uniqueKey} after partial merge: ${remainingEmployees.map(e => e.empCode).join(', ')}`);
-      } else {
-        // All employees were actually merged, skip this route
-        console.log(`[Route Consolidation] Route ${route.uniqueKey} has no remaining employees after partial merge, removing`);
-      }
-    } else {
-      consolidatedRoutes.push(route);
-    }
-  }
-
-  console.log(`[Route Consolidation] Complete. Merged ${routesToRemove.size} routes. Routes: ${routes.length} → ${consolidatedRoutes.length}`);
-
-  // **CRITICAL: Final deduplication pass to ensure each employee appears in exactly one route**
-  // This handles edge cases where routes are both sources and hosts
-  const seenEmployees = new Set();
-  const finalRoutes = [];
-  const duplicatesRemoved = [];
-
-  // Process routes in reverse order so that employees stay in their MERGED destination (later routes)
-  for (let i = consolidatedRoutes.length - 1; i >= 0; i--) {
-    const route = consolidatedRoutes[i];
-    if (!route.employees || route.employees.length === 0) continue;
-
-    const uniqueEmployees = [];
-    for (const emp of route.employees) {
-      if (!seenEmployees.has(emp.empCode)) {
-        seenEmployees.add(emp.empCode);
-        uniqueEmployees.push(emp);
-      } else {
-        duplicatesRemoved.push({ empCode: emp.empCode, fromRoute: route.uniqueKey });
-      }
-    }
-
-    if (uniqueEmployees.length > 0) {
-      // Reassign order numbers
-      const orderedEmployees = uniqueEmployees.map((emp, idx) => ({ ...emp, order: idx + 1 }));
-      finalRoutes.unshift({
-        ...route,
-        employees: orderedEmployees
-      });
-    }
-  }
-
-  if (duplicatesRemoved.length > 0) {
-    console.log(`[Route Consolidation] **DEDUPLICATION** Removed ${duplicatesRemoved.length} duplicate employee appearances:`);
-    duplicatesRemoved.forEach(d => console.log(`  - ${d.empCode} removed from ${d.fromRoute}`));
-  }
-
-  console.log(`[Route Consolidation] Final route count after deduplication: ${finalRoutes.length}`);
-
-  return {
-    routes: finalRoutes,
-    mergedRouteCount: routesToRemove.size,
-    mergeDetails
-  };
-}
-
-// ==================== END ROUTE CONSOLIDATION OPTIMIZATION ====================
-
 async function generateRoutes(data) {
   try {
     const {
@@ -4145,56 +3249,11 @@ async function generateRoutes(data) {
     // **NEW: Fleet status after OR-Tools**
     logFleetStatus(availableFleetCounts, profile, "After OR-Tools");
 
-    // **NEW: Route Consolidation Phase**
-    // Attempt to merge low-occupancy routes into higher-occupancy routes
-    console.log(`\n[Route Consolidation] Pre-consolidation: ${allOptimizedOrToolsRoutes.length} routes`);
-
-    const consolidationResult = await consolidateRoutes(
-      allOptimizedOrToolsRoutes,
-      facility,
-      tripType,
-      profileMaxDuration,
-      pickupTimePerEmployee,
-      profile,
-      city,
-      shiftTime
-    );
-
-    let routesAfterConsolidation = consolidationResult.routes;
-
-    if (consolidationResult.mergedRouteCount > 0) {
-      console.log(`[Route Consolidation] SUCCESS: Merged ${consolidationResult.mergedRouteCount} routes. Routes: ${allOptimizedOrToolsRoutes.length} → ${routesAfterConsolidation.length}`);
-      console.log(`[Route Consolidation] Merge details:`, consolidationResult.mergeDetails);
-    }
-
-    // **NEW: Singleton Aggregation Phase**
-    // Cluster any remaining singleton routes together based on direction and proximity
-    const singletonAggregationRadius = profile.singletonAggregationRadius || 6; // km
-    const singletonMaxClusterSize = profile.singletonMaxClusterSize || 4;
-
-    const singletonCountBefore = routesAfterConsolidation.filter(r => r.employees?.length === 1).length;
-
-    if (singletonCountBefore >= 2) {
-      console.log(`\n[Singleton Aggregation] Pre-aggregation: ${singletonCountBefore} singleton routes`);
-      routesAfterConsolidation = aggregateSingletonRoutes(
-        routesAfterConsolidation,
-        facility,
-        tripType,
-        singletonAggregationRadius,
-        singletonMaxClusterSize
-      );
-
-      const singletonCountAfter = routesAfterConsolidation.filter(r => r.employees?.length === 1).length;
-      console.log(`[Singleton Aggregation] Post-aggregation: ${singletonCountAfter} singleton routes (reduced by ${singletonCountBefore - singletonCountAfter})`);
-    }
-
-    logFleetStatus(availableFleetCounts, profile, "After Route Consolidation");
-
     const finalProcessedRoutes = [];
     const collectedUnroutedForReinsertionMap = new Map();
 
     // Main route processing loop with guard handling
-    for (const route of routesAfterConsolidation) {
+    for (const route of allOptimizedOrToolsRoutes) {
       totalRouteCount++;
       route.routeNumber = totalRouteCount;
 
@@ -4484,79 +3543,6 @@ async function generateRoutes(data) {
       masterUnroutedPool = unroutedResult.remainingUnrouted;
     }
 
-    // --- FINAL FALLBACK: Create singleton routes for any remaining unrouted employees ---
-    // This ensures NO employee is left unrouted
-    if (masterUnroutedPool.length > 0) {
-      console.log(`\n[FALLBACK SINGLETON ROUTING] ${masterUnroutedPool.length} employees still unrouted after all attempts. Creating singleton routes...`);
-
-      const isDropoff = tripType.toLowerCase() === 'dropoff';
-      const facilityCoordinates = [facility.geoY, facility.geoX];
-
-      for (const employee of masterUnroutedPool) {
-        totalRouteCount++;
-
-        // Calculate route details for singleton
-        const employeeCoords = [[employee.location?.lat || employee.geoY, employee.location?.lng || employee.geoX]];
-        const allCoords = isDropoff
-          ? [facilityCoordinates, ...employeeCoords]
-          : [...employeeCoords, facilityCoordinates];
-
-        let routeDetails = {
-          totalDistance: 0,
-          totalDuration: 0,
-          encodedPolyline: '',
-          legs: [],
-          geometry: null
-        };
-
-        try {
-          routeDetails = await calculateRouteDetails(
-            allCoords,
-            [employee],
-            pickupTimePerEmployee,
-            tripType,
-            city,
-            shiftTime
-          );
-        } catch (err) {
-          console.warn(`[Fallback Singleton] Failed to calculate route for ${employee.empCode}: ${err.message}`);
-        }
-
-        // Create singleton route
-        const singletonRoute = {
-          zone: employee.zone || 'FALLBACK',
-          tripType: tripType,
-          uniqueKey: `FALLBACK_singleton_${employee.empCode}_${totalRouteCount}`,
-          routeNumber: totalRouteCount,
-          employees: [{
-            ...employee,
-            order: 1,
-            location: employee.location || { lat: employee.geoY, lng: employee.geoX }
-          }],
-          routeDetails: routeDetails,
-          encodedPolyline: routeDetails.encodedPolyline || '',
-          vehicleCapacity: 4,
-          assignedVehicleType: 's',
-          guardNeeded: activateGuardSystemFromInput && employee.gender === 'F',
-          isSpecialNeedsRoute: employee.isMedical || employee.isPWD || false,
-          isNMTRoute: employee.isNMT || false,
-          afterFleetExhaustion: true,
-          error: false,
-          fallbackSingleton: true
-        };
-
-        // Calculate pickup times for singleton
-        calculatePickupTimes(singletonRoute, shiftTime, pickupTimePerEmployee, reportingTime);
-
-        routeDataContainer.routeData.push(singletonRoute);
-        console.log(`[Fallback Singleton] Created route ${totalRouteCount} for employee ${employee.empCode}`);
-      }
-
-      // Clear the unrouted pool since all have been routed
-      masterUnroutedPool = [];
-      console.log(`[FALLBACK SINGLETON ROUTING] Complete. All employees now routed.`);
-    }
-
     // --- END OF UNROUTED HANDLING ---
 
     const finalStats = calculateRouteStatistics(
@@ -4569,107 +3555,24 @@ async function generateRoutes(data) {
       totalSwappedRoutes: finalTotalSwappedRoutes,
     });
 
-    // Collect all employee codes that are currently routed
     const allEffectivelyRoutedEmpCodes = new Set();
     routeDataContainer.routeData.forEach((r) => {
       if (!r.error && r.employees)
         r.employees.forEach((e) => allEffectivelyRoutedEmpCodes.add(e.empCode));
     });
-
-    // Find employees that are NOT routed
-    let stillUnroutedEmployees = employees.filter(
-      (emp) => !allEffectivelyRoutedEmpCodes.has(emp.empCode)
-    );
-
-    // --- FINAL COMPREHENSIVE FALLBACK: Create singleton routes for ANY remaining unrouted employees ---
-    if (stillUnroutedEmployees.length > 0) {
-      console.log(`\n[FINAL FALLBACK] ${stillUnroutedEmployees.length} employees still unrouted. Creating singleton routes for ALL...`);
-
-      const isDropoff = tripType.toLowerCase() === 'dropoff';
-      const facilityCoordinates = [facility.geoY, facility.geoX];
-      let fallbackRouteCount = routeDataContainer.routeData.length;
-
-      for (const employee of stillUnroutedEmployees) {
-        fallbackRouteCount++;
-
-        // Ensure employee has location data
-        const empLat = employee.location?.lat || employee.geoY;
-        const empLng = employee.location?.lng || employee.geoX;
-
-        // Calculate route details for singleton
-        const employeeCoords = [[empLat, empLng]];
-        const allCoords = isDropoff
-          ? [facilityCoordinates, ...employeeCoords]
-          : [...employeeCoords, facilityCoordinates];
-
-        let routeDetails = {
-          totalDistance: 0,
-          totalDuration: 0,
-          encodedPolyline: '',
-          legs: [],
-          geometry: null
-        };
-
-        try {
-          routeDetails = await calculateRouteDetails(
-            allCoords,
-            [{ ...employee, location: { lat: empLat, lng: empLng } }],
-            pickupTimePerEmployee,
-            tripType,
-            city,
-            shiftTime
-          );
-        } catch (err) {
-          console.warn(`[Final Fallback] Failed to calculate route for ${employee.empCode}: ${err.message}`);
-        }
-
-        // Create singleton route
-        const singletonRoute = {
-          zone: employee.zone || 'FALLBACK',
-          tripType: tripType,
-          uniqueKey: `FINAL_FALLBACK_${employee.empCode}_${fallbackRouteCount}`,
-          routeNumber: fallbackRouteCount,
-          employees: [{
-            ...employee,
-            order: 1,
-            location: { lat: empLat, lng: empLng }
-          }],
-          routeDetails: routeDetails,
-          encodedPolyline: routeDetails.encodedPolyline || '',
-          vehicleCapacity: 4,
-          assignedVehicleType: 's',
-          guardNeeded: activateGuardSystemFromInput && employee.gender === 'F',
-          isSpecialNeedsRoute: employee.isMedical || employee.isPWD || false,
-          isNMTRoute: employee.isNMT || false,
-          afterFleetExhaustion: true,
-          error: false,
-          fallbackSingleton: true,
-          finalFallback: true
-        };
-
-        // Calculate pickup times for singleton
-        calculatePickupTimes(singletonRoute, shiftTime, pickupTimePerEmployee, reportingTime);
-
-        routeDataContainer.routeData.push(singletonRoute);
-        allEffectivelyRoutedEmpCodes.add(employee.empCode);
-        console.log(`[Final Fallback] Created route ${fallbackRouteCount} for employee ${employee.empCode}`);
-      }
-
-      stillUnroutedEmployees = [];
-      console.log(`[FINAL FALLBACK] Complete. All ${employees.length} employees are now routed.`);
-
-      // Regenerate response with the new routes added
-      const updatedStats = calculateRouteStatistics(routeDataContainer, employees.length);
-      Object.assign(response, await createSimplifiedResponse({
-        ...routeDataContainer,
-        ...updatedStats,
-        totalSwappedRoutes: finalTotalSwappedRoutes,
-      }));
-    }
-
-    // Final unrouted check (should be empty now)
     response.unroutedEmployees = employees
       .filter((emp) => !allEffectivelyRoutedEmpCodes.has(emp.empCode))
+      .concat(
+        masterUnroutedPool.filter(
+          (emp) => !allEffectivelyRoutedEmpCodes.has(emp.empCode)
+        )
+      )
+      .filter(
+        (emp, index, self) =>
+          emp &&
+          emp.empCode &&
+          index === self.findIndex((e) => e.empCode === emp.empCode)
+      )
       .map((emp) => ({
         empCode: emp.empCode,
         geoX: emp.geoX,
@@ -4724,14 +3627,6 @@ async function generateRoutes(data) {
           utilization: parseFloat((used / fleetType.count * 100).toFixed(1))
         };
       }) : []
-    };
-
-    // **NEW: Add route consolidation stats to response**
-    response.routeConsolidation = {
-      enabled: profile.enableRouteConsolidation !== false,
-      mergedRouteCount: consolidationResult.mergedRouteCount,
-      routesSavedByConsolidation: consolidationResult.mergedRouteCount,
-      mergeDetails: consolidationResult.mergeDetails
     };
 
     return response;
@@ -5375,11 +4270,6 @@ async function createSimplifiedResponse(routeDataContainer) {
       })
   );
 
-  // Renumber routes sequentially to eliminate any gaps
-  processedRoutes.forEach((route, index) => {
-    route.routeNumber = index + 1;
-  });
-
   return {
     uuid: routeDataContainer.uuid,
     date: routeDataContainer.date,
@@ -5387,7 +4277,7 @@ async function createSimplifiedResponse(routeDataContainer) {
     tripType: routeDataContainer.tripType === "PICKUP" ? "P" : "D",
     totalEmployees: routeDataContainer.totalEmployees,
     totalRoutedEmployees: routeDataContainer.totalRoutedEmployees,
-    totalRoutes: processedRoutes.length,
+    totalRoutes: routeDataContainer.totalRoutes,
     totalGuardedRoutes: routeDataContainer.totalGuardedRoutes,
     averageOccupancy: routeDataContainer.averageOccupancy,
     overallRouteDetails: routeDataContainer.overallRouteDetails,
@@ -5465,23 +4355,6 @@ async function calculateEta(currentGeocodes, destinationGeocodes, shiftTime, cit
 /**
  * Reoptimize a route using OR-Tools VRP solver to find optimal employee order
  * Then calculate route details (ETA, polyline) for the optimized order
- * 
- * @param {Object} params - Parameters for route reoptimization
- * @param {Array} params.employees - List of employees with geoX, geoY coordinates
- * @param {Object} params.facility - Facility with geoX, geoY coordinates
- * @param {string} params.tripType - 'PICKUP' or 'DROPOFF'
- * @param {number} params.vehicleCapacity - Max employees per vehicle (default: employees.length)
- * @param {number} params.pickupTimePerEmployee - Time per pickup in seconds
- * @param {string} params.city - City for OSRM routing
- * @param {string|number} params.shiftTime - Shift time for traffic calculation
- * @param {number} params.maxRouteDuration - Max route duration in seconds (optional)
- * @returns {Object} - Optimized employees with route details
- */
-/**
- * Reoptimize a route using INSERTION-BASED algorithm
- * This preserves the existing employee order and finds optimal positions for new employees
- * @param {Object} params - Configuration parameters
- * @returns {Object} - Optimized employees with route details
  */
 async function reoptimizeRouteWithVRP({
   employees,
@@ -5494,11 +4367,7 @@ async function reoptimizeRouteWithVRP({
   maxRouteDuration = 7200
 }) {
   if (!employees || employees.length === 0) {
-    return {
-      reOptimized: false,
-      employees: [],
-      error: "No employees provided"
-    };
+    return { reOptimized: false, employees: [], error: "No employees provided" };
   }
 
   // For single employee, no optimization needed
@@ -5510,496 +4379,101 @@ async function reoptimizeRouteWithVRP({
       : [...empCoords, facilityCoordinates];
 
     const routeDetails = await calculateRouteDetails(
-      routeCoords,
-      employees,
-      pickupTimePerEmployee,
-      tripType,
-      city,
-      shiftTime
+      routeCoords, employees, pickupTimePerEmployee, tripType, city, shiftTime
     );
 
-    return {
-      reOptimized: true,
-      employees: routeDetails.employees || employees,
-      routeDetails
-    };
+    return { reOptimized: true, employees: routeDetails.employees || employees, routeDetails };
   }
 
   const facilityLocation = { lat: facility.geoY, lng: facility.geoX };
-  const isPickup = tripType.toUpperCase() === 'PICKUP';
+  const effectiveCapacity = vehicleCapacity || employees.length;
 
   try {
-    // Separate existing employees (in order) from new employees
-    const existingEmployees = employees.filter(emp => !emp.isNewlyAdded);
-    const newEmployees = employees.filter(emp => emp.isNewlyAdded);
-
-    console.log(`[RE-OPTIMIZE] Insertion mode: ${existingEmployees.length} existing, ${newEmployees.length} new employees`);
-
-    // If no new employees, just recalculate route details with existing order
-    if (newEmployees.length === 0) {
-      console.log(`[RE-OPTIMIZE] No new employees, keeping existing order`);
-      const empCoords = existingEmployees.map(emp => [emp.geoY, emp.geoX]);
-      const routeCoords = isPickup
-        ? [...empCoords, [facility.geoY, facility.geoX]]
-        : [[facility.geoY, facility.geoX], ...empCoords];
-
-      const routeDetails = await calculateRouteDetails(
-        routeCoords,
-        existingEmployees,
-        pickupTimePerEmployee,
-        tripType,
-        city,
-        shiftTime
-      );
-
-      return {
-        reOptimized: true,
-        employees: routeDetails.employees || existingEmployees,
-        routeDetails
-      };
-    }
-
-    // If all employees are new (no existing order to preserve), use full VRP
-    if (existingEmployees.length === 0) {
-      console.log(`[RE-OPTIMIZE] All employees are new, using VRP for initial optimization`);
-      return await reoptimizeRouteWithFullVRP({
-        employees,
-        facility,
-        tripType,
-        vehicleCapacity,
-        pickupTimePerEmployee,
-        city,
-        shiftTime,
-        maxRouteDuration
-      });
-    }
-
-    // Normalize employees to have location object
-    const allEmployees = [...existingEmployees, ...newEmployees];
-    const normalizedEmployees = allEmployees.map(emp => ({
+    const normalizedEmployees = employees.map(emp => ({
       ...emp,
       location: emp.location || { lat: emp.geoY, lng: emp.geoX }
     }));
 
-    console.log(`[DEBUG-COORDS] Facility: lat=${facilityLocation.lat}, lng=${facilityLocation.lng}`);
-    console.log(`[DEBUG-COORDS] First employee: ${normalizedEmployees[0]?.empCode}, lat=${normalizedEmployees[0]?.location?.lat}, lng=${normalizedEmployees[0]?.location?.lng}`);
-    console.log(`[DEBUG-COORDS] Last employee: ${normalizedEmployees[normalizedEmployees.length - 1]?.empCode}, lat=${normalizedEmployees[normalizedEmployees.length - 1]?.location?.lat}, lng=${normalizedEmployees[normalizedEmployees.length - 1]?.location?.lng}`);
-
-    // Generate distance/duration matrix using OSRM
-    let matrixData = await generateDistanceDurationMatrix(
-      normalizedEmployees,
-      facilityLocation,
-      city
-    );
-
-    let { distanceMatrix, durationMatrix, pointMap } = matrixData;
+    const matrixData = await generateDistanceDurationMatrix(normalizedEmployees, facilityLocation, city);
+    const { distanceMatrix, durationMatrix, pointMap } = matrixData;
 
     if (!distanceMatrix || distanceMatrix.length === 0) {
-      return {
-        reOptimized: false,
-        employees,
-        error: "Failed to generate distance matrix"
-      };
+      return { reOptimized: false, employees, error: "Failed to generate distance matrix" };
     }
 
-    // Check if OSRM returned all zeros (fallback to Haversine)
-    const osrmHasValidData = distanceMatrix[0]?.[1] > 0 || distanceMatrix[1]?.[0] > 0;
-    if (!osrmHasValidData) {
-      console.log(`[RE-OPTIMIZE] OSRM returned zeros, falling back to Haversine distances`);
+    const isPickup = tripType.toUpperCase() === 'PICKUP';
+    const NUM_SECTORS = 8;
+    const sectorSize = 360 / NUM_SECTORS;
 
-      // Build coordinates array: [facility, ...employees]
-      const allCoords = [
-        [facilityLocation.lat, facilityLocation.lng],
-        ...normalizedEmployees.map(emp => [emp.location.lat, emp.location.lng])
-      ];
+    // Calculate bearing and distance for each employee from facility
+    const employeesWithMetrics = normalizedEmployees.map((emp, idx) => {
+      const lat = emp.geoY || emp.location?.lat;
+      const lng = emp.geoX || emp.location?.lng;
 
-      // Generate Haversine distance matrix (in meters to match OSRM format)
-      const n = allCoords.length;
-      distanceMatrix = [];
-      for (let i = 0; i < n; i++) {
-        distanceMatrix[i] = [];
-        for (let j = 0; j < n; j++) {
-          if (i === j) {
-            distanceMatrix[i][j] = 0;
-          } else {
-            // haversineDistance returns km, convert to meters
-            distanceMatrix[i][j] = haversineDistance(allCoords[i], allCoords[j]) * 1000;
-          }
-        }
-      }
+      // Calculate bearing (0=North, 90=East, 180=South, 270=West)
+      const dLng = (lng - facilityLocation.lng) * Math.PI / 180;
+      const lat1 = facilityLocation.lat * Math.PI / 180;
+      const lat2 = lat * Math.PI / 180;
+      const y = Math.sin(dLng) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+      let bearing = Math.atan2(y, x) * 180 / Math.PI;
+      bearing = (bearing + 360) % 360;
 
-      console.log(`[DEBUG-HAVERSINE] Generated ${n}x${n} matrix, sample [0][1]=${distanceMatrix[0]?.[1]?.toFixed(0)}m`);
-    }
+      const distFromDepot = distanceMatrix[0][idx + 1] || 0;
+      const sectorIndex = Math.floor(bearing / sectorSize) % NUM_SECTORS;
 
-    // Build index mapping for the matrix
-    // Index 0 = facility, Index 1..N = employees in order of normalizedEmployees
-    const empToMatrixIndex = new Map();
-    normalizedEmployees.forEach((emp, idx) => {
-      empToMatrixIndex.set(emp.empCode, idx + 1); // +1 because index 0 is facility
+      return { ...emp, originalIndex: idx, matrixIndex: idx + 1, bearing, distFromDepot, sectorIndex };
     });
 
-    console.log(`[DEBUG-MATRIX] Matrix size: ${distanceMatrix.length}x${distanceMatrix[0]?.length}, normalizedEmployees: ${normalizedEmployees.length}`);
-    console.log(`[DEBUG-MATRIX] Sample matrix[0][1]=${distanceMatrix[0]?.[1]}, matrix[1][0]=${distanceMatrix[1]?.[0]}`);
+    // Group by sector
+    const sectors = new Map();
+    for (let i = 0; i < NUM_SECTORS; i++) sectors.set(i, []);
+    for (const emp of employeesWithMetrics) sectors.get(emp.sectorIndex).push(emp);
 
-    // Start with existing employees in their original order
-    let currentRoute = existingEmployees.map(emp => ({
-      ...emp,
-      matrixIndex: empToMatrixIndex.get(emp.empCode)
-    }));
+    // Sort each sector by distance (farthest first for PICKUP, nearest first for DROP)
+    sectors.forEach((emps, idx) => {
+      sectors.set(idx, emps.sort((a, b) => isPickup ? b.distFromDepot - a.distFromDepot : a.distFromDepot - b.distFromDepot));
+    });
 
-    console.log(`[DEBUG-ROUTE] existingEmployees empCodes: ${existingEmployees.map(e => e.empCode).join(', ')}`);
-    console.log(`[DEBUG-ROUTE] currentRoute matrixIndices: ${currentRoute.map(e => e.matrixIndex).join(', ')}`);
+    // Find anchor employee
+    let anchorEmployee = employeesWithMetrics[0];
+    for (const emp of employeesWithMetrics) {
+      if (isPickup && emp.distFromDepot > anchorEmployee.distFromDepot) anchorEmployee = emp;
+      else if (!isPickup && emp.distFromDepot < anchorEmployee.distFromDepot) anchorEmployee = emp;
+    }
+    const startSectorIndex = anchorEmployee.sectorIndex;
 
-    // For each new employee, find the best insertion position
-    for (const newEmp of newEmployees) {
-      const newEmpMatrixIndex = empToMatrixIndex.get(newEmp.empCode);
-      console.log(`[DEBUG-NEW] newEmp ${newEmp.empCode} matrixIndex=${newEmpMatrixIndex}, geoY=${newEmp.geoY}, geoX=${newEmp.geoX}`);
+    console.log(`[REOPTIMIZE v1] Anchor: ${anchorEmployee.empCode}, bearing: ${anchorEmployee.bearing.toFixed(1)}°, dist: ${anchorEmployee.distFromDepot}m, sector: ${startSectorIndex}`);
 
-      if (newEmpMatrixIndex === undefined) {
-        console.warn(`[RE-OPTIMIZE] Could not find matrix index for ${newEmp.empCode}`);
-        continue;
-      }
-
-      let bestPosition = -1;
-      let bestCost = Infinity;
-
-      // Calculate cost of inserting at each position
-      // Route structure: [Facility] -> Emp0 -> Emp1 -> ... -> EmpN -> [Facility] (for PICKUP it's reversed)
-
-      for (let insertPos = 0; insertPos <= currentRoute.length; insertPos++) {
-        let insertionCost = 0;
-
-        // For both PICKUP and DROPOFF, we model the route as:
-        // PICKUP:  [START] -> Emp[0] -> Emp[1] -> ... -> Emp[N] -> Facility
-        // DROPOFF: Facility -> Emp[0] -> Emp[1] -> ... -> Emp[N] -> [END]
-        // 
-        // We use facility (index 0) as the reference point for both start and end
-        // Insertion cost = (new arcs added) - (arc removed)
-
-        if (currentRoute.length === 0) {
-          // Empty route, cost is just distance to/from facility
-          insertionCost = isPickup
-            ? distanceMatrix[newEmpMatrixIndex][0]  // newEmp -> Facility
-            : distanceMatrix[0][newEmpMatrixIndex]; // Facility -> newEmp
-        } else if (insertPos === 0) {
-          // Inserting at the beginning
-          const firstEmpIndex = currentRoute[0].matrixIndex;
-          const firstDistFromFacility = distanceMatrix[0][firstEmpIndex];
-          const newDistFromFacility = distanceMatrix[0][newEmpMatrixIndex];
-
-          if (isPickup) {
-            // PICKUP: Modeling as round trip: Facility -> First -> ... -> Last -> Facility
-            // Inserting NewEmp before First: Facility -> NewEmp -> First -> ...
-            // Cost = dist(Facility->NewEmp) + dist(NewEmp->First) - dist(Facility->First)
-            const toNew = distanceMatrix[0][newEmpMatrixIndex];
-            const newToFirst = distanceMatrix[newEmpMatrixIndex][firstEmpIndex];
-            const toFirst = distanceMatrix[0][firstEmpIndex];
-            insertionCost = toNew + newToFirst - toFirst;
-
-            console.log(`[DEBUG-POS0] PICKUP: toNew=${toNew}, newToFirst=${newToFirst}, toFirst=${toFirst}, baseCost=${insertionCost}, newDist=${newDistFromFacility}, firstDist=${firstDistFromFacility}`);
-
-            // If NewEmp is closer to facility than First, add heavy penalty (wrong direction for PICKUP)
-            // PICKUP should start from farthest employee, so position 0 should have the farthest
-            if (newDistFromFacility < firstDistFromFacility) {
-              insertionCost += (firstDistFromFacility - newDistFromFacility) * 10;
-              console.log(`[DEBUG-POS0] Added penalty: ${(firstDistFromFacility - newDistFromFacility) * 10}, totalCost=${insertionCost}`);
-            }
-          } else {
-            // DROPOFF: Facility -> First -> ... 
-            // Inserting NewEmp: Facility -> NewEmp -> First -> ...
-            // Cost = dist(Facility->NewEmp) + dist(NewEmp->First) - dist(Facility->First)
-            insertionCost = distanceMatrix[0][newEmpMatrixIndex]
-              + distanceMatrix[newEmpMatrixIndex][firstEmpIndex]
-              - distanceMatrix[0][firstEmpIndex];
-
-            // If NewEmp is farther from facility than First, add penalty (wrong direction for DROPOFF)
-            // DROPOFF should start with nearest employee first
-            if (newDistFromFacility > firstDistFromFacility) {
-              insertionCost += (newDistFromFacility - firstDistFromFacility) * 10;
-            }
-          }
-        } else if (insertPos === currentRoute.length) {
-          // Inserting at the end
-          const lastEmpIndex = currentRoute[currentRoute.length - 1].matrixIndex;
-          if (isPickup) {
-            // PICKUP: ... -> Last -> Facility
-            // Inserting NewEmp: ... -> Last -> NewEmp -> Facility
-            // Cost = dist(Last->NewEmp) + dist(NewEmp->Facility) - dist(Last->Facility)
-            insertionCost = distanceMatrix[lastEmpIndex][newEmpMatrixIndex]
-              + distanceMatrix[newEmpMatrixIndex][0]
-              - distanceMatrix[lastEmpIndex][0];
-
-            // If NewEmp is farther from facility than Last, add penalty (wrong direction)
-            const lastDistFromFacility = distanceMatrix[0][lastEmpIndex];
-            const newDistFromFacility = distanceMatrix[0][newEmpMatrixIndex];
-            if (newDistFromFacility > lastDistFromFacility) {
-              insertionCost += (newDistFromFacility - lastDistFromFacility) * 10;
-            }
-          } else {
-            // DROPOFF: ... -> Last -> [END]
-            // Inserting NewEmp: ... -> Last -> NewEmp
-            const lastDistFromFacility = distanceMatrix[0][lastEmpIndex];
-            const newDistFromFacility = distanceMatrix[0][newEmpMatrixIndex];
-
-            insertionCost = distanceMatrix[lastEmpIndex][newEmpMatrixIndex];
-
-            // If NewEmp is closer to facility than Last, add penalty (wrong direction)
-            if (newDistFromFacility < lastDistFromFacility) {
-              insertionCost += (lastDistFromFacility - newDistFromFacility) * 10;
-            }
-          }
-        } else {
-          // Inserting in the middle (same for both PICKUP and DROPOFF)
-          const prevEmpIndex = currentRoute[insertPos - 1].matrixIndex;
-          const nextEmpIndex = currentRoute[insertPos].matrixIndex;
-
-          // Classic cheapest insertion: Cost = dist(prev->new) + dist(new->next) - dist(prev->next)
-          insertionCost = distanceMatrix[prevEmpIndex][newEmpMatrixIndex]
-            + distanceMatrix[newEmpMatrixIndex][nextEmpIndex]
-            - distanceMatrix[prevEmpIndex][nextEmpIndex];
-        }
-
-        // Add direction penalty for middle positions
-        if (insertPos > 0 && insertPos < currentRoute.length) {
-          const prevDist = distanceMatrix[0][currentRoute[insertPos - 1].matrixIndex];
-          const newDist = distanceMatrix[0][newEmpMatrixIndex];
-          const nextDist = distanceMatrix[0][currentRoute[insertPos].matrixIndex];
-
-          if (isPickup) {
-            // For PICKUP, distance should decrease: prevDist >= newDist >= nextDist
-            if (newDist > prevDist) insertionCost += (newDist - prevDist) * 5;
-            if (newDist < nextDist) insertionCost += (nextDist - newDist) * 5;
-          } else {
-            // For DROPOFF, distance should increase: prevDist <= newDist <= nextDist
-            if (newDist < prevDist) insertionCost += (prevDist - newDist) * 5;
-            if (newDist > nextDist) insertionCost += (newDist - nextDist) * 5;
-          }
-        }
-
-        if (insertionCost < bestCost) {
-          bestCost = insertionCost;
-          bestPosition = insertPos;
-        }
-      } // end of for (insertPos) loop
-
-      // Insert the new employee at the best position
-      if (bestPosition >= 0) {
-        currentRoute.splice(bestPosition, 0, {
-          ...newEmp,
-          matrixIndex: newEmpMatrixIndex
-        });
-        console.log(`[RE-OPTIMIZE] Inserted ${newEmp.empCode} at position ${bestPosition} (cost: ${bestCost.toFixed(0)}m)`);
-      }
+    // Sweep through sectors starting from anchor's sector
+    const optimizedOrder = [];
+    for (let offset = 0; offset < NUM_SECTORS; offset++) {
+      const sectorIdx = isPickup
+        ? (startSectorIndex - offset + NUM_SECTORS) % NUM_SECTORS
+        : (startSectorIndex + offset) % NUM_SECTORS;
+      const sectorEmployees = sectors.get(sectorIdx);
+      if (sectorEmployees?.length > 0) optimizedOrder.push(...sectorEmployees);
     }
 
-    // Build final optimized employee list (remove matrixIndex)
-    const optimizedEmployees = currentRoute.map(({ matrixIndex, ...emp }) => emp);
+    let optimizedEmployees = optimizedOrder.map(e => employees[e.originalIndex]);
+    console.log(`[REOPTIMIZE v1] Route optimized: ${employees.length} employees using angular sector ordering, tripType=${tripType}`);
 
-    console.log(`[RE-OPTIMIZE] Insertion complete. Final order: ${optimizedEmployees.map(e => e.empCode).join(' -> ')}`);
-
-    // Calculate route details for the optimized order
-    const optimizedEmployeeCoords = optimizedEmployees.map(emp => [emp.geoY, emp.geoX]);
-    const routeCoords = isPickup
-      ? [...optimizedEmployeeCoords, [facility.geoY, facility.geoX]]
-      : [[facility.geoY, facility.geoX], ...optimizedEmployeeCoords];
+    const facilityCoordinates = [facility.geoY, facility.geoX];
+    const employeeCoords = optimizedEmployees.map(emp => [emp.geoY, emp.geoX]);
+    const routeCoords = tripType.toUpperCase() === 'DROPOFF'
+      ? [facilityCoordinates, ...employeeCoords]
+      : [...employeeCoords, facilityCoordinates];
 
     const routeDetails = await calculateRouteDetails(
-      routeCoords,
-      optimizedEmployees,
-      pickupTimePerEmployee,
-      tripType,
-      city,
-      shiftTime
+      routeCoords, optimizedEmployees, pickupTimePerEmployee, tripType, city, shiftTime
     );
 
-    return {
-      reOptimized: true,
-      employees: routeDetails.employees || optimizedEmployees,
-      routeDetails
-    };
+    return { reOptimized: true, employees: routeDetails.employees || optimizedEmployees, routeDetails };
 
   } catch (error) {
-    console.error("[RE-OPTIMIZE] Error:", error);
-    return {
-      reOptimized: false,
-      employees,
-      error: error.message
-    };
+    console.error("[REOPTIMIZE v1] Error:", error);
+    return { reOptimized: false, employees, error: error.message };
   }
-}
-
-/**
- * Full VRP-based reoptimization (used when no existing order to preserve)
- * @param {Object} params - Configuration parameters
- * @returns {Object} - Optimized employees with route details
- */
-async function reoptimizeRouteWithFullVRP({
-  employees,
-  facility,
-  tripType,
-  vehicleCapacity,
-  pickupTimePerEmployee,
-  city,
-  shiftTime,
-  maxRouteDuration = 7200
-}) {
-  const facilityLocation = { lat: facility.geoY, lng: facility.geoX };
-  const effectiveCapacity = vehicleCapacity || employees.length;
-  const isPickup = tripType.toUpperCase() === 'PICKUP';
-
-  // Normalize employees to have location object
-  const normalizedEmployees = employees.map(emp => ({
-    ...emp,
-    location: emp.location || { lat: emp.geoY, lng: emp.geoX }
-  }));
-
-  // Generate distance/duration matrix using OSRM
-  const matrixData = await generateDistanceDurationMatrix(
-    normalizedEmployees,
-    facilityLocation,
-    city
-  );
-
-  const { distanceMatrix, durationMatrix, pointMap } = matrixData;
-
-  if (!distanceMatrix || distanceMatrix.length === 0) {
-    return {
-      reOptimized: false,
-      employees,
-      error: "Failed to generate distance matrix"
-    };
-  }
-
-  // Find the farthest employee for anchor pinning
-  let maxDist = -1;
-  let farthestEmployeeIndex = -1;
-
-  for (let i = 1; i < distanceMatrix[0].length; i++) {
-    const dist = distanceMatrix[0][i];
-    if (dist > maxDist) {
-      maxDist = dist;
-      farthestEmployeeIndex = i;
-    }
-  }
-
-  const fixedNodeParam = {};
-  if (farthestEmployeeIndex !== -1) {
-    if (isPickup) {
-      fixedNodeParam.fixed_start_node_index_in_matrix = farthestEmployeeIndex;
-    } else {
-      fixedNodeParam.fixed_end_node_index_in_matrix = farthestEmployeeIndex;
-    }
-  }
-
-  // Prepare OR-Tools input
-  const demands = [0, ...normalizedEmployees.map(() => 1)];
-  const serviceTimes = [0, ...normalizedEmployees.map(() => pickupTimePerEmployee)];
-
-  const orToolsInput = {
-    distance_matrix: distanceMatrix,
-    duration_matrix: durationMatrix,
-    num_vehicles: 1,
-    vehicle_capacities: [effectiveCapacity],
-    demands: demands,
-    depot_index: 0,
-    max_route_duration: maxRouteDuration,
-    service_times: serviceTimes,
-    allow_dropping_visits: false,
-    facility_coords: [facilityLocation.lat, facilityLocation.lng],
-    trip_type: tripType.toUpperCase(),
-    direction_penalty_weight: 5.0,
-    ...fixedNodeParam
-  };
-
-  const pythonExecutable = process.env.PYTHON_EXECUTABLE || "python";
-  const scriptPath = path.join(__dirname, "or_tools_vrp_solver.py");
-  if (!fs.existsSync(scriptPath)) {
-    throw new Error(`Solver script not found: ${scriptPath}`);
-  }
-
-  // Spawn Python VRP solver
-  const pythonProcess = spawn(pythonExecutable, [scriptPath]);
-  let scriptOutput = "";
-  let scriptError = "";
-
-  pythonProcess.stdin.write(JSON.stringify(orToolsInput));
-  pythonProcess.stdin.end();
-
-  pythonProcess.stdout.on("data", (data) => (scriptOutput += data.toString()));
-  pythonProcess.stderr.on("data", (data) => (scriptError += data.toString()));
-
-  const solverResult = await new Promise((resolve) => {
-    pythonProcess.on("close", (code) => {
-      if (code !== 0) {
-        console.error(`[RE-OPTIMIZE] Python solver exit ${code}: ${scriptError}`);
-        return resolve({ error: `Solver failed with code ${code}` });
-      }
-      try {
-        let solution = null;
-        const lines = scriptOutput.trim().split("\n");
-        for (let i = lines.length - 1; i >= 0; i--) {
-          try {
-            solution = JSON.parse(lines[i]);
-            if (typeof solution === "object" && solution !== null) break;
-          } catch (e) { /* skip non-JSON lines */ }
-        }
-        if (!solution) return resolve({ error: "No valid JSON from solver" });
-        if (solution.error) return resolve({ error: solution.error });
-        resolve(solution);
-      } catch (e) {
-        resolve({ error: `Parse error: ${e.message}` });
-      }
-    });
-    pythonProcess.on("error", (err) => resolve({ error: `Spawn error: ${err.message}` }));
-  });
-
-  if (solverResult.error) {
-    console.warn(`[RE-OPTIMIZE] VRP solver failed: ${solverResult.error}. Keeping original order.`);
-    return {
-      reOptimized: false,
-      employees,
-      error: solverResult.error
-    };
-  }
-
-  if (!solverResult.routes || solverResult.routes.length === 0) {
-    return {
-      reOptimized: false,
-      employees,
-      error: "No routes returned by solver"
-    };
-  }
-
-  // Extract optimized employee order from solver result
-  const routeNodeIndices = solverResult.routes[0].node_indices;
-  const optimizedEmployees = routeNodeIndices
-    .map(nodeIndex => {
-      if (nodeIndex === 0 || nodeIndex >= pointMap.length) return null;
-      const mapped = pointMap[nodeIndex];
-      return mapped.isFacility ? null : mapped;
-    })
-    .filter(emp => emp !== null);
-
-  // Calculate route details for the optimized order
-  const optimizedEmployeeCoords = optimizedEmployees.map(emp => [emp.geoY, emp.geoX]);
-  const routeCoords = isPickup
-    ? [...optimizedEmployeeCoords, [facility.geoY, facility.geoX]]
-    : [[facility.geoY, facility.geoX], ...optimizedEmployeeCoords];
-
-  const routeDetails = await calculateRouteDetails(
-    routeCoords,
-    optimizedEmployees,
-    pickupTimePerEmployee,
-    tripType,
-    city,
-    shiftTime
-  );
-
-  return {
-    reOptimized: true,
-    employees: routeDetails.employees || optimizedEmployees,
-    routeDetails
-  };
 }
 
 module.exports = {

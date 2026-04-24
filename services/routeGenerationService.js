@@ -1718,6 +1718,16 @@ async function processEmployeeBatch(
   let employeesAddedToMasterUnroutedThisBatch = [];
   const isDropoff = tripType.toLowerCase() === "dropoff";
   const facilityCoordinates = [facility.geoY, facility.geoX];
+  const enableLocalSequenceOptimization = profile.enableLocalSequenceOptimization !== false;
+  const localSequenceConfig = {
+    maxIterations: profile.localSequenceMaxIterations || DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS,
+    directionPenaltyWeight:
+      profile.localSequenceDirectionPenaltyWeight || DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+    passengerBurdenWeight:
+      profile.localSequencePassengerBurdenWeight || DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+    monotonicSlackKm:
+      profile.localSequenceMonotonicSlackKm || DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+  };
   const deferredForInitialOSRM = [];
 
   const validEmployees = employees.filter(
@@ -1865,23 +1875,31 @@ async function processEmployeeBatch(
             ...preliminaryEmployeesForThisAttempt,
             candidateInfo.candidateEmp,
           ];
+          const evaluatedPrelimEmployees = enableLocalSequenceOptimization
+            ? optimizeEmployeeSequenceLocal(
+              tentativePrelimEmployees,
+              tripType,
+              facilityCoordinates,
+              localSequenceConfig
+            )
+            : tentativePrelimEmployees;
 
-          const hasNMTInGroup = tentativePrelimEmployees.some(emp => emp.isNMT === true);
+          const hasNMTInGroup = evaluatedPrelimEmployees.some(emp => emp.isNMT === true);
           if (hasNMTInGroup) {
             const nmtLimit = getNMTCapacityLimit(profile.fleet || []);
-            if (tentativePrelimEmployees.length > nmtLimit) {
+            if (evaluatedPrelimEmployees.length > nmtLimit) {
               continue;
             }
           }
 
-          const tentativeCoords = tentativePrelimEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
+          const tentativeCoords = evaluatedPrelimEmployees.map((emp) => [emp.location.lat, emp.location.lng]);
           const allTentativeCoords = isDropoff
             ? [facilityCoordinates, ...tentativeCoords]
             : [...tentativeCoords, facilityCoordinates];
 
           const tentativeDetails = await calculateRouteDetails(
             allTentativeCoords,
-            tentativePrelimEmployees,
+            evaluatedPrelimEmployees,
             pickupTimePerEmployee,
             tripType,
             city,
@@ -1893,7 +1911,7 @@ async function processEmployeeBatch(
             continue;
           }
 
-          const serviceTime = tentativePrelimEmployees.length * pickupTimePerEmployee;
+          const serviceTime = evaluatedPrelimEmployees.length * pickupTimePerEmployee;
           const estimatedTotalDuration = tentativeDetails.totalDuration + serviceTime;
 
           if (maxDuration && estimatedTotalDuration > maxDuration) {
@@ -1901,7 +1919,7 @@ async function processEmployeeBatch(
           }
 
           const tempRouteForValidation = {
-            employees: tentativePrelimEmployees,
+            employees: evaluatedPrelimEmployees,
             routeDetails: tentativeDetails,
             uniqueKey: `temp_val_progressive_${batchRouteCounter}_${attemptedGroupSize}`,
             tripType: tripType,
@@ -1921,7 +1939,7 @@ async function processEmployeeBatch(
               bestCandidate: candidateInfo.candidateEmp,
               bestCandidateIndex: candidateInfo.idx,
               tentativeDetails,
-              tentativePrelimEmployees,
+              tentativePrelimEmployees: evaluatedPrelimEmployees,
               blendedScore,
             };
           }
@@ -1953,14 +1971,22 @@ async function processEmployeeBatch(
       }
 
       if (preliminaryEmployeesForThisAttempt.length > 0) {
-        const finalCoords = preliminaryEmployeesForThisAttempt.map((emp) => [emp.location.lat, emp.location.lng]);
+        const finalEmployeesForAttempt = enableLocalSequenceOptimization
+          ? optimizeEmployeeSequenceLocal(
+            preliminaryEmployeesForThisAttempt,
+            tripType,
+            facilityCoordinates,
+            localSequenceConfig
+          )
+          : preliminaryEmployeesForThisAttempt;
+        const finalCoords = finalEmployeesForAttempt.map((emp) => [emp.location.lat, emp.location.lng]);
         const allFinalCoords = isDropoff
           ? [facilityCoordinates, ...finalCoords]
           : [...finalCoords, facilityCoordinates];
 
         const routeDetails = await calculateRouteDetails(
           allFinalCoords,
-          preliminaryEmployeesForThisAttempt,
+          finalEmployeesForAttempt,
           pickupTimePerEmployee,
           tripType,
           city,
@@ -1969,7 +1995,7 @@ async function processEmployeeBatch(
 
         if (!routeDetails.error) {
           const tempRouteForFinalValidation = {
-            employees: preliminaryEmployeesForThisAttempt,
+            employees: finalEmployeesForAttempt,
             routeDetails: routeDetails,
             uniqueKey: `temp_final_${batchRouteCounter}_${attemptedGroupSize}`,
             tripType: tripType,
@@ -1980,7 +2006,7 @@ async function processEmployeeBatch(
 
           if (passesDeviation && passesMaxDuration) {
             successfulRouteBuilt = true;
-            finalEmployeesForRoute = preliminaryEmployeesForThisAttempt;
+            finalEmployeesForRoute = finalEmployeesForAttempt;
             finalRouteDetails = routeDetails;
 
             const hasNMT = finalEmployeesForRoute.some(emp => emp.isNMT === true);
@@ -1999,10 +2025,10 @@ async function processEmployeeBatch(
             break;
           } else {
             if (!passesMaxDuration) {
-              console.log(`[Duration Retry] Route ${batchRouteCounter}: Group size ${preliminaryEmployeesForThisAttempt.length} failed duration check (${Math.round(routeDetails.totalDuration)}s > ${maxDuration}s). Trying smaller group.`);
+              console.log(`[Duration Retry] Route ${batchRouteCounter}: Group size ${finalEmployeesForAttempt.length} failed duration check (${Math.round(routeDetails.totalDuration)}s > ${maxDuration}s). Trying smaller group.`);
             }
             if (!passesDeviation) {
-              console.log(`[Deviation Retry] Route ${batchRouteCounter}: Group size ${preliminaryEmployeesForThisAttempt.length} failed deviation check. Trying smaller group.`);
+              console.log(`[Deviation Retry] Route ${batchRouteCounter}: Group size ${finalEmployeesForAttempt.length} failed deviation check. Trying smaller group.`);
             }
           }
         }
@@ -3385,6 +3411,23 @@ async function processUnroutedEmployeesWithSafeguards(
 const DEFAULT_CONSOLIDATION_MAX_INSERTION_DISTANCE_KM = 2.5;
 const DEFAULT_CONSOLIDATION_LOW_OCCUPANCY_THRESHOLD = 2;
 const DEFAULT_CONSOLIDATION_MIN_HOST_OCCUPANCY = 3;
+const DEFAULT_CROSS_ROUTE_MAX_ITERATIONS = 4;
+const DEFAULT_CROSS_ROUTE_MAX_DETOUR_KM = 4.5;
+const DEFAULT_CROSS_ROUTE_MAX_DETOUR_RATIO = 1.2;
+const DEFAULT_CROSS_ROUTE_MAX_HEADING_DEVIATION_DEG = 100;
+const DEFAULT_CROSS_ROUTE_MONOTONICITY_SLACK_KM = 1.8;
+const DEFAULT_CROSS_ROUTE_CORRIDOR_RADIUS_KM = 5.0;
+const DEFAULT_CROSS_ROUTE_TOP_HOST_CANDIDATES = 5;
+const DEFAULT_CROSS_ROUTE_MAX_OSRM_CHECKS = 250;
+const DEFAULT_CROSS_ROUTE_ROUTE_REDUCTION_BONUS_KM = 2.0;
+const DEFAULT_CROSS_ROUTE_MIN_NET_GAIN_KM = -0.2;
+const DEFAULT_CROSS_ROUTE_CANDIDATE_EMPLOYEES_PER_ROUTE = 6;
+const DEFAULT_CROSS_ROUTE_OCCUPANCY_BONUS_KM = 0.8;
+const DEFAULT_CROSS_ROUTE_PASSENGER_BURDEN_WEIGHT = 0.35;
+const DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS = 3;
+const DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT = 4.0;
+const DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT = 0.25;
+const DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM = 1.5;
 
 /**
  * Find the best insertion point for an employee in an existing route
@@ -3472,6 +3515,811 @@ function findBestInsertionPoint(hostEmployees, candidateEmployee, tripType, faci
   };
 }
 
+function getAngleDifferenceDeg(a, b) {
+  const diff = Math.abs((a || 0) - (b || 0)) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
+function getRelocationCandidateIndices(
+  employees,
+  tripType,
+  facilityCoordinates,
+  maxCandidates = DEFAULT_CROSS_ROUTE_CANDIDATE_EMPLOYEES_PER_ROUTE
+) {
+  const routeLength = employees?.length || 0;
+  if (routeLength <= 0) return [];
+
+  // For small/medium routes, evaluate every stop so middle points (e.g. #8/#9) are not skipped.
+  if (routeLength <= 12) {
+    return Array.from({ length: routeLength }, (_, i) => i);
+  }
+
+  const seed = [0, routeLength - 1, 1, routeLength - 2, Math.floor(routeLength / 2)];
+  const withImpact = Array.from({ length: routeLength }, (_, idx) => ({
+    idx,
+    savingsKm: calculateRemovalSavingsKm(employees, idx, tripType, facilityCoordinates),
+  })).sort((a, b) => b.savingsKm - a.savingsKm);
+
+  const unique = [];
+  for (const idx of seed) {
+    if (idx >= 0 && idx < routeLength && !unique.includes(idx)) unique.push(idx);
+  }
+
+  for (const candidate of withImpact) {
+    if (!unique.includes(candidate.idx)) unique.push(candidate.idx);
+    if (unique.length >= Math.max(1, maxCandidates)) break;
+  }
+
+  return unique.slice(0, Math.max(1, maxCandidates));
+}
+
+function getMinDistanceToRouteEmployees(candidateEmployee, hostEmployees) {
+  if (!candidateEmployee?.location || !hostEmployees?.length) return Infinity;
+  let minDist = Infinity;
+  const candidateLoc = [candidateEmployee.location.lat, candidateEmployee.location.lng];
+  for (const emp of hostEmployees) {
+    if (!emp?.location) continue;
+    const dist = haversineDistance(candidateLoc, [emp.location.lat, emp.location.lng]);
+    if (dist < minDist) minDist = dist;
+  }
+  return minDist;
+}
+
+function distancePointToSegmentKm(point, segStart, segEnd) {
+  // Local equirectangular projection is sufficient for short urban segments.
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371;
+  const [lat, lng] = point;
+  const [lat1, lng1] = segStart;
+  const [lat2, lng2] = segEnd;
+
+  const meanLat = toRad((lat1 + lat2 + lat) / 3);
+  const x = (toRad(lng) - toRad(lng1)) * Math.cos(meanLat) * R;
+  const y = (toRad(lat) - toRad(lat1)) * R;
+  const x2 = (toRad(lng2) - toRad(lng1)) * Math.cos(meanLat) * R;
+  const y2 = (toRad(lat2) - toRad(lat1)) * R;
+
+  const segLenSq = x2 * x2 + y2 * y2;
+  if (segLenSq <= 1e-9) {
+    return Math.sqrt(x * x + y * y);
+  }
+
+  const t = Math.max(0, Math.min(1, (x * x2 + y * y2) / segLenSq));
+  const projX = t * x2;
+  const projY = t * y2;
+  const dx = x - projX;
+  const dy = y - projY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getMinDistanceToRouteCorridor(candidateEmployee, hostEmployees, tripType, facilityCoordinates) {
+  if (!candidateEmployee?.location || !hostEmployees?.length) return Infinity;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const points = isDropoff
+    ? [facilityCoordinates, ...hostEmployees.map((e) => [e.location.lat, e.location.lng])]
+    : [...hostEmployees.map((e) => [e.location.lat, e.location.lng]), facilityCoordinates];
+
+  if (points.length < 2) return Infinity;
+  const point = [candidateEmployee.location.lat, candidateEmployee.location.lng];
+  let minDist = Infinity;
+  for (let i = 0; i < points.length - 1; i++) {
+    const d = distancePointToSegmentKm(point, points[i], points[i + 1]);
+    if (d < minDist) minDist = d;
+  }
+  return minDist;
+}
+
+function calculatePassengerBurdenPenaltyKm(hostEmployeeCount, insertionIndex, tripType, insertionDeltaKm) {
+  if (!hostEmployeeCount || insertionDeltaKm <= 0) return 0;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  let impactedPassengers;
+  if (isDropoff) {
+    // In dropoff, earlier insertions impact more remaining passengers.
+    impactedPassengers = Math.max(0, hostEmployeeCount - insertionIndex);
+  } else {
+    // In pickup, earlier insertions also increase ride time for downstream passengers.
+    impactedPassengers = Math.max(0, hostEmployeeCount - insertionIndex);
+  }
+  return insertionDeltaKm * (impactedPassengers / Math.max(1, hostEmployeeCount));
+}
+
+function calculatePassengerBurdenDistanceKm(employees, tripType, facilityCoordinates) {
+  if (!employees || employees.length === 0) return 0;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const points = isDropoff
+    ? [facilityCoordinates, ...employees.map((e) => [e.location.lat, e.location.lng])]
+    : [...employees.map((e) => [e.location.lat, e.location.lng]), facilityCoordinates];
+
+  let burden = 0;
+  const total = employees.length;
+  for (let i = 0; i < points.length - 1; i++) {
+    const legDist = haversineDistance(points[i], points[i + 1]);
+    let onboard;
+    if (isDropoff) {
+      // facility->emp1 has n onboard, then n-1, ...
+      onboard = Math.max(0, total - i);
+    } else {
+      // emp1->emp2 has 1 onboard, ..., last->facility has n onboard
+      onboard = Math.min(total, i + 1);
+    }
+    burden += legDist * onboard;
+  }
+  return burden;
+}
+
+function calculateDirectionViolationKm(employees, tripType, facilityCoordinates, slackKm) {
+  if (!employees || employees.length < 2) return 0;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const dists = employees.map((emp) =>
+    haversineDistance([emp.location.lat, emp.location.lng], facilityCoordinates)
+  );
+
+  let violation = 0;
+  for (let i = 0; i < dists.length - 1; i++) {
+    if (isDropoff) {
+      violation += Math.max(0, dists[i] - dists[i + 1] - slackKm);
+    } else {
+      violation += Math.max(0, dists[i + 1] - dists[i] - slackKm);
+    }
+  }
+  return violation;
+}
+
+function calculateApproxRouteCostKm(
+  employees,
+  tripType,
+  facilityCoordinates,
+  {
+    directionPenaltyWeight = DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+    passengerBurdenWeight = DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+    monotonicSlackKm = DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+  } = {}
+) {
+  if (!employees || employees.length === 0) return 0;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const points = isDropoff
+    ? [facilityCoordinates, ...employees.map((e) => [e.location.lat, e.location.lng])]
+    : [...employees.map((e) => [e.location.lat, e.location.lng]), facilityCoordinates];
+
+  let routeDistanceKm = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    routeDistanceKm += haversineDistance(points[i], points[i + 1]);
+  }
+
+  const passengerBurdenKm = calculatePassengerBurdenDistanceKm(
+    employees,
+    tripType,
+    facilityCoordinates
+  );
+  const directionViolationKm = calculateDirectionViolationKm(
+    employees,
+    tripType,
+    facilityCoordinates,
+    monotonicSlackKm
+  );
+
+  return (
+    routeDistanceKm +
+    passengerBurdenWeight * passengerBurdenKm +
+    directionPenaltyWeight * directionViolationKm
+  );
+}
+
+function optimizeEmployeeSequenceLocal(
+  employees,
+  tripType,
+  facilityCoordinates,
+  {
+    maxIterations = DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS,
+    directionPenaltyWeight = DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+    passengerBurdenWeight = DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+    monotonicSlackKm = DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+  } = {}
+) {
+  if (!employees || employees.length < 3) return employees ? [...employees] : [];
+
+  let current = employees.map((e) => ({ ...e }));
+  let currentCost = calculateApproxRouteCostKm(current, tripType, facilityCoordinates, {
+    directionPenaltyWeight,
+    passengerBurdenWeight,
+    monotonicSlackKm,
+  });
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    let bestCost = currentCost;
+    let bestSequence = null;
+
+    // Relocate moves
+    for (let i = 0; i < current.length; i++) {
+      for (let j = 0; j <= current.length; j++) {
+        if (j === i || j === i + 1) continue;
+        const seq = [...current];
+        const [moved] = seq.splice(i, 1);
+        const insertAt = j > i ? j - 1 : j;
+        seq.splice(insertAt, 0, moved);
+        const cost = calculateApproxRouteCostKm(seq, tripType, facilityCoordinates, {
+          directionPenaltyWeight,
+          passengerBurdenWeight,
+          monotonicSlackKm,
+        });
+        if (cost + 1e-6 < bestCost) {
+          bestCost = cost;
+          bestSequence = seq;
+        }
+      }
+    }
+
+    // Adjacent swaps
+    for (let i = 0; i < current.length - 1; i++) {
+      const seq = [...current];
+      [seq[i], seq[i + 1]] = [seq[i + 1], seq[i]];
+      const cost = calculateApproxRouteCostKm(seq, tripType, facilityCoordinates, {
+        directionPenaltyWeight,
+        passengerBurdenWeight,
+        monotonicSlackKm,
+      });
+      if (cost + 1e-6 < bestCost) {
+        bestCost = cost;
+        bestSequence = seq;
+      }
+    }
+
+    if (!bestSequence) break;
+    current = bestSequence;
+    currentCost = bestCost;
+  }
+
+  return current.map((e, idx) => ({ ...e, order: idx + 1 }));
+}
+
+function getRouteReferenceBearing(hostEmployees, tripType, facilityCoordinates) {
+  if (!hostEmployees?.length) return null;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const refEmp = isDropoff ? hostEmployees[hostEmployees.length - 1] : hostEmployees[0];
+  if (!refEmp?.location) return null;
+  return calculateBearing(
+    facilityCoordinates[0],
+    facilityCoordinates[1],
+    refEmp.location.lat,
+    refEmp.location.lng
+  );
+}
+
+function getPrevAndNextPointsForInsertion(hostEmployees, insertionIndex, tripType, facilityCoordinates) {
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const prevPoint = insertionIndex > 0
+    ? [hostEmployees[insertionIndex - 1].location.lat, hostEmployees[insertionIndex - 1].location.lng]
+    : (isDropoff ? facilityCoordinates : null);
+  const nextPoint = insertionIndex < hostEmployees.length
+    ? [hostEmployees[insertionIndex].location.lat, hostEmployees[insertionIndex].location.lng]
+    : (!isDropoff ? facilityCoordinates : null);
+  return { prevPoint, nextPoint };
+}
+
+function calculateInsertionDeltaKm(hostEmployees, candidateEmployee, insertionIndex, tripType, facilityCoordinates) {
+  if (!candidateEmployee?.location) return Infinity;
+  const candidatePoint = [candidateEmployee.location.lat, candidateEmployee.location.lng];
+  const { prevPoint, nextPoint } = getPrevAndNextPointsForInsertion(
+    hostEmployees,
+    insertionIndex,
+    tripType,
+    facilityCoordinates
+  );
+
+  let oldDistance = 0;
+  let newDistance = 0;
+
+  if (prevPoint && nextPoint) {
+    oldDistance = haversineDistance(prevPoint, nextPoint);
+    newDistance =
+      haversineDistance(prevPoint, candidatePoint) +
+      haversineDistance(candidatePoint, nextPoint);
+  } else if (prevPoint) {
+    newDistance = haversineDistance(prevPoint, candidatePoint);
+  } else if (nextPoint) {
+    newDistance = haversineDistance(candidatePoint, nextPoint);
+  }
+
+  return Math.max(0, newDistance - oldDistance);
+}
+
+function calculateInsertionBaseSegmentKm(hostEmployees, insertionIndex, tripType, facilityCoordinates) {
+  const { prevPoint, nextPoint } = getPrevAndNextPointsForInsertion(
+    hostEmployees,
+    insertionIndex,
+    tripType,
+    facilityCoordinates
+  );
+  if (!prevPoint || !nextPoint) return 0;
+  return haversineDistance(prevPoint, nextPoint);
+}
+
+function calculateRemovalSavingsKm(sourceEmployees, removeIndex, tripType, facilityCoordinates) {
+  if (!sourceEmployees?.length || removeIndex < 0 || removeIndex >= sourceEmployees.length) return 0;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const current = sourceEmployees[removeIndex];
+  if (!current?.location) return 0;
+  const currentPoint = [current.location.lat, current.location.lng];
+
+  const prevPoint = removeIndex > 0
+    ? [sourceEmployees[removeIndex - 1].location.lat, sourceEmployees[removeIndex - 1].location.lng]
+    : (isDropoff ? facilityCoordinates : null);
+  const nextPoint = removeIndex < sourceEmployees.length - 1
+    ? [sourceEmployees[removeIndex + 1].location.lat, sourceEmployees[removeIndex + 1].location.lng]
+    : (!isDropoff ? facilityCoordinates : null);
+
+  let oldDistance = 0;
+  let newDistance = 0;
+
+  if (prevPoint) oldDistance += haversineDistance(prevPoint, currentPoint);
+  if (nextPoint) oldDistance += haversineDistance(currentPoint, nextPoint);
+  if (prevPoint && nextPoint) newDistance = haversineDistance(prevPoint, nextPoint);
+
+  return Math.max(0, oldDistance - newDistance);
+}
+
+function calculateInsertionHeadingDeviationDeg(hostEmployees, candidateEmployee, insertionIndex, tripType, facilityCoordinates) {
+  if (!candidateEmployee?.location) return 180;
+  const candidatePoint = [candidateEmployee.location.lat, candidateEmployee.location.lng];
+  const { prevPoint, nextPoint } = getPrevAndNextPointsForInsertion(
+    hostEmployees,
+    insertionIndex,
+    tripType,
+    facilityCoordinates
+  );
+
+  if (!prevPoint || !nextPoint) return 0;
+
+  const baseBearing = calculateBearing(prevPoint[0], prevPoint[1], nextPoint[0], nextPoint[1]);
+  const b1 = calculateBearing(prevPoint[0], prevPoint[1], candidatePoint[0], candidatePoint[1]);
+  const b2 = calculateBearing(candidatePoint[0], candidatePoint[1], nextPoint[0], nextPoint[1]);
+  return Math.max(getAngleDifferenceDeg(baseBearing, b1), getAngleDifferenceDeg(baseBearing, b2));
+}
+
+function isMonotonicRouteByFacilityDistance(employees, tripType, facilityCoordinates, slackKm = DEFAULT_CROSS_ROUTE_MONOTONICITY_SLACK_KM) {
+  if (!employees || employees.length < 2) return true;
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const dists = employees.map((emp) =>
+    haversineDistance([emp.location.lat, emp.location.lng], facilityCoordinates)
+  );
+
+  for (let i = 0; i < dists.length - 1; i++) {
+    if (isDropoff) {
+      if (dists[i] - dists[i + 1] > slackKm) return false;
+    } else {
+      if (dists[i + 1] - dists[i] > slackKm) return false;
+    }
+  }
+  return true;
+}
+
+async function optimizeRoutesAcrossRoutes(
+  routes,
+  facility,
+  tripType,
+  maxDuration,
+  pickupTimePerEmployee,
+  profile,
+  city,
+  shiftTime
+) {
+  const enableCrossRouteOptimization = profile.enableCrossRouteOptimization !== false;
+  if (!enableCrossRouteOptimization) {
+    console.log("[Cross-Route Optimization] Disabled via profile configuration.");
+    return { routes, moveCount: 0, moves: [] };
+  }
+
+  const maxIterations = profile.crossRouteMaxIterations || DEFAULT_CROSS_ROUTE_MAX_ITERATIONS;
+  const maxDetourKm = profile.crossRouteMaxDetourKm || DEFAULT_CROSS_ROUTE_MAX_DETOUR_KM;
+  const maxDetourRatio = profile.crossRouteMaxDetourRatio || DEFAULT_CROSS_ROUTE_MAX_DETOUR_RATIO;
+  const maxHeadingDeviationDeg = profile.crossRouteMaxHeadingDeviationDeg || DEFAULT_CROSS_ROUTE_MAX_HEADING_DEVIATION_DEG;
+  const monotonicitySlackKm = profile.crossRouteMonotonicitySlackKm || DEFAULT_CROSS_ROUTE_MONOTONICITY_SLACK_KM;
+  const corridorRadiusKm = profile.crossRouteCorridorRadiusKm || DEFAULT_CROSS_ROUTE_CORRIDOR_RADIUS_KM;
+  const topHostCandidates = profile.crossRouteTopHostCandidates || DEFAULT_CROSS_ROUTE_TOP_HOST_CANDIDATES;
+  const configuredMaxOsrmChecksPerIteration = profile.crossRouteMaxOsrmChecksPerIteration;
+  const routeReductionBonusKm = profile.crossRouteRouteReductionBonusKm || DEFAULT_CROSS_ROUTE_ROUTE_REDUCTION_BONUS_KM;
+  const occupancyBonusKm = profile.crossRouteOccupancyBonusKm || DEFAULT_CROSS_ROUTE_OCCUPANCY_BONUS_KM;
+  const passengerBurdenWeight =
+    profile.crossRoutePassengerBurdenWeight || DEFAULT_CROSS_ROUTE_PASSENGER_BURDEN_WEIGHT;
+  const minNetGainKm =
+    profile.crossRouteMinNetGainKm !== undefined
+      ? profile.crossRouteMinNetGainKm
+      : DEFAULT_CROSS_ROUTE_MIN_NET_GAIN_KM;
+  const candidateEmployeesPerRoute =
+    profile.crossRouteCandidateEmployeesPerRoute || DEFAULT_CROSS_ROUTE_CANDIDATE_EMPLOYEES_PER_ROUTE;
+
+  const isDropoff = tripType.toLowerCase() === "dropoff";
+  const facilityCoordinates = [facility.geoY, facility.geoX];
+  const moves = [];
+  const workingRoutes = routes.map((route) => ({
+    ...route,
+    employees: (route.employees || []).map((emp, idx) => ({ ...emp, order: idx + 1 })),
+  }));
+
+  console.log(
+    `[Cross-Route Optimization] Starting with ${workingRoutes.length} routes. Config: iterations=${maxIterations}, maxDetourKm=${maxDetourKm}, maxDetourRatio=${maxDetourRatio}, corridorRadiusKm=${corridorRadiusKm}, maxHeadingDeviationDeg=${maxHeadingDeviationDeg}`
+  );
+
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    let bestMove = null;
+    let osrmChecks = 0;
+    const deviationFailedHosts = new Set(); // routes that failed deviation this iteration — skip them for all future candidates
+
+    const candidateRoutes = workingRoutes.filter(
+      (r) => !r.error && r.employees && r.employees.length > 0
+    ).sort((a, b) => (b.employees?.length || 0) - (a.employees?.length || 0));
+
+    const dynamicOsrmBudget = Math.max(
+      DEFAULT_CROSS_ROUTE_MAX_OSRM_CHECKS,
+      candidateRoutes.length * Math.max(4, candidateEmployeesPerRoute * 2)
+    );
+    const maxOsrmChecksPerIteration = Math.max(
+      configuredMaxOsrmChecksPerIteration || 0,
+      dynamicOsrmBudget
+    );
+    console.log(
+      `[Cross-Route Optimization] Iteration ${iteration}: candidateRoutes=${candidateRoutes.length}, osrmBudget=${maxOsrmChecksPerIteration} (configured=${configuredMaxOsrmChecksPerIteration || 0}, dynamic=${dynamicOsrmBudget})`
+    );
+    const rejectionStats = {
+      capacity: 0,
+      corridor: 0,
+      bearing: 0,
+      linear: 0,
+      detour: 0,
+      ratio: 0,
+      heading: 0,
+      monotonic: 0,
+      constraints: 0,
+      netGain: 0,
+    };
+    const constraintReasonCounts = {};
+
+    for (const sourceRoute of candidateRoutes) {
+      if (!sourceRoute?.employees?.length) continue;
+
+      const sourceCandidateIndices = getRelocationCandidateIndices(
+        sourceRoute.employees,
+        tripType,
+        facilityCoordinates,
+        candidateEmployeesPerRoute
+      );
+
+      for (const sourceIndex of sourceCandidateIndices) {
+        const candidateEmployee = sourceRoute.employees[sourceIndex];
+        if (!candidateEmployee?.location?.lat || !candidateEmployee?.location?.lng) continue;
+
+        const sourceRemovalSavingsKm = calculateRemovalSavingsKm(
+          sourceRoute.employees,
+          sourceIndex,
+          tripType,
+          facilityCoordinates
+        );
+        const candidateBearing = calculateBearing(
+          facilityCoordinates[0],
+          facilityCoordinates[1],
+          candidateEmployee.location.lat,
+          candidateEmployee.location.lng
+        );
+
+        const hostCandidates = [];
+        for (const hostRoute of candidateRoutes) {
+          if (!hostRoute?.employees?.length) continue;
+          if (hostRoute.uniqueKey === sourceRoute.uniqueKey) continue;
+
+          const currentOccupancy =
+            hostRoute.employees.length + (hostRoute.guardNeeded ? 1 : 0);
+          if (currentOccupancy >= hostRoute.vehicleCapacity) {
+            rejectionStats.capacity++;
+            continue;
+          }
+
+          const minDistanceToHostKm = getMinDistanceToRouteEmployees(
+            candidateEmployee,
+            hostRoute.employees
+          );
+          const minDistanceToCorridorKm = getMinDistanceToRouteCorridor(
+            candidateEmployee,
+            hostRoute.employees,
+            tripType,
+            facilityCoordinates
+          );
+          const effectiveProximityKm = Math.min(minDistanceToHostKm, minDistanceToCorridorKm);
+
+          if (effectiveProximityKm > corridorRadiusKm) {
+            rejectionStats.corridor++;
+            continue;
+          }
+
+          const hostBearing = getRouteReferenceBearing(
+            hostRoute.employees,
+            tripType,
+            facilityCoordinates
+          );
+          if (hostBearing != null) {
+            const bearingDiff = getAngleDifferenceDeg(candidateBearing, hostBearing);
+            if (
+              bearingDiff > maxHeadingDeviationDeg &&
+              effectiveProximityKm > corridorRadiusKm / 2
+            ) {
+              rejectionStats.bearing++;
+              continue;
+            }
+          }
+
+          const directionalAnchor = isDropoff
+            ? hostRoute.employees[hostRoute.employees.length - 1]
+            : hostRoute.employees[0];
+          if (
+            directionalAnchor &&
+            !isLinearDirection(
+              directionalAnchor,
+              candidateEmployee,
+              facility,
+              maxHeadingDeviationDeg,
+              tripType
+            ) &&
+            effectiveProximityKm > 1.5
+          ) {
+            rejectionStats.linear++;
+            continue;
+          }
+
+          const insertionPoint = findBestInsertionPoint(
+            hostRoute.employees,
+            candidateEmployee,
+            tripType,
+            facilityCoordinates
+          );
+          if (insertionPoint.insertionIndex < 0) continue;
+
+          const insertionDeltaKm = calculateInsertionDeltaKm(
+            hostRoute.employees,
+            candidateEmployee,
+            insertionPoint.insertionIndex,
+            tripType,
+            facilityCoordinates
+          );
+          if (insertionDeltaKm > maxDetourKm) {
+            rejectionStats.detour++;
+            continue;
+          }
+
+          const baseSegmentKm = calculateInsertionBaseSegmentKm(
+            hostRoute.employees,
+            insertionPoint.insertionIndex,
+            tripType,
+            facilityCoordinates
+          );
+          if (baseSegmentKm > 0) {
+            const detourRatio = insertionDeltaKm / baseSegmentKm;
+            if (detourRatio > maxDetourRatio) {
+              rejectionStats.ratio++;
+              continue;
+            }
+          }
+
+          const headingDeviationAtInsertion = calculateInsertionHeadingDeviationDeg(
+            hostRoute.employees,
+            candidateEmployee,
+            insertionPoint.insertionIndex,
+            tripType,
+            facilityCoordinates
+          );
+          if (
+            headingDeviationAtInsertion > maxHeadingDeviationDeg &&
+            effectiveProximityKm > 1
+          ) {
+            rejectionStats.heading++;
+            continue;
+          }
+
+          const tentativeEmployees = [...hostRoute.employees];
+          tentativeEmployees.splice(insertionPoint.insertionIndex, 0, candidateEmployee);
+          if (
+            !isMonotonicRouteByFacilityDistance(
+              tentativeEmployees,
+              tripType,
+              facilityCoordinates,
+              monotonicitySlackKm
+            )
+          ) {
+            rejectionStats.monotonic++;
+            continue;
+          }
+
+          hostCandidates.push({
+            hostKey: hostRoute.uniqueKey,
+            insertionIndex: insertionPoint.insertionIndex,
+            insertionDeltaKm,
+            heuristicScore: insertionDeltaKm + effectiveProximityKm * 0.2,
+          });
+        }
+
+        hostCandidates.sort((a, b) => a.heuristicScore - b.heuristicScore);
+        const shortList = hostCandidates.slice(0, Math.max(1, topHostCandidates));
+
+        for (const hostCandidate of shortList) {
+          if (osrmChecks >= maxOsrmChecksPerIteration) break;
+          if (deviationFailedHosts.has(hostCandidate.hostKey)) continue; // already proven over-deviation this iteration
+
+          osrmChecks++;
+
+          const hostRoute = workingRoutes.find((r) => r.uniqueKey === hostCandidate.hostKey);
+          if (!hostRoute?.employees?.length) continue;
+
+          const insertionResult = await canInsertEmployeeIntoRoute(
+            hostRoute,
+            candidateEmployee,
+            hostCandidate.insertionIndex,
+            facility,
+            tripType,
+            maxDuration,
+            pickupTimePerEmployee,
+            profile,
+            city,
+            shiftTime
+          );
+          if (!insertionResult.canInsert) {
+            rejectionStats.constraints++;
+            const reason = insertionResult.reason || "unknown";
+            constraintReasonCounts[reason] =
+              (constraintReasonCounts[reason] || 0) + 1;
+            if (reason === 'deviation_exceeded') {
+              deviationFailedHosts.add(hostCandidate.hostKey);
+            }
+            continue;
+          }
+
+          const sourceWillDisappear = sourceRoute.employees.length === 1;
+          const hostOccupancyBefore =
+            hostRoute.employees.length + (hostRoute.guardNeeded ? 1 : 0);
+          const hostOccupancyAfter = hostOccupancyBefore + 1;
+          const occupancyUplift =
+            hostRoute.vehicleCapacity > 0
+              ? hostOccupancyAfter / hostRoute.vehicleCapacity -
+                hostOccupancyBefore / hostRoute.vehicleCapacity
+              : 0;
+          const occupancyReward = Math.max(0, occupancyUplift) * occupancyBonusKm;
+          const passengerBurdenPenalty =
+            passengerBurdenWeight *
+            calculatePassengerBurdenPenaltyKm(
+              hostRoute.employees.length,
+              hostCandidate.insertionIndex,
+              tripType,
+              hostCandidate.insertionDeltaKm
+            );
+          const netGainKm =
+            sourceRemovalSavingsKm -
+            hostCandidate.insertionDeltaKm +
+            (sourceWillDisappear ? routeReductionBonusKm : 0) +
+            occupancyReward -
+            passengerBurdenPenalty;
+          if (netGainKm < minNetGainKm) {
+            rejectionStats.netGain++;
+            continue;
+          }
+
+          if (!bestMove || netGainKm > bestMove.netGainKm) {
+            bestMove = {
+              sourceKey: sourceRoute.uniqueKey,
+              hostKey: hostRoute.uniqueKey,
+              employeeCode: candidateEmployee.empCode,
+              sourceRemovalSavingsKm,
+              hostInsertionDeltaKm: hostCandidate.insertionDeltaKm,
+              netGainKm,
+              targetInsertionIndex: hostCandidate.insertionIndex,
+            };
+          }
+        }
+
+        if (osrmChecks >= maxOsrmChecksPerIteration) break;
+      }
+
+      if (osrmChecks >= maxOsrmChecksPerIteration) break;
+    }
+
+    if (!bestMove) {
+      console.log(
+        `[Cross-Route Optimization] Iteration ${iteration}: no improving move found (OSRM checks used: ${osrmChecks}/${maxOsrmChecksPerIteration}). Rejections=${JSON.stringify(rejectionStats)} ConstraintReasons=${JSON.stringify(constraintReasonCounts)}`
+      );
+      break;
+    }
+
+    const sourceIdx = workingRoutes.findIndex((r) => r.uniqueKey === bestMove.sourceKey);
+    const hostIdx = workingRoutes.findIndex((r) => r.uniqueKey === bestMove.hostKey);
+    if (sourceIdx === -1 || hostIdx === -1 || sourceIdx === hostIdx) {
+      console.warn(
+        `[Cross-Route Optimization] Iteration ${iteration}: invalid move targets, skipping.`
+      );
+      continue;
+    }
+
+    const sourceRoute = workingRoutes[sourceIdx];
+    const hostRoute = workingRoutes[hostIdx];
+    const movingEmployee = sourceRoute.employees.find(
+      (emp) => emp.empCode === bestMove.employeeCode
+    );
+
+    if (!movingEmployee) {
+      console.warn(
+        `[Cross-Route Optimization] Iteration ${iteration}: employee ${bestMove.employeeCode} no longer in source route.`
+      );
+      continue;
+    }
+
+    if (!hostRoute.employees.some((emp) => emp.empCode === movingEmployee.empCode)) {
+      const hostEmployees = [...hostRoute.employees];
+      const safeInsertionIndex = Math.max(
+        0,
+        Math.min(bestMove.targetInsertionIndex, hostEmployees.length)
+      );
+      hostEmployees.splice(safeInsertionIndex, 0, movingEmployee);
+      const optimizedHostEmployees =
+        profile.enableLocalSequenceOptimization !== false
+          ? optimizeEmployeeSequenceLocal(hostEmployees, tripType, facilityCoordinates, {
+            maxIterations:
+              profile.localSequenceMaxIterations || DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS,
+            directionPenaltyWeight:
+              profile.localSequenceDirectionPenaltyWeight ||
+              DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+            passengerBurdenWeight:
+              profile.localSequencePassengerBurdenWeight ||
+              DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+            monotonicSlackKm:
+              profile.localSequenceMonotonicSlackKm ||
+              DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+          })
+          : hostEmployees;
+      hostRoute.employees = optimizedHostEmployees.map((emp, idx) => ({ ...emp, order: idx + 1 }));
+      hostRoute.routeDetails = null;
+      hostRoute.encodedPolyline = "";
+    }
+
+    const sourceAfterRemoval = sourceRoute.employees
+      .filter((emp) => emp.empCode !== movingEmployee.empCode);
+    const optimizedSourceEmployees =
+      profile.enableLocalSequenceOptimization !== false
+        ? optimizeEmployeeSequenceLocal(sourceAfterRemoval, tripType, facilityCoordinates, {
+          maxIterations:
+            profile.localSequenceMaxIterations || DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS,
+          directionPenaltyWeight:
+            profile.localSequenceDirectionPenaltyWeight ||
+            DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+          passengerBurdenWeight:
+            profile.localSequencePassengerBurdenWeight ||
+            DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+          monotonicSlackKm:
+            profile.localSequenceMonotonicSlackKm ||
+            DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+        })
+        : sourceAfterRemoval;
+    sourceRoute.employees = optimizedSourceEmployees.map((emp, idx) => ({ ...emp, order: idx + 1 }));
+    sourceRoute.routeDetails = null;
+    sourceRoute.encodedPolyline = "";
+
+    if (sourceRoute.employees.length === 0) {
+      workingRoutes.splice(sourceIdx, 1);
+    }
+
+    moves.push(bestMove);
+    console.log(
+      `[Cross-Route Optimization] Iteration ${iteration}: moved ${bestMove.employeeCode} ${bestMove.sourceKey} -> ${bestMove.hostKey}, netGain=${bestMove.netGainKm.toFixed(
+        3
+      )}km (OSRM checks ${osrmChecks}/${maxOsrmChecksPerIteration})`
+    );
+  }
+
+  console.log(
+    `[Cross-Route Optimization] Complete. Applied ${moves.length} moves. Routes: ${routes.length} -> ${workingRoutes.length}`
+  );
+
+  return {
+    routes: workingRoutes,
+    moveCount: moves.length,
+    moves,
+  };
+}
+
 /**
  * Check if an employee can be inserted into a route without violating constraints
  */
@@ -3514,18 +4362,39 @@ async function canInsertEmployeeIntoRoute(
   // Create tentative employee list with insertion
   const tentativeEmployees = [...hostRoute.employees];
   tentativeEmployees.splice(insertionIndex, 0, candidateEmployee);
+  const facilityCoordinates = [facility.geoY, facility.geoX];
+  const optimizedTentativeEmployees =
+    profile.enableLocalSequenceOptimization !== false
+      ? optimizeEmployeeSequenceLocal(
+        tentativeEmployees,
+        tripType,
+        facilityCoordinates,
+        {
+          maxIterations:
+            profile.localSequenceMaxIterations || DEFAULT_LOCAL_SEQUENCE_MAX_ITERATIONS,
+          directionPenaltyWeight:
+            profile.localSequenceDirectionPenaltyWeight ||
+            DEFAULT_LOCAL_SEQUENCE_DIRECTION_PENALTY_WEIGHT,
+          passengerBurdenWeight:
+            profile.localSequencePassengerBurdenWeight ||
+            DEFAULT_LOCAL_SEQUENCE_PASSENGER_BURDEN_WEIGHT,
+          monotonicSlackKm:
+            profile.localSequenceMonotonicSlackKm ||
+            DEFAULT_LOCAL_SEQUENCE_MONOTONIC_SLACK_KM,
+        }
+      )
+      : tentativeEmployees;
 
   // Calculate new route details
   const isDropoff = tripType.toLowerCase() === 'dropoff';
-  const facilityCoordinates = [facility.geoY, facility.geoX];
-  const employeeCoords = tentativeEmployees.map(e => [e.location.lat, e.location.lng]);
+  const employeeCoords = optimizedTentativeEmployees.map(e => [e.location.lat, e.location.lng]);
   const allCoords = isDropoff
     ? [facilityCoordinates, ...employeeCoords]
     : [...employeeCoords, facilityCoordinates];
 
   const tentativeDetails = await calculateRouteDetails(
     allCoords,
-    tentativeEmployees,
+    optimizedTentativeEmployees,
     pickupTimePerEmployee,
     tripType,
     city,
@@ -3537,7 +4406,7 @@ async function canInsertEmployeeIntoRoute(
   }
 
   // Check duration constraint
-  const serviceTime = tentativeEmployees.length * pickupTimePerEmployee;
+  const serviceTime = optimizedTentativeEmployees.length * pickupTimePerEmployee;
   const totalDuration = tentativeDetails.totalDuration + serviceTime;
   if (maxDuration && totalDuration > maxDuration) {
     return { canInsert: false, reason: 'duration_exceeded', actualDuration: totalDuration };
@@ -3545,7 +4414,7 @@ async function canInsertEmployeeIntoRoute(
 
   // Check deviation constraint
   const tentativeRoute = {
-    employees: tentativeEmployees,
+    employees: optimizedTentativeEmployees,
     routeDetails: tentativeDetails,
     uniqueKey: `consolidation_test_${hostRoute.uniqueKey}`,
     tripType: tripType
@@ -3558,7 +4427,7 @@ async function canInsertEmployeeIntoRoute(
 
   return {
     canInsert: true,
-    newEmployees: tentativeEmployees,
+    newEmployees: optimizedTentativeEmployees,
     newRouteDetails: tentativeDetails,
     totalDuration: totalDuration
   };
@@ -4186,6 +5055,28 @@ async function generateRoutes(data) {
 
       const singletonCountAfter = routesAfterConsolidation.filter(r => r.employees?.length === 1).length;
       console.log(`[Singleton Aggregation] Post-aggregation: ${singletonCountAfter} singleton routes (reduced by ${singletonCountBefore - singletonCountAfter})`);
+    }
+
+    // **NEW: Cross-route optimization phase**
+    // Relocate employees between routes when it improves directional fit
+    // and reduces avoidable detours without violating constraints.
+    const crossRouteOptimizationResult = await optimizeRoutesAcrossRoutes(
+      routesAfterConsolidation,
+      facility,
+      tripType,
+      profileMaxDuration,
+      pickupTimePerEmployee,
+      profile,
+      city,
+      shiftTime
+    );
+
+    routesAfterConsolidation = crossRouteOptimizationResult.routes;
+
+    if (crossRouteOptimizationResult.moveCount > 0) {
+      console.log(
+        `[Cross-Route Optimization] SUCCESS: Applied ${crossRouteOptimizationResult.moveCount} moves. Routes now: ${routesAfterConsolidation.length}`
+      );
     }
 
     logFleetStatus(availableFleetCounts, profile, "After Route Consolidation");

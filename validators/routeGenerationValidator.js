@@ -1,5 +1,21 @@
 const { z } = require('zod');
 
+const TRIP_TYPE_ALIASES = {
+  P: "PICKUP",
+  PICKUP: "PICKUP",
+  D: "DROPOFF",
+  DROP: "DROPOFF",
+  DROPOFF: "DROPOFF",
+};
+
+const tripTypeSchema = z.string({ required_error: "tripType is required" })
+  .transform(value => value.trim().toUpperCase())
+  .refine(
+    value => Object.prototype.hasOwnProperty.call(TRIP_TYPE_ALIASES, value),
+    { message: 'tripType must be "P", "D", "PICKUP", "DROP", or "DROPOFF"' }
+  )
+  .transform(value => TRIP_TYPE_ALIASES[value]);
+
 const employeeSchema = z.object({
   empCode: z.string().optional(),
   geoX: z.number().optional(),
@@ -132,6 +148,27 @@ const profileSchema = z.object({
   // Singleton Aggregation Configuration
   singletonAggregationRadius: z.number().positive().optional().default(6),
   singletonMaxClusterSize: z.number().int().positive().optional().default(4),
+  // Cross-Route Optimization Configuration
+  enableCrossRouteOptimization: z.boolean().optional().default(true),
+  crossRouteMaxIterations: z.number().int().positive().optional().default(4),
+  crossRouteMaxDetourKm: z.number().positive().optional().default(4.5),
+  crossRouteMaxDetourRatio: z.number().positive().optional().default(1.2),
+  crossRouteMaxHeadingDeviationDeg: z.number().min(0).max(180).optional().default(100),
+  crossRouteMonotonicitySlackKm: z.number().nonnegative().optional().default(1.8),
+  crossRouteCorridorRadiusKm: z.number().positive().optional().default(5.0),
+  crossRouteTopHostCandidates: z.number().int().positive().optional().default(5),
+  crossRouteMaxOsrmChecksPerIteration: z.number().int().positive().optional().default(250),
+  crossRouteRouteReductionBonusKm: z.number().nonnegative().optional().default(2.0),
+  crossRouteOccupancyBonusKm: z.number().nonnegative().optional().default(0.8),
+  crossRoutePassengerBurdenWeight: z.number().nonnegative().optional().default(0.35),
+  crossRouteMinNetGainKm: z.number().optional().default(-0.2),
+  crossRouteCandidateEmployeesPerRoute: z.number().int().positive().optional().default(6),
+  // Local Sequence Optimization (within each route)
+  enableLocalSequenceOptimization: z.boolean().optional().default(true),
+  localSequenceMaxIterations: z.number().int().positive().optional().default(3),
+  localSequenceDirectionPenaltyWeight: z.number().nonnegative().optional().default(4.0),
+  localSequencePassengerBurdenWeight: z.number().nonnegative().optional().default(0.25),
+  localSequenceMonotonicSlackKm: z.number().nonnegative().optional().default(1.5),
   // ...other fields
 }).strict();
 
@@ -146,11 +183,7 @@ const routeRequestSchema = z.object({
     .positive({ message: "pickupTimePerEmployee must be a positive number (in seconds)" }),
   reportingTime: z.number({ required_error: "reportingTime is required" })
     .min(0, { message: "reportingTime must be a positive number (in seconds)" }),
-  tripType: z.string({ required_error: "tripType is required" })
-    .refine(
-      v => ['P', 'D', 'PICKUP', 'DROPOFF'].includes(v.toUpperCase()),
-      { message: 'tripType must be "P", "D", "PICKUP", or "DROPOFF"' }
-    ),
+  tripType: tripTypeSchema,
   guard: z.boolean({ required_error: "guard is required and must be a boolean" }),
   zones: z.array(z.any()).optional(),
   saveToDatabase: z.boolean().optional()
@@ -166,11 +199,7 @@ const recalculateRouteRequestSchema = z.object({
   pickupTimePerEmployee: z.number().positive(),
   reportingTime: z.coerce.number().min(0),
   city: z.string(),
-  tripType: z.string({ required_error: "tripType is required" })
-    .refine(
-      v => ['P', 'D', 'PICKUP', 'DROPOFF'].includes(v.toUpperCase()),
-      { message: 'tripType must be "P", "D", "PICKUP", or "DROPOFF"' }
-    ),
+  tripType: tripTypeSchema,
 });
 
 const geocodesSchema = z.object({

@@ -1,0 +1,47 @@
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 19.014km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 18.231km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 18.485km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 19.194km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 19.056km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 18.477km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.339km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 25.821km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 22.037km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_6cb099d7-5ccd-4bbc-91cb-d0d757e36a26: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.382km. Returning false.
+
+[Cross-Route Optimization] Iteration 3: moved WXYZ4400 GLOBAL_batch_50_c8e755b4-5903-4c90-9c55-227575589618 -> GLOBAL_batch_26_552df824-639f-44d0-8187-9daeb71b7a6a, netGain=1.596km (OSRM checks 624/624)
+
+[Cross-Route Optimization] Iteration 4: candidateRoutes=52, osrmBudget=624 (configured=250, dynamic=624)
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.124km. ActualRouteDist: 23.833km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.656km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.599km. ActualRouteDist: 22.828km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 25.759km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_6cb099d7-5ccd-4bbc-91cb-d0d757e36a26: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.398km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 21.401km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 27.988km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_6cb099d7-5ccd-4bbc-91cb-d0d757e36a26: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.326km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 21.146km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_2a5d5067-d795-4dba-ad71-dca5c994148a: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 27.390km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_6cb099d7-5ccd-4bbc-91cb-d0d757e36a26: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.602km. Returning false.
+
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_76c4c631-f2e1-4974-a59a-6b56b99f0cb9: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 22.307km. Returning false.

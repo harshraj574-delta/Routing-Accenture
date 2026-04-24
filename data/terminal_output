@@ -1,0 +1,1388 @@
+nodemon] 3.1.9
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): *.*
+[nodemon] watching extensions: js,mjs,cjs,json
+[nodemon] starting `node server.js`
+----- Available route files -----
+routeGenerationRoutes (default) exists: true
+routeGenerationRoutesV1 exists: true
+routeGenerationRoutesV2 exists: true
+----- Registered API routes -----
+/api/v1/route-generation/* registered (Legacy Algorithm)
+/api/v2/route-generation/* registered (Enhanced Algorithm)
+/api/route-generation/* registered (Default - V2)
+/api/versions - Version info endpoint
+/api/health - Health check endpoint
+Server running on port 5001
+[v2] Generating routes for 312 employees, date: 2026-01-19, shift: 2230
+[v2] Using enhanced routing algorithm with angular clustering and linear direction optimization
+[v2] No zones provided in request, will use zones from backend data file
+Generating routes for 312 employees, date: 2026-01-19, shift: 2230, city: ncr, activateGuardSystem: true
+[Fleet Analysis] MAXIMUM Capacity Configuration: {
+  "s": {
+    "minEmployees": 1,
+    "maxEmployees": 4,
+    "capacity": 4,
+    "count": 82,
+    "utilization": 0
+  },
+  "m": {
+    "minEmployees": 5,
+    "maxEmployees": 6,
+    "capacity": 6,
+    "count": 30,
+    "utilization": 0
+  },
+  "l": {
+    "minEmployees": 7,
+    "maxEmployees": 12,
+    "capacity": 12,
+    "count": 40,
+    "utilization": 0
+  }
+}
+[Fleet Analysis] MAXIMUM Optimal sizes: { s: 4, m: 6, l: 12 }
+[Fleet Analysis] Client fleet configuration analyzed: {
+  s: {
+    minEmployees: 1,
+    maxEmployees: 4,
+    capacity: 4,
+    count: 82,
+    utilization: 0
+  },
+  m: {
+    minEmployees: 5,
+    maxEmployees: 6,
+    capacity: 6,
+    count: 30,
+    utilization: 0
+  },
+  l: {
+    minEmployees: 7,
+    maxEmployees: 12,
+    capacity: 12,
+    count: 40,
+    utilization: 0
+  }
+}
+
+[Fleet Status Initial]
+  S: 0/82 used, 82 remaining (0.0%)
+  M: 0/30 used, 30 remaining (0.0%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 0.0% used.
+  L: 0/40 used, 40 remaining (0.0%)
+  OVERALL: 0/152 vehicles used (0.0%)
+
+[Zone Initial Capacity] GLOBAL: Base: 6, Fleet-adjusted: 9
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Zone Processing MAXIMUM] GLOBAL: Targeting MAXIMUM capacity: 12
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 1: 1 employees, duration: 4667s
+[Guard Needed] Route GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 2: 2 employees, duration: 5521s
+[Guard Needed] Route GLOBAL_batch_2_a0f6eaaf-2b7a-4b46-a7ef-7e4ab055d9fd: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 3: 1 employees, duration: 4915s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.420) | m(cap:6, util:16.7%, score:0.383) | l(cap:12, util:8.3%, score:0.383) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 4: 2 employees, duration: 5608s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 5: 3 employees, duration: 5745s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 6: 1 employees, duration: 5196s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.413) | m(cap:6, util:16.7%, score:0.383) | l(cap:12, util:8.3%, score:0.383) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 7: 1 employees, duration: 4014s
+[Guard Needed] Route GLOBAL_batch_7_03b6051b-df4f-4782-8fa4-395215598f88: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success with Constraints] Route 8: 4 employees (NMT constraints), duration: 4788s
+[NMT Route EARLY] Route GLOBAL_batch_8_75aa836c-07b9-423b-8ac9-487d96c92806 contains NMT employee(s). Must limit to 4 employees TOTAL.
+[NMT Vehicle Selection] Route GLOBAL_batch_8_75aa836c-07b9-423b-8ac9-487d96c92806 final occupancy: 4 (4 employees + 0 guard)
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[NMT Effective Capacity] Route GLOBAL_batch_8_75aa836c-07b9-423b-8ac9-487d96c92806 vehicle capacity: 4, NMT limited to: 4
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 9: 8 employees, duration: 5509s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 10: 5 employees, duration: 5420s
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_10_f51beec3-f6c1-4089-9f22-47c0204c7111 (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 11: 7 employees, duration: 5832s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 12: 6 employees, duration: 5557s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_12_0129e761-b8fe-4d77-afeb-01fceedf7173 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 13: 3 employees, duration: 5208s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 14: 3 employees, duration: 4282s
+[Guard Needed] Route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 15: 1 employees, duration: 4213s
+[Guard Needed] Route GLOBAL_batch_15_1083b8b3-0fa0-4d7c-a35a-1909c86fdcf9: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 16: 8 employees, duration: 5323s
+[Guard Needed] Route GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 17: 4 employees, duration: 5340s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success with Constraints] Route 18: 4 employees (NMT constraints), duration: 4159s
+[NMT Route EARLY] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1 contains NMT employee(s). Must limit to 4 employees TOTAL.
+[Guard Needed] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1: Guard required for female employee at critical position
+[NMT Vehicle Selection] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1 final occupancy: 5 (4 employees + 1 guard)
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1 (occupancy: 5)
+[NMT Effective Capacity] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1 vehicle capacity: 6, NMT limited to: 4
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 19: 8 employees, duration: 5595s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 20: 7 employees, duration: 5829s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 21: 8 employees, duration: 4920s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 22: 1 employees, duration: 3521s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.396) | m(cap:6, util:16.7%, score:0.363) | l(cap:12, util:8.3%, score:0.353) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 23: 1 employees, duration: 3680s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.394) | m(cap:6, util:16.7%, score:0.363) | l(cap:12, util:8.3%, score:0.353) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 24: 1 employees, duration: 3486s
+[Guard Needed] Route GLOBAL_batch_24_c893d02c-000f-42cf-899b-d807e7f58e11: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 25: 1 employees, duration: 3332s
+[Guard Needed] Route GLOBAL_batch_25_b7c285f4-9255-4fc8-8856-f2cce525044b: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 26: 4 employees, duration: 4914s
+[Guard Needed] Route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success with Constraints] Route 27: 4 employees (NMT constraints), duration: 3872s
+[NMT Route EARLY] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6 contains NMT employee(s). Must limit to 4 employees TOTAL.
+[Guard Needed] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6: Guard required for female employee at critical position
+[NMT Vehicle Selection] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6 final occupancy: 5 (4 employees + 1 guard)
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6 (occupancy: 5)
+[NMT Effective Capacity] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6 vehicle capacity: 6, NMT limited to: 4
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 28: 1 employees, duration: 3243s
+[Guard Needed] Route GLOBAL_batch_28_0e22121d-d812-4e60-8206-57db7aa9a7d3: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 29: 1 employees, duration: 3834s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.384) | l(cap:12, util:8.3%, score:0.353) | m(cap:6, util:16.7%, score:0.350) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 30: 5 employees, duration: 3817s
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_30_9789742e-a394-4eff-b02d-0a1cfb6bc964 (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 31: 2 employees, duration: 3072s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_32_12: DEVIATION EXCEEDED. Rule: 25.01-30km (maxTotal: 42km). FarthestEmpDist: 28.834km. ActualRouteDist: 45.201km. Returning false.
+[Route Success] Route 32: 6 employees, duration: 4522s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_32_88e94dc8-bd05-4d60-aa1b-4b9c8ebb4685 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 33: 7 employees, duration: 5396s
+[Guard Needed] Route GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 34: 2 employees, duration: 3166s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 35: 6 employees, duration: 5855s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_35_5d619cdf-5fbd-4317-8c9c-28dace304461 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 36: 4 employees, duration: 3232s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 37: 10 employees, duration: 4322s
+[Guard Needed] Route GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 38: 10 employees, duration: 4332s
+[Guard Needed] Route GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_39_12: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.490km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_39_12: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.629km. Returning false.
+[Route Success] Route 39: 7 employees, duration: 4853s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 40: 12 employees, duration: 3914s
+[Guard Pre-Trim] Route 40: Group is at full capacity (12) and needs a guard. Trimming one employee.
+[Guard Needed] Route GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 12 → HIGH UTILIZATION: l(12) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 41: 10 employees, duration: 4150s
+[Guard Needed] Route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 42: 9 employees, duration: 4742s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 43: 9 employees, duration: 4767s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 44: 3 employees, duration: 3167s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 45: 6 employees, duration: 3358s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_45_a5d6485d-eac0-4aaa-9e7e-f36f7f754ad2 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 15.01-20km (maxTotal: 32km). FarthestEmpDist: 17.898km. ActualRouteDist: 32.384km. Returning false.
+[Route Success] Route 46: 9 employees, duration: 4739s
+[Guard Needed] Route GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 10 → HIGH UTILIZATION: l(12) - 83.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 47: 4 employees, duration: 3967s
+[Guard Needed] Route GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0 (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 48: 1 employees, duration: 2237s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.372) | m(cap:6, util:16.7%, score:0.317) | l(cap:12, util:8.3%, score:0.308) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 49: 2 employees, duration: 2280s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_50_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.788km. ActualRouteDist: 26.319km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_50_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.788km. ActualRouteDist: 26.353km. Returning false.
+[Route Success] Route 50: 9 employees, duration: 4463s
+[Guard Needed] Route GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 10 → HIGH UTILIZATION: l(12) - 83.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 51: 10 employees, duration: 4324s
+[Guard Needed] Route GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 52: 12 employees, duration: 3866s
+[Guard Pre-Trim] Route 52: Group is at full capacity (12) and needs a guard. Trimming one employee.
+[Guard Needed] Route GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 12 → HIGH UTILIZATION: l(12) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 9.908km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 10.239km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.842km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.117km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.418km. Returning false.
+[Route Success] Route 53: 9 employees, duration: 2229s
+[Guard Needed] Route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 10 → HIGH UTILIZATION: l(12) - 83.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_54_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.574km. ActualRouteDist: 25.635km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_54_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.574km. ActualRouteDist: 25.616km. Returning false.
+[Route Success] Route 54: 11 employees, duration: 4294s
+[Guard Needed] Route GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 12 → HIGH UTILIZATION: l(12) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 55: 9 employees, duration: 4888s
+[Guard Needed] Route GLOBAL_batch_55_a3683434-64a4-4d9f-a97c-94b83f248565: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 10 → HIGH UTILIZATION: l(12) - 83.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 56: 3 employees, duration: 2286s
+[Guard Needed] Route GLOBAL_batch_56_c7a6e29b-94ea-491f-8f4b-1fb93f75df5c: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 57: 1 employees, duration: 1728s
+[Guard Needed] Route GLOBAL_batch_57_d772e90f-275f-4266-abe0-a4606ef5ef43: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 58: 1 employees, duration: 2027s
+[Guard Needed] Route GLOBAL_batch_58_48551dac-f0ad-460e-a2b6-e3b09f505f72: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.576km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.541km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.346km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 31.838km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 30.519km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 32.475km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 31.156km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_59_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 30.975km. Returning false.
+[Route Success] Route 59: 8 employees, duration: 3731s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 60: 1 employees, duration: 1490s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.360) | m(cap:6, util:16.7%, score:0.317) | l(cap:12, util:8.3%, score:0.273) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 61: 2 employees, duration: 1431s
+[Guard Needed] Route GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 62: 1 employees, duration: 1196s
+[Guard Needed] Route GLOBAL_batch_62_95487f96-2249-4c29-8d0a-d821059fbc30: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 63: 11 employees, duration: 2862s
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 64: 1 employees, duration: 533s
+[Guard Needed] Route GLOBAL_batch_64_c12cab90-f048-4924-a0c7-ee449ae02901: Guard required for female employee at critical position
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+
+[Fleet Status After Zone Processing]
+  S: 31/82 used, 51 remaining (37.8%)
+  M: 10/30 used, 20 remaining (33.3%)
+  ⚠️  MEDIUM vehicles underutilized. 33.3% used.
+  L: 23/40 used, 17 remaining (57.5%)
+  OVERALL: 64/152 vehicles used (42.1%)
+
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.4649,28.6625]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=59182.3, durations[0][1]=3133.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.4514,28.6256],[77.4274,28.621]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=50609.3, durations[0][1]=3055.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.4576,28.6076]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=48111.9, durations[0][1]=3191.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.4519,28.5619],[77.436,28.5755]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=51666.2, durations[0][1]=3449.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3792,28.6895],[77.3771,28.6748]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=50459.1, durations[0][1]=2682.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.4455,28.5345]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=47618.3, durations[0][1]=3024.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3801,28.6397]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=43905.3, durations[0][1]=2688.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2691,28.7363],[77.2607,28.7299]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=37244.8, durations[0][1]=2650.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3239,28.6864],[77.3185,28.6838]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=36390.6, durations[0][1]=2540.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 6
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.36,28.3738],[77.3353,28.3816]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=46285.8, durations[0][1]=2908.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2009,28.7518],[77.2016,28.7474]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=37888.7, durations[0][1]=2483.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2461,28.7315],[77.2586,28.7073]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34127.6, durations[0][1]=2479.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3846,28.5609],[77.3565,28.5796]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=40985.2, durations[0][1]=2730.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2797,28.7017],[77.2799,28.7014]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=35605.7, durations[0][1]=2474.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3694,28.4235]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=42135.9, durations[0][1]=2717.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3274,28.3545],[77.3277,28.3667]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=40065.6, durations[0][1]=2535.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3456,28.6084],[77.3381,28.6089]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=39038, durations[0][1]=2498.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3225,28.6412],[77.3042,28.6282]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=39118.1, durations[0][1]=2308.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1283,28.7399],[77.1294,28.7368]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=38317.1, durations[0][1]=2313
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1361,28.7387],[77.1453,28.7304]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=37460.3, durations[0][1]=2250.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1144,28.7405],[77.1164,28.7396]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=38858.9, durations[0][1]=2342.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1586,28.7336]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=38342.5, durations[0][1]=2251.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2177,28.7127]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=31421.1, durations[0][1]=2348.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2874,28.3581]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=36138.9, durations[0][1]=2400.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2978,28.6345]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=30152.8, durations[0][1]=2187.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3391,28.4824],[77.3218,28.5024]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=33530.5, durations[0][1]=2249.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1075,28.7145],[77.0974,28.7069]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=32567.2, durations[0][1]=2071.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0807,28.7092]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=32320.2, durations[0][1]=1986.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3174,28.4541]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34763.5, durations[0][1]=2260.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 6
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2365,28.6498],[77.2406,28.6419]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=24806.9, durations[0][1]=1868.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9401,28.3616],[76.9529,28.3863]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=25078, durations[0][1]=1471.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2006,28.6679],[77.186,28.6536]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=24090.4, durations[0][1]=1883
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.3075,28.521],[77.294,28.5503]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=31607.9, durations[0][1]=2116
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1835,28.6751],[77.1777,28.6726]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=25612.7, durations[0][1]=1940
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2866,28.5675],[77.2639,28.5773]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=27373.9, durations[0][1]=1785.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9172,28.402],[76.9417,28.4242]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=27178, durations[0][1]=1661
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 11
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1056,28.6728],[77.0992,28.6525]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=28446.4, durations[0][1]=1867.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 11
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0717,28.6656],[77.0775,28.6468]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=30405.1, durations[0][1]=1896.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9962,28.6315],[76.99,28.6144]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22378.1, durations[0][1]=1313.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0163,28.6359],[77.028,28.6275]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=24375, durations[0][1]=1461
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 11
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0544,28.613],[77.0543,28.6104]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=19786.9, durations[0][1]=1455.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0898,28.6485],[77.086,28.6471]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=24846.5, durations[0][1]=1686.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2511,28.5037],[77.2362,28.5053]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=23524.5, durations[0][1]=1595.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0644,28.6399],[77.062,28.618]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22872.6, durations[0][1]=1598.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0358,28.6309],[77.0332,28.624]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=21454.8, durations[0][1]=1590.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0164,28.3882],[77.0359,28.4076]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=20423.6, durations[0][1]=1459.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1044,28.6328],[77.0872,28.629]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22217.8, durations[0][1]=1676.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0241,28.6187]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=18715.8, durations[0][1]=1417.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9545,28.4617],[76.9548,28.461]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22488.2, durations[0][1]=1498.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.046,28.4038],[77.065,28.4249]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=15888.9, durations[0][1]=1026.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 11
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9736,28.5133],[76.9863,28.5147]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=18146.6, durations[0][1]=1437.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[76.9827,28.498],[77.0126,28.4938]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=16055.2, durations[0][1]=1376.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0653,28.5093],[77.0647,28.5051]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=4856.9, durations[0][1]=468.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0072,28.4457],[77.011,28.4532]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=14459.5, durations[0][1]=1016.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1856,28.5405],[77.172,28.5206]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=15610.7, durations[0][1]=1116.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1925,28.4882],[77.1872,28.4872]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=17017.4, durations[0][1]=1212.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1733,28.5538]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=14058, durations[0][1]=1004.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1905,28.5004]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=16017.1, durations[0][1]=1118.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0114,28.4636],[77.0113,28.4657]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=13908.8, durations[0][1]=1021.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0325,28.5561]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=12391.3, durations[0][1]=969.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0525,28.4467],[77.0603,28.4485]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=10783.4, durations[0][1]=820.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0787,28.4438]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=12540.4, durations[0][1]=1001.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.1326,28.4747],[77.1286,28.4738]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=8563.7, durations[0][1]=827.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0866,28.5315]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=4168.7, durations[0][1]=403.7
+
+[Fleet Status After OR-Tools]
+  S: 31/82 used, 51 remaining (37.8%)
+  M: 10/30 used, 20 remaining (33.3%)
+  ⚠️  MEDIUM vehicles underutilized. 33.3% used.
+  L: 23/40 used, 17 remaining (57.5%)
+  OVERALL: 64/152 vehicles used (42.1%)
+
+
+[Route Consolidation] Pre-consolidation: 64 routes
+
+[Route Consolidation] Starting consolidation phase...
+[Route Consolidation] Config: maxInsertionDistance=5km, lowOccupancyThreshold=2, minHostOccupancy=1
+[Route Consolidation] Found 23 low-occupancy routes, 52 potential host routes
+[Route Consolidation] ✗ Could not merge employee WXYZ5416 from route GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89
+[Route Consolidation] ✓ Employee WXYZ5041 from route GLOBAL_batch_2_a0f6eaaf-2b7a-4b46-a7ef-7e4ab055d9fd → route GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89 (distance impact: 4.31km)
+[Route Consolidation] ✓ Employee WXYZ4936 from route GLOBAL_batch_2_a0f6eaaf-2b7a-4b46-a7ef-7e4ab055d9fd → route GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89 (distance impact: 2.40km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_2_a0f6eaaf-2b7a-4b46-a7ef-7e4ab055d9fd fully merged into GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89
+[Route Consolidation] ✗ Could not merge employee WXYZ4535 from route GLOBAL_batch_3_e89d34c7-d567-4a81-b34e-3c2682d6eb8c
+[Route Consolidation] ✗ Could not merge employee WXYZ5149 from route GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed
+[Route Consolidation] ✓ Employee WXYZ2980 from route GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed → route GLOBAL_batch_3_e89d34c7-d567-4a81-b34e-3c2682d6eb8c (distance impact: 4.15km)
+[Route Consolidation] ⚠ Route GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed partially merged. Employees to remove: WXYZ2980
+[Route Consolidation] ✓ Employee WXYZ5039 from route GLOBAL_batch_6_958b12b2-239a-4825-a3ca-74a60584de29 → route GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed (distance impact: 5.60km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_6_958b12b2-239a-4825-a3ca-74a60584de29 fully merged into GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed
+[Route Consolidation] ✗ Could not merge employee WXYZ4545 from route GLOBAL_batch_7_03b6051b-df4f-4782-8fa4-395215598f88
+[Route Consolidation] ✗ Could not merge employee WXYZ5269 from route GLOBAL_batch_15_1083b8b3-0fa0-4d7c-a35a-1909c86fdcf9
+[Route Consolidation] ✗ Could not merge employee WXYZ3548 from route GLOBAL_batch_22_54957107-7624-4943-86ba-6804450814c5
+[Route Consolidation] ✗ Could not merge employee WXYZ4679 from route GLOBAL_batch_23_7de1f2a1-6923-4079-a0d7-4845ed4dc590
+[Route Consolidation] ✗ Could not merge employee WXYZ2603 from route GLOBAL_batch_24_c893d02c-000f-42cf-899b-d807e7f58e11
+[Route Consolidation] ✗ Could not merge employee WXYZ5085 from route GLOBAL_batch_25_b7c285f4-9255-4fc8-8856-f2cce525044b
+[Route Consolidation] ✗ Could not merge employee WXYZ4413 from route GLOBAL_batch_28_0e22121d-d812-4e60-8206-57db7aa9a7d3
+[Route Consolidation] ✓ Employee WXYZ3546 from route GLOBAL_batch_29_2fc7b6f9-b20f-4e5a-80b7-fe6e5060229e → route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c (distance impact: 6.39km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_29_2fc7b6f9-b20f-4e5a-80b7-fe6e5060229e fully merged into GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c
+[Route Consolidation] ✗ Could not merge employee WXYZ4509 from route GLOBAL_batch_31_08d3222b-8eac-492e-9595-d4f882809618
+[Route Consolidation] ✗ Could not merge employee WXYZ5245 from route GLOBAL_batch_31_08d3222b-8eac-492e-9595-d4f882809618
+[Route Consolidation] ✗ Could not merge employee WXYZ3101 from route GLOBAL_batch_34_15b4fa3f-9279-45c5-820f-27a489e7d5cd
+[Route Consolidation] ✗ Could not merge employee WXYZ3667 from route GLOBAL_batch_34_15b4fa3f-9279-45c5-820f-27a489e7d5cd
+[Route Consolidation] ✗ Could not merge employee WXYZ3384 from route GLOBAL_batch_48_c2157f05-1547-4407-8a53-d79f9030af69
+[Route Consolidation] ✗ Could not merge employee WXYZ5011 from route GLOBAL_batch_49_5932a583-8566-42cc-af9f-ff38ede59039
+[Route Consolidation] ✗ Could not merge employee WXYZ5178 from route GLOBAL_batch_49_5932a583-8566-42cc-af9f-ff38ede59039
+[Route Consolidation] ✗ Could not merge employee WXYZ3579 from route GLOBAL_batch_57_d772e90f-275f-4266-abe0-a4606ef5ef43
+[Route Consolidation] ✗ Could not merge employee WXYZ3235 from route GLOBAL_batch_58_48551dac-f0ad-460e-a2b6-e3b09f505f72
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.894km. Returning false.
+[Route Consolidation] ✗ Could not merge employee WXYZ3230 from route GLOBAL_batch_60_24480631-30d8-4b83-8e2d-cd110dc4ba57
+[Route Consolidation] ✗ Could not merge employee WXYZ3037 from route GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299
+[Route Consolidation] ✓ Employee WXYZ3454 from route GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299 → route GLOBAL_batch_62_95487f96-2249-4c29-8d0a-d821059fbc30 (distance impact: 1.87km)
+[Route Consolidation] ⚠ Route GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299 partially merged. Employees to remove: WXYZ3454
+[Route Consolidation] ✓ Employee WXYZ2896 from route GLOBAL_batch_62_95487f96-2249-4c29-8d0a-d821059fbc30 → route GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299 (distance impact: 1.87km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_62_95487f96-2249-4c29-8d0a-d821059fbc30 fully merged into GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.767km. ActualRouteDist: 13.230km. Returning false.
+[Route Consolidation] ✗ Could not merge employee WXYZ7671 from route GLOBAL_batch_64_c12cab90-f048-4924-a0c7-ee449ae02901
+[Route Consolidation] Final employee order for GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89: WXYZ5416(#1), WXYZ5041(#2), WXYZ4936(#3)
+[Route Consolidation] Final employee order for GLOBAL_batch_3_e89d34c7-d567-4a81-b34e-3c2682d6eb8c: WXYZ4535(#1), WXYZ2980(#2)
+[Route Consolidation] Final employee order for GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed: WXYZ5149(#1), WXYZ5039(#2), WXYZ2980(#3)
+[Route Consolidation] Final employee order for GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c: WXYZ4775(#1), WXYZ3546(#2), WXYZ4888(#3), WXYZ3598(#4), WXYZ5069(#5)
+[Route Consolidation] Final employee order for GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299: WXYZ3037(#1), WXYZ3454(#2), WXYZ2896(#3)
+[Route Consolidation] Complete. Merged 4 routes. Routes: 64 → 60
+[Route Consolidation] **DEDUPLICATION** Removed 1 duplicate employee appearances:
+  - WXYZ2980 removed from GLOBAL_batch_3_e89d34c7-d567-4a81-b34e-3c2682d6eb8c
+[Route Consolidation] Final route count after deduplication: 60
+[Route Consolidation] SUCCESS: Merged 4 routes. Routes: 64 → 60
+[Route Consolidation] Merge details: [
+  {
+    mergedRoute: 'GLOBAL_batch_2_a0f6eaaf-2b7a-4b46-a7ef-7e4ab055d9fd',
+    intoRoute: 'GLOBAL_batch_1_597270b7-e128-4f0a-97c8-db91410f1c89',
+    employeeCount: 2
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_6_958b12b2-239a-4825-a3ca-74a60584de29',
+    intoRoute: 'GLOBAL_batch_4_516f2ad8-af90-45f5-93cf-0f510ec4f6ed',
+    employeeCount: 1
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_29_2fc7b6f9-b20f-4e5a-80b7-fe6e5060229e',
+    intoRoute: 'GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c',
+    employeeCount: 1
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_62_95487f96-2249-4c29-8d0a-d821059fbc30',
+    intoRoute: 'GLOBAL_batch_61_973a2667-0066-4769-9fc2-47d9ebc5b299',
+    employeeCount: 1
+  }
+]
+
+[Singleton Aggregation] Pre-aggregation: 13 singleton routes
+
+[Singleton Aggregation] Found 13 singleton routes to process
+[Singleton Aggregation] Merged 2 singletons: WXYZ3230, WXYZ7671
+[Singleton Aggregation] Complete. Aggregated 2 singletons into 1 routes
+[Singleton Aggregation] Post-aggregation: 11 singleton routes (reduced by 2)
+[Cross-Route Optimization] Starting with 59 routes. Config: iterations=4, maxDetourKm=4.5, maxDetourRatio=1.2, corridorRadiusKm=5, maxHeadingDeviationDeg=100
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.073km. ActualRouteDist: 9.711km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.968km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.009km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.514km. ActualRouteDist: 10.151km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.117km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.054km. ActualRouteDist: 26.313km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.322km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.646km. ActualRouteDist: 15.440km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 29.213km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.484km. ActualRouteDist: 15.994km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.418km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.732km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.490km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.629km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.774km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.756km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.405km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 27.014km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.125km. Returning false.
+[Cross-Route Optimization] Iteration 1: moved WXYZ3561 GLOBAL_batch_35_5d619cdf-5fbd-4317-8c9c-28dace304461 -> GLOBAL_batch_13_e8610f10-f358-4131-be17-3484e0fc0317, netGain=2.097km (OSRM checks 250/250)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.073km. ActualRouteDist: 9.711km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.968km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.009km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.514km. ActualRouteDist: 10.151km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.117km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.054km. ActualRouteDist: 26.313km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.322km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.646km. ActualRouteDist: 15.440km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 29.213km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.484km. ActualRouteDist: 15.994km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.418km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.732km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.490km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.629km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.774km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.756km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.405km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 27.014km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.125km. Returning false.
+[Cross-Route Optimization] Iteration 2: moved WXYZ3576 GLOBAL_batch_42_89be16dc-cf00-4dbb-afb4-b41de437a990 -> GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089, netGain=2.095km (OSRM checks 250/250)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.490km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.629km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.073km. ActualRouteDist: 9.711km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.968km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.009km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.514km. ActualRouteDist: 10.151km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.117km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.054km. ActualRouteDist: 26.313km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.322km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.646km. ActualRouteDist: 15.440km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 29.213km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.484km. ActualRouteDist: 15.994km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.418km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.732km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.774km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.756km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.405km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 27.014km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.125km. Returning false.
+[Cross-Route Optimization] Iteration 3: moved WXYZ4162 GLOBAL_batch_20_9b7fd46d-dab7-427b-b5a4-ed8b90e92ae5 -> GLOBAL_batch_34_15b4fa3f-9279-45c5-820f-27a489e7d5cd, netGain=2.086km (OSRM checks 250/250)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.490km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.629km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.073km. ActualRouteDist: 9.711km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.968km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.009km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.514km. ActualRouteDist: 10.151km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.117km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.054km. ActualRouteDist: 26.313km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.322km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.646km. ActualRouteDist: 15.440km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 29.213km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.484km. ActualRouteDist: 15.994km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 13.418km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 39.732km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 25.774km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 26.756km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 28.405km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_59_c41af7bd-1e90-43d9-87bf-f4815b7678ca: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 11.731km. ActualRouteDist: 27.014km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 3.493km. ActualRouteDist: 14.174km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_39_c5bc50e0-8483-443c-b1a4-fa5cef69c42b: DEVIATION EXCEEDED. Rule: 20.01-25km (maxTotal: 37.5km). FarthestEmpDist: 23.056km. ActualRouteDist: 38.125km. Returning false.
+[Cross-Route Optimization] Iteration 4: moved WXYZ7803 GLOBAL_batch_55_a3683434-64a4-4d9f-a97c-94b83f248565 -> GLOBAL_batch_35_5d619cdf-5fbd-4317-8c9c-28dace304461, netGain=2.084km (OSRM checks 250/250)
+[Cross-Route Optimization] Complete. Applied 4 moves. Routes: 59 -> 59
+[Cross-Route Optimization] SUCCESS: Applied 4 moves. Routes now: 59
+
+[Fleet Status After Route Consolidation]
+  S: 31/82 used, 51 remaining (37.8%)
+  M: 10/30 used, 20 remaining (33.3%)
+  ⚠️  MEDIUM vehicles underutilized. 33.3% used.
+  L: 23/40 used, 17 remaining (57.5%)
+  OVERALL: 64/152 vehicles used (42.1%)
+
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,582.3,2290.8],[582.3,0,1161.7],[1256.3,1144.9,0]],"destinations":[{"hint":"jBsAgJkOBoBrAAAAEgAAAAAAAAALAQAAE1mVQh-eQkEAAAAA2pY5Q2sAAAASAAAAAAAAAAsBAADOAAAA5jGbBGj0tQHUMZsEBPS1AQAAfxEq0XFj","distance":11.221356,"name":"","location":[77.279718,28.7018]},{"hint":"GwoGgHsKBoABAAAAQAAAAEUAAAAAAAAAwi-jP1e_MEKY0kBCAAAAAAEAAABAAAAARQAAAAAAAADOAAAAnzKbBO7ytQGcMpsE2PK1AQEAPxEq0XFj","distance":2.455748,"name":"","location":[77.279903,28.701422]},{"hint":"IQcGgCcHBoAUAAAAGQAAAAAAAAAAAAAAevpfQbWqiEEAAAAAAAAAABQAAAAZAAAAAAAAAAAAAADOAAAA7jSbBKHYtQH0NJsErNi1AQAALwcq0XFj","distance":1.352818,"name":"","location":[77.280494,28.694689]}],"sources":[{"hint":"jBsAgJkOBoBrAAAAEgAAAAAAAAALAQAAE1mVQh-eQkEAAAAA2pY5Q2sAAAASAAAAAAAAAAsBAADOAAAA5jGbBGj0tQHUMZsEBPS1AQAAfxEq0XFj","distance":11.221356,"name":"","location":[77.279718,28.7018]},{"hint":"GwoGgHsKBoABAAAAQAAAAEUAAAAAAAAAwi-jP1e_MEKY0kBCAAAAAAEAAABAAAAARQAAAAAAAADOAAAAnzKbBO7ytQGcMpsE2PK1AQEAPxEq0XFj","distance":2.455748,"name":"","location":[77.279903,28.701422]},{"hint":"IQcGgCcHBoAUAAAAGQAAAAAAAAAAAAAAevpfQbWqiEEAAAAAAAAAABQAAAAZAAAAAAAAAAAAAADOAAAA7jSbBKHYtQH0NJsErNi1AQAALwcq0XFj","distance":1.352818,"name":"","location":[77.280494,28.694689]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88
+  Critical Female: WXYZ3690 at [28.7017, 77.2797]
+  Male Candidate: WXYZ4396 at [28.7014, 77.2799] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 582.3, (KM): 0.582
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 0.582 <= 1.5 is true
+    -> Candidate WXYZ4396 IS VALID for swap.
+--- END DEBUG FOR CANDIDATE WXYZ4396 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88
+  Critical Female: WXYZ3690 at [28.7017, 77.2797]
+  Male Candidate: WXYZ4866 at [28.6947, 77.2805] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 2290.8, (KM): 2.291
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.291 <= 1.5 is false
+    -> Candidate WXYZ4866 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4866 ---
+[GuardSwap - Experiential] Successfully swapped WXYZ3690 (F) with WXYZ4396 (M) in route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88. Guard saved!
+[Guard Logic] Experiential swap for route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88 successful. Swapped: WXYZ3690 with WXYZ4396.
+[Guard Logic - Pickup] Route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88: Will proceed to OR-Tools re-optimization for this swap.
+[Guard Logic - Re-Opt] Route GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88: PICKUP trip, re-optimizing after swap.
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.2799,28.7014],[77.2797,28.7017]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=35878.4, durations[0][1]=2496.9
+[Guard Logic - Re-Opt] Re-optimization failed for GLOBAL_batch_14_ec821066-3378-4e55-a7b6-861107bc5e88: No route from re-opt. Using pre-reopt swapped order.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,1676.7,6207.7,7186.3,8062.8],[1676.7,0,4993.8,5972.4,6849],[6151.9,4927.1,0,1258.2,2134.7],[7218.6,5993.8,1488,0,876.6],[8095.2,6870.4,2481.2,876.6,0]],"destinations":[{"hint":"cWcCgHNnAoALAAAAKQAAAAAAAABXAAAAmgJFQTC_NkIAAAAALsHBQgsAAAApAAAAAAAAAFcAAADOAAAAIuybBP2nsAEo7JsExKewAQAATwUq0XFj","distance":6.344131,"name":"","location":[77.327394,28.354557]},{"hint":"0W8CgIRwAoAkAAAAeQAAAAoAAAAAAAAAu5PKQWjNpkKhWtVAAAAAACQAAAB5AAAACgAAAAAAAADOAAAAI-2bBGnXsAFU7ZsEbNewAQEATxYq0XFj","distance":4.814529,"name":"","location":[77.327651,28.366697]},{"hint":"d98MgHrfDIAiAAAAQQAAAAAAAABQAAAAVM29Qc5kNEIAAAAA09ldQiIAAABBAAAAAAAAAFAAAADOAAAA6GibBAcOsQHoaJsEHA6xAQAAjwUq0XFj","distance":2.327246,"name":"","location":[77.2938,28.380679]},{"hint":"6kUNgLM6AIABAAAAAgAAABkAAAADAAAAPOLwP_Ufuj9RQd1BJjJjQAEAAAACAAAAGQAAAAMAAADOAAAAjDubBLMNsQGYO5sEuA2xAQIAnwkq0XFj","distance":1.300233,"name":"","location":[77.282188,28.380595]},{"hint":"4kYNgFR_AYAPAAAAAwAAAAAAAAAAAAAAlxGFQROaP0AAAAAAAAAAAA8AAAADAAAAAAAAAAAAAADOAAAAYjibBNcpsQF4OJsE2CmxAQAALwsq0XFj","distance":2.159311,"name":"","location":[77.281378,28.387799]}],"sources":[{"hint":"cWcCgHNnAoALAAAAKQAAAAAAAABXAAAAmgJFQTC_NkIAAAAALsHBQgsAAAApAAAAAAAAAFcAAADOAAAAIuybBP2nsAEo7JsExKewAQAATwUq0XFj","distance":6.344131,"name":"","location":[77.327394,28.354557]},{"hint":"0W8CgIRwAoAkAAAAeQAAAAoAAAAAAAAAu5PKQWjNpkKhWtVAAAAAACQAAAB5AAAACgAAAAAAAADOAAAAI-2bBGnXsAFU7ZsEbNewAQEATxYq0XFj","distance":4.814529,"name":"","location":[77.327651,28.366697]},{"hint":"d98MgHrfDIAiAAAAQQAAAAAAAABQAAAAVM29Qc5kNEIAAAAA09ldQiIAAABBAAAAAAAAAFAAAADOAAAA6GibBAcOsQHoaJsEHA6xAQAAjwUq0XFj","distance":2.327246,"name":"","location":[77.2938,28.380679]},{"hint":"6kUNgLM6AIABAAAAAgAAABkAAAADAAAAPOLwP_Ufuj9RQd1BJjJjQAEAAAACAAAAGQAAAAMAAADOAAAAjDubBLMNsQGYO5sEuA2xAQIAnwkq0XFj","distance":1.300233,"name":"","location":[77.282188,28.380595]},{"hint":"4kYNgFR_AYAPAAAAAwAAAAAAAAAAAAAAlxGFQROaP0AAAAAAAAAAAA8AAAADAAAAAAAAAAAAAADOAAAAYjibBNcpsQF4OJsE2CmxAQAALwsq0XFj","distance":2.159311,"name":"","location":[77.281378,28.387799]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652
+  Critical Female: WXYZ4552 at [28.3545, 77.3274]
+  Male Candidate: WXYZ3301 at [28.3667, 77.3277] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 1676.7, (KM): 1.677
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 1.677 <= 1.5 is false
+    -> Candidate WXYZ3301 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3301 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652
+  Critical Female: WXYZ4552 at [28.3545, 77.3274]
+  Male Candidate: WXYZ3259 at [28.3807, 77.2938] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 6207.7, (KM): 6.208
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.208 <= 1.5 is false
+    -> Candidate WXYZ3259 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3259 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652
+  Critical Female: WXYZ4552 at [28.3545, 77.3274]
+  Male Candidate: WXYZ3158 at [28.3806, 77.2822] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 7186.3, (KM): 7.186
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.186 <= 1.5 is false
+    -> Candidate WXYZ3158 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3158 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652
+  Critical Female: WXYZ4552 at [28.3545, 77.3274]
+  Male Candidate: WXYZ3574 at [28.3878, 77.2814] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 8062.8, (KM): 8.063
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 8.063 <= 1.5 is false
+    -> Candidate WXYZ3574 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3574 ---
+[Guard Swap] Route GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_16_006a691a-6c6d-4d97-a01a-4e787b162652 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,3382.6],[4735.9,0]],"destinations":[{"hint":"Qj8IgI4_CIADAAAATQAAAAAAAAAAAAAAml8WQDwVVkIAAAAAAAAAAAMAAABNAAAAAAAAAAAAAADOAAAABNmbBKwHtQEE2ZsEsAe1AQAAjwUq0XFj","distance":0.443301,"name":"","location":[77.3225,28.641196]},{"hint":"XW8IgKhvCIA_AAAAEAAAAAAAAAAAAAAATVWNQk46jUEAAAAAAAAAAD8AAAAQAAAAAAAAAAAAAADOAAAAV5GbBFnVtAGIkZsE6NS0AQAAXwQq0XFj","distance":13.408687,"name":"","location":[77.304151,28.628313]}],"sources":[{"hint":"Qj8IgI4_CIADAAAATQAAAAAAAAAAAAAAml8WQDwVVkIAAAAAAAAAAAMAAABNAAAAAAAAAAAAAADOAAAABNmbBKwHtQEE2ZsEsAe1AQAAjwUq0XFj","distance":0.443301,"name":"","location":[77.3225,28.641196]},{"hint":"XW8IgKhvCIA_AAAAEAAAAAAAAAAAAAAATVWNQk46jUEAAAAAAAAAAD8AAAAQAAAAAAAAAAAAAADOAAAAV5GbBFnVtAGIkZsE6NS0AQAAXwQq0XFj","distance":13.408687,"name":"","location":[77.304151,28.628313]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1
+  Critical Female: WXYZ4146 at [28.6412, 77.3225]
+  Male Candidate: WXYZ4973 at [28.6282, 77.3042] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 3382.6, (KM): 3.383
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.383 <= 1.5 is false
+    -> Candidate WXYZ4973 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4973 ---
+[Guard Swap] Route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_18_c0061768-dd72-422e-b056-1c346a3291e1 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,5804.4,4236.2,7657],[5530.9,0,7134.5,7552.8],[4236.2,7534.2,0,4952.2],[7026.7,8103.1,3805.7,0]],"destinations":[{"hint":"aAsCgHF8EoADAAAAKQAAAAAAAAAAAAAAQBEbQE-q4UEAAAAAAAAAAAMAAAApAAAAAAAAAAAAAADOAAAA7hmcBHCbsgHcGZwEYJuyAQAArxMq0XFj","distance":2.500262,"name":"","location":[77.339118,28.482416]},{"hint":"MsgCgDTIAoAjAAAAKwAAAAAAAAAAAAAAP6TEQdby7kEAAAAAAAAAACMAAAArAAAAAAAAAAAAAADOAAAAGMWbBM0ssgEYxZsE1CyyAQAAnwUq0XFj","distance":0.77576,"name":"","location":[77.3174,28.454093]},{"hint":"1RICgNO7EoBFAAAASwAAAAAAAAAAAAAAFUBCQu8qT0IAAAAAAAAAAEUAAABLAAAAAAAAAAAAAADOAAAAwNKbBKcCswHE0psESAOzAQAA_xAq0XFj","distance":17.846914,"name":"","location":[77.320896,28.508839]},{"hint":"vpISgNoNAoAIAAAAVwAAAAgAAAAUAQAAExO5QJveb0IcArJAoks_QwgAAABXAAAACAAAABQBAADOAAAA04qbBMbvsgGAipsEwO-yAQEALxYq0XFj","distance":8.151449,"name":"","location":[77.302483,28.504006]}],"sources":[{"hint":"aAsCgHF8EoADAAAAKQAAAAAAAAAAAAAAQBEbQE-q4UEAAAAAAAAAAAMAAAApAAAAAAAAAAAAAADOAAAA7hmcBHCbsgHcGZwEYJuyAQAArxMq0XFj","distance":2.500262,"name":"","location":[77.339118,28.482416]},{"hint":"MsgCgDTIAoAjAAAAKwAAAAAAAAAAAAAAP6TEQdby7kEAAAAAAAAAACMAAAArAAAAAAAAAAAAAADOAAAAGMWbBM0ssgEYxZsE1CyyAQAAnwUq0XFj","distance":0.77576,"name":"","location":[77.3174,28.454093]},{"hint":"1RICgNO7EoBFAAAASwAAAAAAAAAAAAAAFUBCQu8qT0IAAAAAAAAAAEUAAABLAAAAAAAAAAAAAADOAAAAwNKbBKcCswHE0psESAOzAQAA_xAq0XFj","distance":17.846914,"name":"","location":[77.320896,28.508839]},{"hint":"vpISgNoNAoAIAAAAVwAAAAgAAAAUAQAAExO5QJveb0IcArJAoks_QwgAAABXAAAACAAAABQBAADOAAAA04qbBMbvsgGAipsEwO-yAQEALxYq0XFj","distance":8.151449,"name":"","location":[77.302483,28.504006]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c
+  Critical Female: WXYZ4775 at [28.4824, 77.3391]
+  Male Candidate: WXYZ3546 at [28.4541, 77.3174] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 5804.4, (KM): 5.804
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.804 <= 1.5 is false
+    -> Candidate WXYZ3546 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3546 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c
+  Critical Female: WXYZ4775 at [28.4824, 77.3391]
+  Male Candidate: WXYZ3598 at [28.509, 77.3209] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 4236.2, (KM): 4.236
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.236 <= 1.5 is false
+    -> Candidate WXYZ3598 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3598 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c
+  Critical Female: WXYZ4775 at [28.4824, 77.3391]
+  Male Candidate: WXYZ5069 at [28.504, 77.3024] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 7657, (KM): 7.657
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.657 <= 1.5 is false
+    -> Candidate WXYZ5069 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5069 ---
+[Guard Swap] Route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_26_56263fab-d89d-4a3c-8861-8829abda478c did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,1686.2],[1690.4,0]],"destinations":[{"hint":"IwcHgDgHB4ADAAAAMgAAAAAAAAAAAAAA4cIYQPcYCUIAAAAAAAAAAAMAAAAyAAAAAAAAAAAAAADOAAAALJGYBAQmtgEskZgEBCa2AQAAbwIq0XFj","distance":0,"name":"","location":[77.1075,28.7145]},{"hint":"Gg4HgEsOB4APAAAAQgAAAAAAAAAAAAAAXfUlQftpNkIAAAAAAAAAAA8AAABCAAAAAAAAAAAAAADOAAAA12mYBJQItgG4aZgEVAi2AQAATxIq0XFj","distance":7.712472,"name":"","location":[77.097431,28.706964]}],"sources":[{"hint":"IwcHgDgHB4ADAAAAMgAAAAAAAAAAAAAA4cIYQPcYCUIAAAAAAAAAAAMAAAAyAAAAAAAAAAAAAADOAAAALJGYBAQmtgEskZgEBCa2AQAAbwIq0XFj","distance":0,"name":"","location":[77.1075,28.7145]},{"hint":"Gg4HgEsOB4APAAAAQgAAAAAAAAAAAAAAXfUlQftpNkIAAAAAAAAAAA8AAABCAAAAAAAAAAAAAADOAAAA12mYBJQItgG4aZgEVAi2AQAATxIq0XFj","distance":7.712472,"name":"","location":[77.097431,28.706964]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6
+  Critical Female: WXYZ3307 at [28.7145, 77.1075]
+  Male Candidate: WXYZ4395 at [28.7069, 77.0974] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 1686.2, (KM): 1.686
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 1.686 <= 1.5 is false
+    -> Candidate WXYZ4395 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4395 ---
+[Guard Swap] Route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_27_8124071c-ae17-49e6-920d-17536d7857b6 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,5959.5,6510.9,9471.4,9697.6,11541.9],[6133.3,0,551.5,6748.9,7811,11431.5],[6408.2,991.3,0,6270.9,6923.9,10689.4],[7655.6,5885.4,6510.1,0,837.4,5268.3],[8129.6,6359.5,6672.1,842.5,0,4899.1],[12409.3,9784.2,10096.8,5197,4643.2,0]],"destinations":[{"hint":"QdgBgDGaEIAbAAAAMwAAAAAAAABOAAAAMdqbQV3LC0IAAAAA-o9YQhsAAAAzAAAAAAAAAE4AAADOAAAAa56bBPkxswFsnpsEKDKzAQAA7xAq0XFj","distance":5.209635,"name":"","location":[77.307499,28.520953]},{"hint":"t8wQgP___38bAAAAHwAAAFIAAAByAAAAkEr2QTDKcECaubRC06v9QhsAAAAfAAAAUgAAAHIAAADOAAAAsGmbBJykswGwaZsEnKSzAQEAzxQq0XFj","distance":0,"name":"","location":[77.294,28.5503]},{"hint":"5N0BgHvdAYARAAAACAAAAAAAAAAAAAAAUGiZQZRlAUEAAAAAAAAAABEAAAAIAAAAAAAAAAAAAADOAAAATV6bBMOwswFcXpsEuLCzAQAAfwIq0XFj","distance":1.907836,"name":"","location":[77.291085,28.553411]},{"hint":"TzgUgGo4FIAxAAAALQAAAJQAAADaAAAAat9aQWxRRUGx_CRCr1xyQjEAAAAtAAAAlAAAANoAAADOAAAAr-maBNNnswH06ZoEdGizAQEALxIq0XFj","distance":19.078116,"name":"12","location":[77.261231,28.534739]},{"hint":"R8QTgB3FE4A_AAAAEAAAAAAAAAAAAAAAHDkwQhRPKUEAAAAAAAAAAD8AAAAQAAAAAAAAAAAAAADOAAAAu9iaBGRWswHE2JoEfFazAQAADxIq0XFj","distance":2.801864,"name":"","location":[77.256891,28.530276]},{"hint":"KPgTgEn4E4ALAAAALQAAAAAAAAAAAAAAoDoAQdL1-EEAAAAAAAAAAAsAAAAtAAAAAAAAAAAAAADOAAAA12maBFIcswHUaZoESByzAQAAnwYq0XFj","distance":1.146481,"name":"","location":[77.228503,28.51541]}],"sources":[{"hint":"QdgBgDGaEIAbAAAAMwAAAAAAAABOAAAAMdqbQV3LC0IAAAAA-o9YQhsAAAAzAAAAAAAAAE4AAADOAAAAa56bBPkxswFsnpsEKDKzAQAA7xAq0XFj","distance":5.209635,"name":"","location":[77.307499,28.520953]},{"hint":"t8wQgP___38bAAAAHwAAAFIAAAByAAAAkEr2QTDKcECaubRC06v9QhsAAAAfAAAAUgAAAHIAAADOAAAAsGmbBJykswGwaZsEnKSzAQEAzxQq0XFj","distance":0,"name":"","location":[77.294,28.5503]},{"hint":"5N0BgHvdAYARAAAACAAAAAAAAAAAAAAAUGiZQZRlAUEAAAAAAAAAABEAAAAIAAAAAAAAAAAAAADOAAAATV6bBMOwswFcXpsEuLCzAQAAfwIq0XFj","distance":1.907836,"name":"","location":[77.291085,28.553411]},{"hint":"TzgUgGo4FIAxAAAALQAAAJQAAADaAAAAat9aQWxRRUGx_CRCr1xyQjEAAAAtAAAAlAAAANoAAADOAAAAr-maBNNnswH06ZoEdGizAQEALxIq0XFj","distance":19.078116,"name":"12","location":[77.261231,28.534739]},{"hint":"R8QTgB3FE4A_AAAAEAAAAAAAAAAAAAAAHDkwQhRPKUEAAAAAAAAAAD8AAAAQAAAAAAAAAAAAAADOAAAAu9iaBGRWswHE2JoEfFazAQAADxIq0XFj","distance":2.801864,"name":"","location":[77.256891,28.530276]},{"hint":"KPgTgEn4E4ALAAAALQAAAAAAAAAAAAAAoDoAQdL1-EEAAAAAAAAAAAsAAAAtAAAAAAAAAAAAAADOAAAA12maBFIcswHUaZoESByzAQAAnwYq0XFj","distance":1.146481,"name":"","location":[77.228503,28.51541]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968
+  Critical Female: WXYZ5449 at [28.521, 77.3075]
+  Male Candidate: WXYZ5198 at [28.5503, 77.294] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 5959.5, (KM): 5.960
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.960 <= 1.5 is false
+    -> Candidate WXYZ5198 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5198 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968
+  Critical Female: WXYZ5449 at [28.521, 77.3075]
+  Male Candidate: WXYZ4098 at [28.5534, 77.2911] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 6510.9, (KM): 6.511
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.511 <= 1.5 is false
+    -> Candidate WXYZ4098 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4098 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968
+  Critical Female: WXYZ5449 at [28.521, 77.3075]
+  Male Candidate: WXYZ4892 at [28.5349, 77.2613] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 9471.4, (KM): 9.471
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 9.471 <= 1.5 is false
+    -> Candidate WXYZ4892 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4892 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968
+  Critical Female: WXYZ5449 at [28.521, 77.3075]
+  Male Candidate: WXYZ3267 at [28.5303, 77.2569] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 9697.6, (KM): 9.698
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 9.698 <= 1.5 is false
+    -> Candidate WXYZ3267 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3267 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968
+  Critical Female: WXYZ5449 at [28.521, 77.3075]
+  Male Candidate: WXYZ5170 at [28.5154, 77.2285] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 11541.9, (KM): 11.542
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.542 <= 1.5 is false
+    -> Candidate WXYZ5170 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5170 ---
+[Guard Swap] Route GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_33_bafa75cb-b644-4edc-b06d-90c5976cf968 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,3110,3892.6,3733.3,5324.5,5524.7],[3118.7,0,418.3,924.3,1068.1,1268.3],[3430.9,418.3,0,519.5,885.4,1085.6],[3864.8,1034.1,615.8,0,1455.6,1524.7],[5757,1242.9,885.4,1442.5,0,200.3],[5957.3,1443.2,1085.6,1511.6,200.3,0]],"destinations":[{"hint":"qcYNgLXHDYAHAAAAAgAAAAAAAAAAAAAAgw-aQGwJnj8AAAAAAAAAAAcAAAACAAAAAAAAAAAAAADOAAAAn4mYBCSDtQHAiZgEIIO1AQAAjwAq0XFj","distance":3.255874,"name":"","location":[77.105567,28.672804]},{"hint":"jv4NgKX-DYBUAAAAbgAAAAAAAAAAAAAAO65qQr-dlkIAAAAAAAAAAFQAAABuAAAAAAAAAAAAAADOAAAAwXCYBNQztQHAcJgE1DO1AQAALwAq0XFj","distance":0.097744,"name":"","location":[77.099201,28.6525]},{"hint":"SzwAgNs9AIBIAAAACgAAAAAAAAAAAAAAVL9HQnbP10AAAAAAAAAAAEgAAAAKAAAAAAAAAAAAAADOAAAAUXyYBOottQF4fJgE-C21AQAAHxUq0XFj","distance":4.115682,"name":"","location":[77.102161,28.650986]},{"hint":"Hj4AgDk8AIAkAAAAKwAAAKMAAAAAAAAAoUPLQbU16UHx--BCAAAAACQAAAArAAAAowAAAAAAAADOAAAA9oqYBKgotQFQi5gE5Ci1AQMA7wgq0XFj","distance":11.030692,"name":"","location":[77.10591,28.64964]},{"hint":"-5QNgEGJAYAJAAAAIAAAAAAAAAAAAAAAFDgmQeliDkIAAAAAAAAAAAkAAAAgAAAAAAAAAAAAAADOAAAAeneYBCgVtQFkd5gE-BS1AQAA_wYq0XFj","distance":5.738189,"name":"","location":[77.100922,28.644648]},{"hint":"KpMNgDiTDYATAAAAHwAAAAAAAAAAAAAA1S1TQUO0qkEAAAAAAAAAABMAAAAfAAAAAAAAAAAAAADOAAAA-3WYBCIQtQHUdZgESBC1AQAATw4q0XFj","distance":5.681625,"name":"","location":[77.100539,28.643362]}],"sources":[{"hint":"qcYNgLXHDYAHAAAAAgAAAAAAAAAAAAAAgw-aQGwJnj8AAAAAAAAAAAcAAAACAAAAAAAAAAAAAADOAAAAn4mYBCSDtQHAiZgEIIO1AQAAjwAq0XFj","distance":3.255874,"name":"","location":[77.105567,28.672804]},{"hint":"jv4NgKX-DYBUAAAAbgAAAAAAAAAAAAAAO65qQr-dlkIAAAAAAAAAAFQAAABuAAAAAAAAAAAAAADOAAAAwXCYBNQztQHAcJgE1DO1AQAALwAq0XFj","distance":0.097744,"name":"","location":[77.099201,28.6525]},{"hint":"SzwAgNs9AIBIAAAACgAAAAAAAAAAAAAAVL9HQnbP10AAAAAAAAAAAEgAAAAKAAAAAAAAAAAAAADOAAAAUXyYBOottQF4fJgE-C21AQAAHxUq0XFj","distance":4.115682,"name":"","location":[77.102161,28.650986]},{"hint":"Hj4AgDk8AIAkAAAAKwAAAKMAAAAAAAAAoUPLQbU16UHx--BCAAAAACQAAAArAAAAowAAAAAAAADOAAAA9oqYBKgotQFQi5gE5Ci1AQMA7wgq0XFj","distance":11.030692,"name":"","location":[77.10591,28.64964]},{"hint":"-5QNgEGJAYAJAAAAIAAAAAAAAAAAAAAAFDgmQeliDkIAAAAAAAAAAAkAAAAgAAAAAAAAAAAAAADOAAAAeneYBCgVtQFkd5gE-BS1AQAA_wYq0XFj","distance":5.738189,"name":"","location":[77.100922,28.644648]},{"hint":"KpMNgDiTDYATAAAAHwAAAAAAAAAAAAAA1S1TQUO0qkEAAAAAAAAAABMAAAAfAAAAAAAAAAAAAADOAAAA-3WYBCIQtQHUdZgESBC1AQAATw4q0XFj","distance":5.681625,"name":"","location":[77.100539,28.643362]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2
+  Critical Female: WXYZ4456 at [28.6728, 77.1056]
+  Male Candidate: WXYZ5044 at [28.6525, 77.0992] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 3110, (KM): 3.110
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.110 <= 1.5 is false
+    -> Candidate WXYZ5044 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5044 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2
+  Critical Female: WXYZ4456 at [28.6728, 77.1056]
+  Male Candidate: WXYZ3692 at [28.651, 77.1022] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 3892.6, (KM): 3.893
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.893 <= 1.5 is false
+    -> Candidate WXYZ3692 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3692 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2
+  Critical Female: WXYZ4456 at [28.6728, 77.1056]
+  Male Candidate: WXYZ4125 at [28.6497, 77.106] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 3733.3, (KM): 3.733
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.733 <= 1.5 is false
+    -> Candidate WXYZ4125 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4125 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2
+  Critical Female: WXYZ4456 at [28.6728, 77.1056]
+  Male Candidate: WXYZ4907 at [28.6446, 77.1009] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 5324.5, (KM): 5.324
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.324 <= 1.5 is false
+    -> Candidate WXYZ4907 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4907 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2
+  Critical Female: WXYZ4456 at [28.6728, 77.1056]
+  Male Candidate: WXYZ4725 at [28.6434, 77.1005] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 5524.7, (KM): 5.525
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.525 <= 1.5 is false
+    -> Candidate WXYZ4725 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4725 ---
+[Guard Swap] Route GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_37_a0eb0fa4-828e-4490-bb76-cddd0aafc7c2 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,3405.9,4504.5,7691.4,8512.6,9653.4,11058.5],[3384.7,0,1389.1,3272.3,4875.4,6016.2,7421.3],[4411.3,1096.6,0,1975.9,3838.7,4979.5,6384.6],[7451.5,4219.4,1982.5,0,1801.5,2942.3,5908.7],[8342.1,5110,3815.9,1791.4,0,1187.5,2839.9],[9219.6,5987.5,4693.4,2668.9,1187.5,0,1683.8],[12516.4,9284.2,7990.1,5965.6,5201.4,2687.1,0]],"destinations":[{"hint":"vIkUgLuKFIAGAAAAfAAAAAAAAAAAAAAAtvuUQCPtqkIAAAAAAAAAAAYAAAB8AAAAAAAAAAAAAADOAAAAWwWYBABntQFUBZgEAGe1AQAAXwsq0XFj","distance":0.684208,"name":"","location":[77.071707,28.6656]},{"hint":"IvkNgC35DYARAAAACQAAAAAAAAAaAAAAv-FEQav5tEAAAAAArpeQQREAAAAJAAAAAAAAABoAAADOAAAAyxuYBJEdtQH8G5gEkB21AQAAHwAq0XFj","distance":4.793012,"name":"","location":[77.077451,28.646801]},{"hint":"zfcNgP33DYALAAAACQAAAAAAAAAAAAAAWl76QAvjvkAAAAAAAAAAAAsAAAAJAAAAAAAAAAAAAADOAAAAjB2YBM4BtQGMHZgE1AG1AQAArwUq0XFj","distance":0.664952,"name":"","location":[77.0779,28.639694]},{"hint":"Jo4BgP68DYAkAAAAJQAAAAkAAAB6AAAAVfHLQZ2Cx0GZgb9A-capQiQAAAAlAAAACQAAAHoAAADOAAAAVPqXBILdtAHI-pcEgN20AQEADwAq0XFj","distance":11.345853,"name":"","location":[77.068884,28.630402]},{"hint":"iY0DgBeOA4A1AAAACAAAAAAAAAAAAAAA-okUQoWen0AAAAAAAAAAADUAAAAIAAAAAAAAAAAAAADOAAAAJPGXBDGwtAFo8ZcEMLC0AQAAHwAq0XFj","distance":6.650671,"name":"","location":[77.066532,28.618801]},{"hint":"rxMAgOkmBIAWAAAADwAAAAAAAABSAAAA1Wx7QftIHUEAAAAAr0tkQhYAAAAPAAAAAAAAAFIAAADOAAAAsvmXBIuPtAGc-ZcExI-0AQAAbwQq0XFj","distance":6.673346,"name":"","location":[77.068722,28.610443]},{"hint":"D5cDgMqXA4AXAAAADAAAAEIAAAAAAAAAHhqBQQmdBEHaTzVCAAAAABcAAAAMAAAAQgAAAAAAAADOAAAAOg2YBKpjtAH4C5gEdGK0AQIAjxMq0XFj","distance":46.613017,"name":"","location":[77.073722,28.59921]}],"sources":[{"hint":"vIkUgLuKFIAGAAAAfAAAAAAAAAAAAAAAtvuUQCPtqkIAAAAAAAAAAAYAAAB8AAAAAAAAAAAAAADOAAAAWwWYBABntQFUBZgEAGe1AQAAXwsq0XFj","distance":0.684208,"name":"","location":[77.071707,28.6656]},{"hint":"IvkNgC35DYARAAAACQAAAAAAAAAaAAAAv-FEQav5tEAAAAAArpeQQREAAAAJAAAAAAAAABoAAADOAAAAyxuYBJEdtQH8G5gEkB21AQAAHwAq0XFj","distance":4.793012,"name":"","location":[77.077451,28.646801]},{"hint":"zfcNgP33DYALAAAACQAAAAAAAAAAAAAAWl76QAvjvkAAAAAAAAAAAAsAAAAJAAAAAAAAAAAAAADOAAAAjB2YBM4BtQGMHZgE1AG1AQAArwUq0XFj","distance":0.664952,"name":"","location":[77.0779,28.639694]},{"hint":"Jo4BgP68DYAkAAAAJQAAAAkAAAB6AAAAVfHLQZ2Cx0GZgb9A-capQiQAAAAlAAAACQAAAHoAAADOAAAAVPqXBILdtAHI-pcEgN20AQEADwAq0XFj","distance":11.345853,"name":"","location":[77.068884,28.630402]},{"hint":"iY0DgBeOA4A1AAAACAAAAAAAAAAAAAAA-okUQoWen0AAAAAAAAAAADUAAAAIAAAAAAAAAAAAAADOAAAAJPGXBDGwtAFo8ZcEMLC0AQAAHwAq0XFj","distance":6.650671,"name":"","location":[77.066532,28.618801]},{"hint":"rxMAgOkmBIAWAAAADwAAAAAAAABSAAAA1Wx7QftIHUEAAAAAr0tkQhYAAAAPAAAAAAAAAFIAAADOAAAAsvmXBIuPtAGc-ZcExI-0AQAAbwQq0XFj","distance":6.673346,"name":"","location":[77.068722,28.610443]},{"hint":"D5cDgMqXA4AXAAAADAAAAEIAAAAAAAAAHhqBQQmdBEHaTzVCAAAAABcAAAAMAAAAQgAAAAAAAADOAAAAOg2YBKpjtAH4C5gEdGK0AQIAjxMq0XFj","distance":46.613017,"name":"","location":[77.073722,28.59921]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ4173 at [28.6468, 77.0775] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 3405.9, (KM): 3.406
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.406 <= 1.5 is false
+    -> Candidate WXYZ4173 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4173 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ5003 at [28.6397, 77.0779] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 4504.5, (KM): 4.505
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.505 <= 1.5 is false
+    -> Candidate WXYZ5003 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5003 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ5397 at [28.6304, 77.069] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 7691.4, (KM): 7.691
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.691 <= 1.5 is false
+    -> Candidate WXYZ5397 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5397 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ3404 at [28.6188, 77.0666] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 8512.6, (KM): 8.513
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 8.513 <= 1.5 is false
+    -> Candidate WXYZ3404 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3404 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ4802 at [28.6105, 77.0687] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 9653.4, (KM): 9.653
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 9.653 <= 1.5 is false
+    -> Candidate WXYZ4802 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4802 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7
+  Critical Female: WXYZ3532 at [28.6656, 77.0717]
+  Male Candidate: WXYZ4116 at [28.5989, 77.0734] (Index in swappableMaleCandidates: 5)
+  OSRM Road Distance (Meters): 11058.5, (KM): 11.059
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.059 <= 1.5 is false
+    -> Candidate WXYZ4116 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4116 ---
+[Guard Swap] Route GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_38_c784d1e7-58d9-406c-82a7-108b668caed7 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,2015.3,2116.3,2455.7,4039.8],[2015.3,0,154,697.7,1233.3],[2116.3,154,0,543.8,1127.8],[2441.3,697.7,543.8,0,862.3],[3195.6,1233.3,1127.8,841.6,0]],"destinations":[{"hint":"vUIJgOISAYBqAAAALAAAAMMAAAAAAAAAnEmUQlZc80GcfwdDAAAAAGoAAAAsAAAAwwAAAAAAAADOAAAA7iyXBErztAHsLJcE_PK0AQEA_xAq0XFj","distance":8.646591,"name":"","location":[77.016302,28.635978]},{"hint":"q6gDgK2oA4AmAAAAbgAAAAAAAAAAAAAAUw7UQRRfmUIAAAAAAAAAACYAAABuAAAAAAAAAAAAAADOAAAAoFqXBCDStAGgWpcELNK0AQAA_xAq0XFj","distance":1.329904,"name":"","location":[77.028,28.627488]},{"hint":"pKkDgDuqA4AiAAAALgAAAAAAAAAAAAAANwbCQVey_EEAAAAAAAAAACIAAAAuAAAAAAAAAAAAAADOAAAAvl2XBJfOtAHAXZcEcM-0AQAArwUq0XFj","distance":24.049901,"name":"","location":[77.028798,28.626583]},{"hint":"ra0DgB-uA4ApAAAAEwAAAAAAAAAAAAAAo_npQdf_TEEAAAAAAAAAACkAAAATAAAAAAAAAAAAAADOAAAAU2-XBPzRtAFUb5cELNK0AQAAvwUq0XFj","distance":5.320517,"name":"","location":[77.033299,28.627452]},{"hint":"-KYDgLx7AIAUAAAAEAAAAAAAAAAAAAAARlZhQVaVKkEAAAAAAAAAABQAAAAQAAAAAAAAAAAAAADOAAAA03uXBJy_tAHUe5cE0L-0AQAA_xAq0XFj","distance":5.763749,"name":"","location":[77.036499,28.622748]}],"sources":[{"hint":"vUIJgOISAYBqAAAALAAAAMMAAAAAAAAAnEmUQlZc80GcfwdDAAAAAGoAAAAsAAAAwwAAAAAAAADOAAAA7iyXBErztAHsLJcE_PK0AQEA_xAq0XFj","distance":8.646591,"name":"","location":[77.016302,28.635978]},{"hint":"q6gDgK2oA4AmAAAAbgAAAAAAAAAAAAAAUw7UQRRfmUIAAAAAAAAAACYAAABuAAAAAAAAAAAAAADOAAAAoFqXBCDStAGgWpcELNK0AQAA_xAq0XFj","distance":1.329904,"name":"","location":[77.028,28.627488]},{"hint":"pKkDgDuqA4AiAAAALgAAAAAAAAAAAAAANwbCQVey_EEAAAAAAAAAACIAAAAuAAAAAAAAAAAAAADOAAAAvl2XBJfOtAHAXZcEcM-0AQAArwUq0XFj","distance":24.049901,"name":"","location":[77.028798,28.626583]},{"hint":"ra0DgB-uA4ApAAAAEwAAAAAAAAAAAAAAo_npQdf_TEEAAAAAAAAAACkAAAATAAAAAAAAAAAAAADOAAAAU2-XBPzRtAFUb5cELNK0AQAAvwUq0XFj","distance":5.320517,"name":"","location":[77.033299,28.627452]},{"hint":"-KYDgLx7AIAUAAAAEAAAAAAAAAAAAAAARlZhQVaVKkEAAAAAAAAAABQAAAAQAAAAAAAAAAAAAADOAAAA03uXBJy_tAHUe5cE0L-0AQAA_xAq0XFj","distance":5.763749,"name":"","location":[77.036499,28.622748]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604
+  Critical Female: WXYZ3215 at [28.6359, 77.0163]
+  Male Candidate: WXYZ5376 at [28.6275, 77.028] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 2015.3, (KM): 2.015
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.015 <= 1.5 is false
+    -> Candidate WXYZ5376 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5376 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604
+  Critical Female: WXYZ3215 at [28.6359, 77.0163]
+  Male Candidate: WXYZ7765 at [28.6268, 77.0288] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 2116.3, (KM): 2.116
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.116 <= 1.5 is false
+    -> Candidate WXYZ7765 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ7765 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604
+  Critical Female: WXYZ3215 at [28.6359, 77.0163]
+  Male Candidate: WXYZ5164 at [28.6275, 77.0333] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 2455.7, (KM): 2.456
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.456 <= 1.5 is false
+    -> Candidate WXYZ5164 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5164 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604
+  Critical Female: WXYZ3215 at [28.6359, 77.0163]
+  Male Candidate: WXYZ4913 at [28.6228, 77.0365] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 4039.8, (KM): 4.040
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.040 <= 1.5 is false
+    -> Candidate WXYZ4913 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4913 ---
+[Guard Swap] Route GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_40_eb358157-fcf7-45ab-8472-bf0e529cc604 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,683.8,793.2,4952.9,5538.9,6060.6],[683.8,0,176.1,4207.5,4793.5,5315.2],[793.2,176.1,0,4189.1,4775.1,5296.8],[5244.2,4718.8,4847.7,0,2168,2322],[5647.2,5121.8,5250.8,2181.7,0,729.6],[6034.2,5508.8,5637.7,2605.6,729.6,0]],"destinations":[{"hint":"WwAEgGoABIAIAAAAVgAAAAAAAAAAAAAAmrLGQHsba0IAAAAAAAAAAAgAAABWAAAAAAAAAAAAAADOAAAAn8GXBImZtAHAwZcEiJm0AQAAbwsq0XFj","distance":3.228986,"name":"","location":[77.054367,28.613001]},{"hint":"1RAAgOcQAIB_AAAALAAAAAAAAAAFAAAAqcevQt0q8UEAAAAAiRJOQH8AAAAsAAAAAAAAAAUAAADOAAAAVMuXBEyKtAGEy5cETIq0AQAAfxYq0XFj","distance":4.69394,"name":"som bazar road","location":[77.056852,28.6091]},{"hint":"oroDgMi6A4BSAAAACQAAAAAAAAAAAAAAQhNmQp2ItUAAAAAAAAAAAFIAAAAJAAAAAAAAAAAAAADOAAAANNCXBKKKtAE00JcEsIq0AQAA_xAq0XFj","distance":1.551555,"name":"","location":[77.0581,28.609186]},{"hint":"EHoAgAycA4ABAAAAGQAAAC0AAAAAAAAA5V58PyetiEFGkfdBAAAAAAEAAAAZAAAALQAAAAAAAADOAAAA4j2YBEBUtAH4PZgEZFS0AQEAXwcq0XFj","distance":4.533259,"name":"","location":[77.086178,28.595264]},{"hint":"3tYDgOPWA4A0AAAAEgAAAAAAAAB-AAAAZTgSQsHjQUEAAAAAKJGvQjQAAAASAAAAAAAAAH4AAADOAAAA5jKYBCMjtAGkMpgEyCK0AQAA7xIq0XFj","distance":11.975125,"name":"","location":[77.083366,28.582691]},{"hint":"a9sDgJXbA4AIAAAAkwAAAAAAAAAAAAAAROG7QEW1y0IAAAAAAAAAAAgAAACTAAAAAAAAAAAAAADOAAAAiCaYBCcVtAGIJpgEHBW0AQAArwUq0XFj","distance":1.21907,"name":"","location":[77.0802,28.579111]}],"sources":[{"hint":"WwAEgGoABIAIAAAAVgAAAAAAAAAAAAAAmrLGQHsba0IAAAAAAAAAAAgAAABWAAAAAAAAAAAAAADOAAAAn8GXBImZtAHAwZcEiJm0AQAAbwsq0XFj","distance":3.228986,"name":"","location":[77.054367,28.613001]},{"hint":"1RAAgOcQAIB_AAAALAAAAAAAAAAFAAAAqcevQt0q8UEAAAAAiRJOQH8AAAAsAAAAAAAAAAUAAADOAAAAVMuXBEyKtAGEy5cETIq0AQAAfxYq0XFj","distance":4.69394,"name":"som bazar road","location":[77.056852,28.6091]},{"hint":"oroDgMi6A4BSAAAACQAAAAAAAAAAAAAAQhNmQp2ItUAAAAAAAAAAAFIAAAAJAAAAAAAAAAAAAADOAAAANNCXBKKKtAE00JcEsIq0AQAA_xAq0XFj","distance":1.551555,"name":"","location":[77.0581,28.609186]},{"hint":"EHoAgAycA4ABAAAAGQAAAC0AAAAAAAAA5V58PyetiEFGkfdBAAAAAAEAAAAZAAAALQAAAAAAAADOAAAA4j2YBEBUtAH4PZgEZFS0AQEAXwcq0XFj","distance":4.533259,"name":"","location":[77.086178,28.595264]},{"hint":"3tYDgOPWA4A0AAAAEgAAAAAAAAB-AAAAZTgSQsHjQUEAAAAAKJGvQjQAAAASAAAAAAAAAH4AAADOAAAA5jKYBCMjtAGkMpgEyCK0AQAA7xIq0XFj","distance":11.975125,"name":"","location":[77.083366,28.582691]},{"hint":"a9sDgJXbA4AIAAAAkwAAAAAAAAAAAAAAROG7QEW1y0IAAAAAAAAAAAgAAACTAAAAAAAAAAAAAADOAAAAiCaYBCcVtAGIJpgEHBW0AQAArwUq0XFj","distance":1.21907,"name":"","location":[77.0802,28.579111]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089
+  Critical Female: WXYZ4782 at [28.613, 77.0544]
+  Male Candidate: WXYZ5015 at [28.6091, 77.0569] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 683.8, (KM): 0.684
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 0.684 <= 1.5 is true
+    -> Candidate WXYZ5015 IS VALID for swap.
+--- END DEBUG FOR CANDIDATE WXYZ5015 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089
+  Critical Female: WXYZ4782 at [28.613, 77.0544]
+  Male Candidate: WXYZ4164 at [28.6092, 77.0581] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 793.2, (KM): 0.793
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 0.793 <= 1.5 is true
+    -> Candidate WXYZ4164 IS VALID for swap.
+--- END DEBUG FOR CANDIDATE WXYZ4164 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089
+  Critical Female: WXYZ4782 at [28.613, 77.0544]
+  Male Candidate: WXYZ5257 at [28.5953, 77.0862] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 4952.9, (KM): 4.953
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.953 <= 1.5 is false
+    -> Candidate WXYZ5257 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5257 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089
+  Critical Female: WXYZ4782 at [28.613, 77.0544]
+  Male Candidate: WXYZ3118 at [28.5826, 77.0833] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 5538.9, (KM): 5.539
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.539 <= 1.5 is false
+    -> Candidate WXYZ3118 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3118 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089
+  Critical Female: WXYZ4782 at [28.613, 77.0544]
+  Male Candidate: WXYZ4117 at [28.5791, 77.0802] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 6060.6, (KM): 6.061
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.061 <= 1.5 is false
+    -> Candidate WXYZ4117 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4117 ---
+[GuardSwap - Experiential] Successfully swapped WXYZ4782 (F) with WXYZ5015 (M) in route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089. Guard saved!
+[Guard Logic] Experiential swap for route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089 successful. Swapped: WXYZ4782 with WXYZ5015.
+[Guard Logic - Pickup] Route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089: Will proceed to OR-Tools re-optimization for this swap.
+[Guard Logic - Re-Opt] Route GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089: PICKUP trip, re-optimizing after swap.
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0569,28.6091],[77.0543,28.6104]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=19261.5, durations[0][1]=1355.7
+[Guard Logic - Re-Opt] Re-optimization failed for GLOBAL_batch_41_d71fd3b8-6bc5-4fc5-9c88-d288df0a9089: Nodes dropped in re-opt. Using pre-reopt swapped order.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,10362.4,10830.8,13049.6],[9357.5,0,2718.6,4937.3],[11115.6,2824.9,0,2657.9],[13271.9,4981.2,2936.5,0]],"destinations":[{"hint":"D4kFgBGJBYAjAAAAYAEAAAAAAAAAAAAAWvZvQaJyEkMAAAAAAAAAACMAAABgAQAAAAAAAAAAAADOAAAAUi2XBIMqsQFQLZcEaCuxAQAAnwUq0XFj","distance":25.378823,"name":"","location":[77.016402,28.387971]},{"hint":"jZ8OgNKfDoAHAAAALwAAAJ0AAAA1AAAAUNmxQHqsAEJ_WtpCSn0UQgcAAAAvAAAAnQAAADUAAADOAAAAo0iXBFMTsgGoSJcEcBOyAQMAPwYq0XFj","distance":3.250961,"name":"","location":[77.023395,28.447571]},{"hint":"l6cOgJynDoAzAAAAFwAAAAAAAAAAAAAAjvsOQv0FdkEAAAAAAAAAADMAAAAXAAAAAAAAAAAAAADOAAAASFiXBHEvsgFIWJcEkC-yAQAA7xAq0XFj","distance":3.43551,"name":"","location":[77.0274,28.454769]},{"hint":"LdcOgP___38CAAAAGAAAAAAAAAAkAAAA8dp2QM7AG0IAAAAA4jCDQgIAAAAYAAAAAAAAACQAAADOAAAAxpSXBAZisgHUlJcE9GGyAQAAjwMq0XFj","distance":2.420524,"name":"Mehrauli-Gurgaon Road","location":[77.042886,28.467718]}],"sources":[{"hint":"D4kFgBGJBYAjAAAAYAEAAAAAAAAAAAAAWvZvQaJyEkMAAAAAAAAAACMAAABgAQAAAAAAAAAAAADOAAAAUi2XBIMqsQFQLZcEaCuxAQAAnwUq0XFj","distance":25.378823,"name":"","location":[77.016402,28.387971]},{"hint":"jZ8OgNKfDoAHAAAALwAAAJ0AAAA1AAAAUNmxQHqsAEJ_WtpCSn0UQgcAAAAvAAAAnQAAADUAAADOAAAAo0iXBFMTsgGoSJcEcBOyAQMAPwYq0XFj","distance":3.250961,"name":"","location":[77.023395,28.447571]},{"hint":"l6cOgJynDoAzAAAAFwAAAAAAAAAAAAAAjvsOQv0FdkEAAAAAAAAAADMAAAAXAAAAAAAAAAAAAADOAAAASFiXBHEvsgFIWJcEkC-yAQAA7xAq0XFj","distance":3.43551,"name":"","location":[77.0274,28.454769]},{"hint":"LdcOgP___38CAAAAGAAAAAAAAAAkAAAA8dp2QM7AG0IAAAAA4jCDQgIAAAAYAAAAAAAAACQAAADOAAAAxpSXBAZisgHUlJcE9GGyAQAAjwMq0XFj","distance":2.420524,"name":"Mehrauli-Gurgaon Road","location":[77.042886,28.467718]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706
+  Critical Female: WXYZ4645 at [28.3882, 77.0164]
+  Male Candidate: WXYZ5471 at [28.4476, 77.0234] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 10362.4, (KM): 10.362
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 10.362 <= 1.5 is false
+    -> Candidate WXYZ5471 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5471 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706
+  Critical Female: WXYZ4645 at [28.3882, 77.0164]
+  Male Candidate: WXYZ4617 at [28.4548, 77.0274] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 10830.8, (KM): 10.831
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 10.831 <= 1.5 is false
+    -> Candidate WXYZ4617 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4617 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706
+  Critical Female: WXYZ4645 at [28.3882, 77.0164]
+  Male Candidate: WXYZ4821 at [28.4677, 77.0429] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 13049.6, (KM): 13.050
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 13.050 <= 1.5 is false
+    -> Candidate WXYZ4821 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4821 ---
+[Guard Swap] Route GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_46_cb6ed5f6-e0dc-47b6-900f-2757918f2706 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,2808.5,6633.2,7426.9],[2500.9,0,4677.1,5470.7],[6846.6,4992.2,0,905.5],[7471.6,5617.2,905.5,0]],"destinations":[{"hint":"o6oNgKqqDYAPAAAAEgAAAAAAAAAAAAAAu-8sQVx2O0EAAAAAAAAAAA8AAAASAAAAAAAAAAAAAADOAAAAS4WYBNTmtAEQhZgE4Oa0AQAAzwAq0XFj","distance":5.920923,"name":"","location":[77.104459,28.632788]},{"hint":"XK0NgF6tDYALAAAANgAAAAAAAAAOAAAAnF0AQQbaE0IAAAAAXREdQQsAAAA2AAAAAAAAAA4AAADOAAAAv0GYBDDYtAHgQZgECNi0AQAAXwMq0XFj","distance":5.483219,"name":"","location":[77.087167,28.62904]},{"hint":"ogEEgMkBBIBLAAAAUAAAACsBAABqAQAAdzWoQaOYsUF5DKZCrkLJQksAAABQAAAAKwEAAGoBAADOAAAAYLiXBMmitAFguJcE6KK0AQIA7xAq0XFj","distance":3.435587,"name":"","location":[77.052,28.615369]},{"hint":"agMEgG0DBIARAAAASQAAAAAAAAAAAAAAees-QT-lSkIAAAAAAAAAABEAAABJAAAAAAAAAAAAAADOAAAAeJuXBJuctAF4m5cEqJy0AQAA7xAq0XFj","distance":1.44073,"name":"","location":[77.0446,28.613787]}],"sources":[{"hint":"o6oNgKqqDYAPAAAAEgAAAAAAAAAAAAAAu-8sQVx2O0EAAAAAAAAAAA8AAAASAAAAAAAAAAAAAADOAAAAS4WYBNTmtAEQhZgE4Oa0AQAAzwAq0XFj","distance":5.920923,"name":"","location":[77.104459,28.632788]},{"hint":"XK0NgF6tDYALAAAANgAAAAAAAAAOAAAAnF0AQQbaE0IAAAAAXREdQQsAAAA2AAAAAAAAAA4AAADOAAAAv0GYBDDYtAHgQZgECNi0AQAAXwMq0XFj","distance":5.483219,"name":"","location":[77.087167,28.62904]},{"hint":"ogEEgMkBBIBLAAAAUAAAACsBAABqAQAAdzWoQaOYsUF5DKZCrkLJQksAAABQAAAAKwEAAGoBAADOAAAAYLiXBMmitAFguJcE6KK0AQIA7xAq0XFj","distance":3.435587,"name":"","location":[77.052,28.615369]},{"hint":"agMEgG0DBIARAAAASQAAAAAAAAAAAAAAees-QT-lSkIAAAAAAAAAABEAAABJAAAAAAAAAAAAAADOAAAAeJuXBJuctAF4m5cEqJy0AQAA7xAq0XFj","distance":1.44073,"name":"","location":[77.0446,28.613787]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0
+  Critical Female: WXYZ3349 at [28.6328, 77.1044]
+  Male Candidate: WXYZ3354 at [28.629, 77.0872] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 2808.5, (KM): 2.808
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.808 <= 1.5 is false
+    -> Candidate WXYZ3354 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3354 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0
+  Critical Female: WXYZ3349 at [28.6328, 77.1044]
+  Male Candidate: WXYZ3122 at [28.6154, 77.052] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 6633.2, (KM): 6.633
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.633 <= 1.5 is false
+    -> Candidate WXYZ3122 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3122 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0
+  Critical Female: WXYZ3349 at [28.6328, 77.1044]
+  Male Candidate: WXYZ3224 at [28.6138, 77.0446] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 7426.9, (KM): 7.427
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.427 <= 1.5 is false
+    -> Candidate WXYZ3224 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3224 ---
+[Guard Swap] Route GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_47_bf659350-e1a9-477d-9a6a-4f54622891e0 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,5452.2,9139,11592.9,11856,16291],[4878.5,0,3217.8,7396.1,7659.2,11984.2],[7928.2,3241,0,5469.3,5732.4,10057.5],[12045,7498.4,5529.8,0,263.1,4617.8],[11918.1,7761.5,5792.9,263.1,0,4490.8],[13903.9,10718.5,8750,3157.6,2987.5,0]],"destinations":[{"hint":"E0IFgDFCBYAHAAAACwAAAEwAAAAWAgAAS5GuQI6d3EBR6FJCXE-5QwcAAAALAAAATAAAABYCAADOAAAABaGXBJ5osQHwoJcEWGixAQQAjwYq0XFj","distance":8.025754,"name":"","location":[77.046021,28.40387]},{"hint":"yqIFgNGiBYDDAAAAGAAAAAAAAAAAAAAAJQTZQu-5U0EAAAAAAAAAAMMAAAAYAAAAAAAAAAAAAADOAAAAS-uXBOq6sQEo65cExLqxAQAATxMq0XFj","distance":5.430789,"name":"","location":[77.065035,28.424938]},{"hint":"rtEFgLDRBYAvAAAAKgAAAAAAAAAAAAAAmygDQjT16EEAAAAAAAAAAC8AAAAqAAAAAAAAAAAAAADOAAAAFTCYBEfssQHoL5gEYOyxAQAADwIq0XFj","distance":5.207129,"name":"","location":[77.082645,28.437575]},{"hint":"voMFgAeEBYAcAAAAEAAAAAAAAAAAAAAA0yT_QaHDhkEAAAAAAAAAABwAAAAQAAAAAAAAAAAAAADOAAAAhCyYBEB9sgFkLJgETH2yAQAAbwEq0XFj","distance":3.404237,"name":"","location":[77.081732,28.474688]},{"hint":"PasAgPSqAIAhAAAAGwAAAAAAAAAAAAAA4g69Qbz0kEEAAAAAAAAAACEAAAAbAAAAAAAAAAAAAADOAAAA8zGYBIKDsgHcMZgEjIOyAQAAnwEq0XFj","distance":2.510246,"name":"","location":[77.083123,28.47629]},{"hint":"8MsFgPjLBYAqAAAAMgAAAAAAAAAAAAAAoFTpQZ-HCUIAAAAAAAAAACoAAAAyAAAAAAAAAAAAAADOAAAADXaYBBqnsgHUdZgEGKeyAQAAXxYq0XFj","distance":5.586356,"name":"","location":[77.100557,28.485402]}],"sources":[{"hint":"E0IFgDFCBYAHAAAACwAAAEwAAAAWAgAAS5GuQI6d3EBR6FJCXE-5QwcAAAALAAAATAAAABYCAADOAAAABaGXBJ5osQHwoJcEWGixAQQAjwYq0XFj","distance":8.025754,"name":"","location":[77.046021,28.40387]},{"hint":"yqIFgNGiBYDDAAAAGAAAAAAAAAAAAAAAJQTZQu-5U0EAAAAAAAAAAMMAAAAYAAAAAAAAAAAAAADOAAAAS-uXBOq6sQEo65cExLqxAQAATxMq0XFj","distance":5.430789,"name":"","location":[77.065035,28.424938]},{"hint":"rtEFgLDRBYAvAAAAKgAAAAAAAAAAAAAAmygDQjT16EEAAAAAAAAAAC8AAAAqAAAAAAAAAAAAAADOAAAAFTCYBEfssQHoL5gEYOyxAQAADwIq0XFj","distance":5.207129,"name":"","location":[77.082645,28.437575]},{"hint":"voMFgAeEBYAcAAAAEAAAAAAAAAAAAAAA0yT_QaHDhkEAAAAAAAAAABwAAAAQAAAAAAAAAAAAAADOAAAAhCyYBEB9sgFkLJgETH2yAQAAbwEq0XFj","distance":3.404237,"name":"","location":[77.081732,28.474688]},{"hint":"PasAgPSqAIAhAAAAGwAAAAAAAAAAAAAA4g69Qbz0kEEAAAAAAAAAACEAAAAbAAAAAAAAAAAAAADOAAAA8zGYBIKDsgHcMZgEjIOyAQAAnwEq0XFj","distance":2.510246,"name":"","location":[77.083123,28.47629]},{"hint":"8MsFgPjLBYAqAAAAMgAAAAAAAAAAAAAAoFTpQZ-HCUIAAAAAAAAAACoAAAAyAAAAAAAAAAAAAADOAAAADXaYBBqnsgHUdZgEGKeyAQAAXxYq0XFj","distance":5.586356,"name":"","location":[77.100557,28.485402]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db
+  Critical Female: WXYZ7707 at [28.4038, 77.046]
+  Male Candidate: WXYZ3517 at [28.4249, 77.065] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 5452.2, (KM): 5.452
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.452 <= 1.5 is false
+    -> Candidate WXYZ3517 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3517 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db
+  Critical Female: WXYZ7707 at [28.4038, 77.046]
+  Male Candidate: WXYZ5219 at [28.4376, 77.0826] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 9139, (KM): 9.139
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 9.139 <= 1.5 is false
+    -> Candidate WXYZ5219 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5219 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db
+  Critical Female: WXYZ7707 at [28.4038, 77.046]
+  Male Candidate: WXYZ3527 at [28.4747, 77.0817] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 11592.9, (KM): 11.593
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.593 <= 1.5 is false
+    -> Candidate WXYZ3527 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3527 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db
+  Critical Female: WXYZ7707 at [28.4038, 77.046]
+  Male Candidate: WXYZ3478 at [28.4763, 77.0831] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 11856, (KM): 11.856
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.856 <= 1.5 is false
+    -> Candidate WXYZ3478 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3478 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db
+  Critical Female: WXYZ7707 at [28.4038, 77.046]
+  Male Candidate: WXYZ5241 at [28.4854, 77.1005] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 16291, (KM): 16.291
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 16.291 <= 1.5 is false
+    -> Candidate WXYZ5241 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5241 ---
+[Guard Swap] Route GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_50_a998a2e4-2275-4fd4-abfe-0d63a54d32db did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,5745.7,8342.1,11173.1,10380.5],[6462.8,0,2385.1,5668.5,4875.9],[7901.6,2388.8,0,3344.4,3326.3],[10677.9,5165.2,2895.6,0,460],[10396.5,4883.8,3360.1,460,0]],"destinations":[{"hint":"O5AKgP___3-NAAAAqwAAAAsAAAC3AAAA7vjEQo-uo0GpNfFAv7v-Qo0AAACrAAAACwAAALcAAADOAAAAIIaWBCsUswEghpYEFBSzAQEAvwUq0XFj","distance":2.548946,"name":"","location":[76.9736,28.513323]},{"hint":"8DoBgH3eCoAFAAAAAAAAAB0AAAB2AAAAllhkQAAAAACKt55BBf2iQgUAAAAAAAAAHQAAAHYAAADOAAAAiSuXBK5HswFcK5cEpEezAQEA3woq0XFj","distance":4.54201,"name":"","location":[77.015945,28.52651]},{"hint":"U1UKgFVVCoAJAAAAEgAAAAAAAAAAAAAAOxgmQd6loEEAAAAAAAAAAAkAAAASAAAAAAAAAAAAAADOAAAA616XBLcYswHsXpcExBizAQAADxEq0XFj","distance":1.44403,"name":"","location":[77.029099,28.514487]},{"hint":"BfwOgBytAYACAAAAgQAAADsAAABEAAAAf0DWPySYskLKFCRCdw49QgIAAACBAAAAOwAAAEQAAADOAAAAzZKXBDb-sgHgkpcENP6yAQEArwsq0XFj","distance":1.872937,"name":"","location":[77.042381,28.507702]},{"hint":"NfUOgE31DoAoAAAABAAAACEAAAAAAAAAhE7dQdvGJkDgyLdBAAAAACgAAAAEAAAAIQAAAAAAAADOAAAAmZGXBIvysgG0kZcEfPKyAQEADwIq0XFj","distance":3.122183,"name":"","location":[77.042073,28.504715]}],"sources":[{"hint":"O5AKgP___3-NAAAAqwAAAAsAAAC3AAAA7vjEQo-uo0GpNfFAv7v-Qo0AAACrAAAACwAAALcAAADOAAAAIIaWBCsUswEghpYEFBSzAQEAvwUq0XFj","distance":2.548946,"name":"","location":[76.9736,28.513323]},{"hint":"8DoBgH3eCoAFAAAAAAAAAB0AAAB2AAAAllhkQAAAAACKt55BBf2iQgUAAAAAAAAAHQAAAHYAAADOAAAAiSuXBK5HswFcK5cEpEezAQEA3woq0XFj","distance":4.54201,"name":"","location":[77.015945,28.52651]},{"hint":"U1UKgFVVCoAJAAAAEgAAAAAAAAAAAAAAOxgmQd6loEEAAAAAAAAAAAkAAAASAAAAAAAAAAAAAADOAAAA616XBLcYswHsXpcExBizAQAADxEq0XFj","distance":1.44403,"name":"","location":[77.029099,28.514487]},{"hint":"BfwOgBytAYACAAAAgQAAADsAAABEAAAAf0DWPySYskLKFCRCdw49QgIAAACBAAAAOwAAAEQAAADOAAAAzZKXBDb-sgHgkpcENP6yAQEArwsq0XFj","distance":1.872937,"name":"","location":[77.042381,28.507702]},{"hint":"NfUOgE31DoAoAAAABAAAACEAAAAAAAAAhE7dQdvGJkDgyLdBAAAAACgAAAAEAAAAIQAAAAAAAADOAAAAmZGXBIvysgG0kZcEfPKyAQEADwIq0XFj","distance":3.122183,"name":"","location":[77.042073,28.504715]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b
+  Critical Female: WXYZ2878 at [28.5133, 76.9736]
+  Male Candidate: WXYZ4410 at [28.5265, 77.0159] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 5745.7, (KM): 5.746
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 5.746 <= 1.5 is false
+    -> Candidate WXYZ4410 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4410 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b
+  Critical Female: WXYZ2878 at [28.5133, 76.9736]
+  Male Candidate: WXYZ3142 at [28.5145, 77.0291] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 8342.1, (KM): 8.342
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 8.342 <= 1.5 is false
+    -> Candidate WXYZ3142 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3142 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b
+  Critical Female: WXYZ2878 at [28.5133, 76.9736]
+  Male Candidate: WXYZ7110 at [28.5077, 77.0424] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 11173.1, (KM): 11.173
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.173 <= 1.5 is false
+    -> Candidate WXYZ7110 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ7110 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b
+  Critical Female: WXYZ2878 at [28.5133, 76.9736]
+  Male Candidate: WXYZ4885 at [28.5047, 77.0421] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 10380.5, (KM): 10.380
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 10.380 <= 1.5 is false
+    -> Candidate WXYZ4885 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4885 ---
+[Guard Swap] Route GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_51_62faabed-ae66-4a17-9d66-fd5751ad6e9b did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,4070.3,4633.3,6792.9,7820.1,11604.9],[4086.1,0,2835.3,3066,3540.3,7458.6],[4703.3,2919.7,0,1927.9,2955.1,6739.9],[6847.1,3066,1907.1,0,1343.2,5128],[8224.3,3959.6,3284.3,1668.6,0,4082.9],[11679.9,7455,6739.9,5124.2,4485.1,0]],"destinations":[{"hint":"qJUKgMWVCoArAAAATAAAAAAAAAAAAAAA4WXvQbbNUEIAAAAAAAAAACsAAABMAAAAAAAAAAAAAADOAAAAXqmWBE_YsgGsqZYEUNiyAQAAfxYq0XFj","distance":7.639272,"name":"","location":[76.982622,28.497999]},{"hint":"kMMKgKXDCoAtAAAAHQAAAAAAAAAAAAAAt3X4QYJyn0EAAAAAAAAAAC0AAAAdAAAAAAAAAAAAAADOAAAAqR6XBNTHsgF4HpcE6MeyAQAAjwEq0XFj","distance":5.285691,"name":"","location":[77.012649,28.49378]},{"hint":"tPIOgMTyDoAmAAAAAQAAAAAAAAAAAAAAkaTRQS10Fj8AAAAAAAAAACYAAAABAAAAAAAAAAAAAADOAAAA7yeXBPC5sgE8KJcE2LmyAQAAPwEq0XFj","distance":7.995873,"name":"","location":[77.015023,28.490224]},{"hint":"O5sOgD2bDoATAAAAGwAAAAAAAAAAAAAAke1cQYInkEEAAAAAAAAAABMAAAAbAAAAAAAAAAAAAADOAAAA_FOXBAfSsgH8U5cEENKyAQAArwUq0XFj","distance":0.997406,"name":"","location":[77.0263,28.496391]},{"hint":"eawBgDP2DoCTAAAARgAAAAAAAAAAAAAAasvMQkLVQUIAAAAAAAAAAJMAAABGAAAAAAAAAAAAAADOAAAANGyXBATysgE0bJcEGPKyAQAA7xAq0XFj","distance":2.216474,"name":"","location":[77.0325,28.50458]},{"hint":"sYsOgLeLDoAGAAAAEgAAAAAAAABHAAAAjzmIQB3vSkEAAAAAJt9FQgYAAAASAAAAAAAAAEcAAADOAAAAsuCXBL7-sgGc4JcEmP6yAQAAjxIq0XFj","distance":4.729936,"name":"","location":[77.062322,28.507838]}],"sources":[{"hint":"qJUKgMWVCoArAAAATAAAAAAAAAAAAAAA4WXvQbbNUEIAAAAAAAAAACsAAABMAAAAAAAAAAAAAADOAAAAXqmWBE_YsgGsqZYEUNiyAQAAfxYq0XFj","distance":7.639272,"name":"","location":[76.982622,28.497999]},{"hint":"kMMKgKXDCoAtAAAAHQAAAAAAAAAAAAAAt3X4QYJyn0EAAAAAAAAAAC0AAAAdAAAAAAAAAAAAAADOAAAAqR6XBNTHsgF4HpcE6MeyAQAAjwEq0XFj","distance":5.285691,"name":"","location":[77.012649,28.49378]},{"hint":"tPIOgMTyDoAmAAAAAQAAAAAAAAAAAAAAkaTRQS10Fj8AAAAAAAAAACYAAAABAAAAAAAAAAAAAADOAAAA7yeXBPC5sgE8KJcE2LmyAQAAPwEq0XFj","distance":7.995873,"name":"","location":[77.015023,28.490224]},{"hint":"O5sOgD2bDoATAAAAGwAAAAAAAAAAAAAAke1cQYInkEEAAAAAAAAAABMAAAAbAAAAAAAAAAAAAADOAAAA_FOXBAfSsgH8U5cEENKyAQAArwUq0XFj","distance":0.997406,"name":"","location":[77.0263,28.496391]},{"hint":"eawBgDP2DoCTAAAARgAAAAAAAAAAAAAAasvMQkLVQUIAAAAAAAAAAJMAAABGAAAAAAAAAAAAAADOAAAANGyXBATysgE0bJcEGPKyAQAA7xAq0XFj","distance":2.216474,"name":"","location":[77.0325,28.50458]},{"hint":"sYsOgLeLDoAGAAAAEgAAAAAAAABHAAAAjzmIQB3vSkEAAAAAJt9FQgYAAAASAAAAAAAAAEcAAADOAAAAsuCXBL7-sgGc4JcEmP6yAQAAjxIq0XFj","distance":4.729936,"name":"","location":[77.062322,28.507838]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b
+  Critical Female: WXYZ3642 at [28.498, 76.9827]
+  Male Candidate: WXYZ3434 at [28.4938, 77.0126] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 4070.3, (KM): 4.070
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.070 <= 1.5 is false
+    -> Candidate WXYZ3434 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3434 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b
+  Critical Female: WXYZ3642 at [28.498, 76.9827]
+  Male Candidate: WXYZ4838 at [28.4902, 77.0151] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 4633.3, (KM): 4.633
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.633 <= 1.5 is false
+    -> Candidate WXYZ4838 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4838 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b
+  Critical Female: WXYZ3642 at [28.498, 76.9827]
+  Male Candidate: WXYZ5429 at [28.4964, 77.0263] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 6792.9, (KM): 6.793
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.793 <= 1.5 is false
+    -> Candidate WXYZ5429 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ5429 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b
+  Critical Female: WXYZ3642 at [28.498, 76.9827]
+  Male Candidate: WXYZ3492 at [28.5046, 77.0325] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 7820.1, (KM): 7.820
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.820 <= 1.5 is false
+    -> Candidate WXYZ3492 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3492 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b
+  Critical Female: WXYZ3642 at [28.498, 76.9827]
+  Male Candidate: WXYZ7763 at [28.5078, 77.0623] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 11604.9, (KM): 11.605
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 11.605 <= 1.5 is false
+    -> Candidate WXYZ7763 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ7763 ---
+[Guard Swap] Route GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_52_5d3cfcec-b8c0-4ca2-bc23-9d13646a329b did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,2158.7,1324.4,3876.7],[2126.5,0,662.6,2284.9],[1324.4,662.6,0,3409.6],[3867.5,2284.1,2496.1,0]],"destinations":[{"hint":"-IcOgBaIDoAKAAAAMwAAAJ4AAAAAAAAAmQjyQIXLC0K4YtpCAAAAAAoAAAAzAAAAngAAAAAAAADOAAAAv-uXBFYFswFU7JcEdASzAQMAvwMq0XFj","distance":28.983089,"name":"","location":[77.065151,28.509526]},{"hint":"EoMOgBWDDoAtAAAARwAAAAAAAAAAAAAAHxkAQnd5Q0IAAAAAAAAAAC0AAABHAAAAAAAAAAAAAADOAAAAOOCXBEresgE44JcELN6yAQAAnwUq0XFj","distance":3.324687,"name":"","location":[77.0622,28.49953]},{"hint":"OYMOgGiDDoAHAAAAAAAAAFcAAAAAAAAA7Z2fQAAAAABYg3NCAAAAAAcAAAAAAAAAVwAAAAAAAADOAAAAjN6XBI_isgFE3pcEeOKyAQcAXwsq0XFj","distance":7.494356,"name":"","location":[77.061772,28.500623]},{"hint":"a4kOgG6JDoBAAAAAMgAAAAAAAAAAAAAAuREzQkt8C0IAAAAAAAAAAEAAAAAyAAAAAAAAAAAAAADOAAAAKfuXBCy8sgEs-5cEzLuyAQAAjwUq0XFj","distance":10.643054,"name":"Subedar Major Laxmi Chand Road","location":[77.069097,28.490796]}],"sources":[{"hint":"-IcOgBaIDoAKAAAAMwAAAJ4AAAAAAAAAmQjyQIXLC0K4YtpCAAAAAAoAAAAzAAAAngAAAAAAAADOAAAAv-uXBFYFswFU7JcEdASzAQMAvwMq0XFj","distance":28.983089,"name":"","location":[77.065151,28.509526]},{"hint":"EoMOgBWDDoAtAAAARwAAAAAAAAAAAAAAHxkAQnd5Q0IAAAAAAAAAAC0AAABHAAAAAAAAAAAAAADOAAAAOOCXBEresgE44JcELN6yAQAAnwUq0XFj","distance":3.324687,"name":"","location":[77.0622,28.49953]},{"hint":"OYMOgGiDDoAHAAAAAAAAAFcAAAAAAAAA7Z2fQAAAAABYg3NCAAAAAAcAAAAAAAAAVwAAAAAAAADOAAAAjN6XBI_isgFE3pcEeOKyAQcAXwsq0XFj","distance":7.494356,"name":"","location":[77.061772,28.500623]},{"hint":"a4kOgG6JDoBAAAAAMgAAAAAAAAAAAAAAuREzQkt8C0IAAAAAAAAAAEAAAAAyAAAAAAAAAAAAAADOAAAAKfuXBCy8sgEs-5cEzLuyAQAAjwUq0XFj","distance":10.643054,"name":"Subedar Major Laxmi Chand Road","location":[77.069097,28.490796]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035
+  Critical Female: WXYZ5261 at [28.5093, 77.0653]
+  Male Candidate: WXYZ7751 at [28.4995, 77.0622] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 2158.7, (KM): 2.159
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.159 <= 1.5 is false
+    -> Candidate WXYZ7751 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ7751 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035
+  Critical Female: WXYZ5261 at [28.5093, 77.0653]
+  Male Candidate: WXYZ2974 at [28.5006, 77.0617] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 1324.4, (KM): 1.324
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 1.324 <= 1.5 is true
+    -> Candidate WXYZ2974 IS VALID for swap.
+--- END DEBUG FOR CANDIDATE WXYZ2974 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035
+  Critical Female: WXYZ5261 at [28.5093, 77.0653]
+  Male Candidate: WXYZ4845 at [28.4907, 77.0691] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 3876.7, (KM): 3.877
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 3.877 <= 1.5 is false
+    -> Candidate WXYZ4845 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4845 ---
+[GuardSwap - Experiential] Successfully swapped WXYZ5261 (F) with WXYZ2974 (M) in route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035. Guard saved!
+[Guard Logic] Experiential swap for route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035 successful. Swapped: WXYZ5261 with WXYZ2974.
+[Guard Logic - Pickup] Route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: Will proceed to OR-Tools re-optimization for this swap.
+[Guard Logic - Re-Opt] Route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: PICKUP trip, re-optimizing after swap.
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0617,28.5006],[77.0647,28.5051]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5558.1, durations[0][1]=505.6
+[Guard Logic - Re-Opt] Re-optimization failed for GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: No route from re-opt. Using pre-reopt swapped order.
+[checkRouteDeviation] Route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: DEVIATION EXCEEDED. Rule: 0-5km (maxTotal: 9.5km). FarthestEmpDist: 4.210km. ActualRouteDist: 12.229km. Returning false.
+Assigning error state to route GLOBAL_batch_53_6457f2a4-b690-4b5a-82d1-6ae9ca26b035: Exceeded acceptable route deviation after swap/re-opt
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,1722.1,2174,6997.7,7424,12583.9],[1264.6,0,1531,5289.4,6375.7,12063.9],[2174,1343.8,0,5087.8,5250,10938.1],[7230.9,6533.9,5056.8,0,4419.9,10047.3],[7121.3,6297.9,4947.2,5451.1,0,5354.7],[12152.1,11328.7,9978,10481.8,5315.2,0]],"destinations":[{"hint":"X3oOgGd6DoA-AAAACgAAAAAAAAAAAAAACQEvQpwIykAAAAAAAAAAAD4AAAAKAAAAAAAAAAAAAADOAAAAdQmXBBkMsgFgCZcEBAyyAQAAbxMq0XFj","distance":3.106344,"name":"","location":[77.007221,28.445721]},{"hint":"1qEOgN2hDoAKAAAADgAAAAAAAABjAAAAs1bbQJOkFkEAAAAAUO2IQgoAAAAOAAAAAAAAAGMAAADOAAAA9ReXBD4psgE4GJcEUCmyAQAAbxUq0XFj","distance":6.857788,"name":"","location":[77.010933,28.453182]},{"hint":"GKoOgG-qDoAgAAAAHQAAAAAAAAAcAAAAI3EOQqIy_UEAAAAAMcz8QSAAAAAdAAAAAAAAABwAAADOAAAApEWXBKMzsgHsRZcEeDOyAQAALwIq0XFj","distance":8.510228,"name":"","location":[77.022628,28.455843]},{"hint":"0PEOgASsAYAGAAAAmQAAAAAAAAAAAAAAVh-VQO2V00IAAAAAAAAAAAYAAACZAAAAAAAAAAAAAADOAAAAiGeXBA6gsgGEZ5cEEKCyAQAAPwIq0XFj","distance":0.450076,"name":"","location":[77.031304,28.483598]},{"hint":"YdUOgOvVDoABAAAADgAAAEgAAAAAAAAAV-KJP_nCEUEkpEZCAAAAAAEAAAAOAAAASAAAAAAAAADOAAAAXdqXBLGDsgFc2pcEjIOyAQIA_xAq0XFj","distance":4.101616,"name":"","location":[77.060701,28.476337]},{"hint":"c8YFgHfGBYBTAAAAPgAAAAAAAAAAAAAApmZpQlfmKkIAAAAAAAAAAFMAAAA-AAAAAAAAAAAAAADOAAAAvVeYBLu9sgHAV5gEwL2yAQAArxIq0XFj","distance":0.627179,"name":"U-2","location":[77.092797,28.491195]}],"sources":[{"hint":"X3oOgGd6DoA-AAAACgAAAAAAAAAAAAAACQEvQpwIykAAAAAAAAAAAD4AAAAKAAAAAAAAAAAAAADOAAAAdQmXBBkMsgFgCZcEBAyyAQAAbxMq0XFj","distance":3.106344,"name":"","location":[77.007221,28.445721]},{"hint":"1qEOgN2hDoAKAAAADgAAAAAAAABjAAAAs1bbQJOkFkEAAAAAUO2IQgoAAAAOAAAAAAAAAGMAAADOAAAA9ReXBD4psgE4GJcEUCmyAQAAbxUq0XFj","distance":6.857788,"name":"","location":[77.010933,28.453182]},{"hint":"GKoOgG-qDoAgAAAAHQAAAAAAAAAcAAAAI3EOQqIy_UEAAAAAMcz8QSAAAAAdAAAAAAAAABwAAADOAAAApEWXBKMzsgHsRZcEeDOyAQAALwIq0XFj","distance":8.510228,"name":"","location":[77.022628,28.455843]},{"hint":"0PEOgASsAYAGAAAAmQAAAAAAAAAAAAAAVh-VQO2V00IAAAAAAAAAAAYAAACZAAAAAAAAAAAAAADOAAAAiGeXBA6gsgGEZ5cEEKCyAQAAPwIq0XFj","distance":0.450076,"name":"","location":[77.031304,28.483598]},{"hint":"YdUOgOvVDoABAAAADgAAAEgAAAAAAAAAV-KJP_nCEUEkpEZCAAAAAAEAAAAOAAAASAAAAAAAAADOAAAAXdqXBLGDsgFc2pcEjIOyAQIA_xAq0XFj","distance":4.101616,"name":"","location":[77.060701,28.476337]},{"hint":"c8YFgHfGBYBTAAAAPgAAAAAAAAAAAAAApmZpQlfmKkIAAAAAAAAAAFMAAAA-AAAAAAAAAAAAAADOAAAAvVeYBLu9sgHAV5gEwL2yAQAArxIq0XFj","distance":0.627179,"name":"U-2","location":[77.092797,28.491195]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4
+  Critical Female: WXYZ3380 at [28.4457, 77.0072]
+  Male Candidate: WXYZ3242 at [28.4532, 77.011] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 1722.1, (KM): 1.722
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 1.722 <= 1.5 is false
+    -> Candidate WXYZ3242 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3242 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4
+  Critical Female: WXYZ3380 at [28.4457, 77.0072]
+  Male Candidate: WXYZ4939 at [28.4558, 77.0227] (Index in swappableMaleCandidates: 1)
+  OSRM Road Distance (Meters): 2174, (KM): 2.174
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 2.174 <= 1.5 is false
+    -> Candidate WXYZ4939 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4939 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4
+  Critical Female: WXYZ3380 at [28.4457, 77.0072]
+  Male Candidate: WXYZ4429 at [28.4836, 77.0313] (Index in swappableMaleCandidates: 2)
+  OSRM Road Distance (Meters): 6997.7, (KM): 6.998
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 6.998 <= 1.5 is false
+    -> Candidate WXYZ4429 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4429 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4
+  Critical Female: WXYZ3380 at [28.4457, 77.0072]
+  Male Candidate: WXYZ6290 at [28.4763, 77.0607] (Index in swappableMaleCandidates: 3)
+  OSRM Road Distance (Meters): 7424, (KM): 7.424
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 7.424 <= 1.5 is false
+    -> Candidate WXYZ6290 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ6290 ---
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4
+  Critical Female: WXYZ3380 at [28.4457, 77.0072]
+  Male Candidate: WXYZ4632 at [28.4912, 77.0928] (Index in swappableMaleCandidates: 4)
+  OSRM Road Distance (Meters): 12583.9, (KM): 12.584
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 12.584 <= 1.5 is false
+    -> Candidate WXYZ4632 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ4632 ---
+[Guard Swap] Route GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_54_2d44f9b7-f0fa-4f77-b16e-cc973686d0c4 did not occur or was rejected.
+[Guard Logic - Swap Attempt] Route GLOBAL_batch_56_c7a6e29b-94ea-491f-8f4b-1fb93f75df5c: Critical is Female, attempting experiential swap.
+[DEBUG handleGuardRequirements] FastAPI /table response: {"code":"Ok","distances":[[0,4002.1],[4030.7,0]],"destinations":[{"hint":"B80HgJ3NB4AAAAAABgAAAAQAAAAfAAAAAAAAAPCJgUDP6yVApw-tQQAAAAAGAAAABAAAAB8AAADOAAAAGd2ZBASysgE03ZkECLKyAQEArwoq0XFj","distance":2.680987,"name":"","location":[77.192473,28.488196]},{"hint":"5n4HgDZ_B4BUAAAASgAAAAAAAAAaAAAA19ZrQoA5S0IAAAAAA9uOQVQAAABKAAAAAAAAABoAAADOAAAARoOZBCrhsgFcg5kETOGyAQAAzxIq0XFj","distance":4.339944,"name":"","location":[77.169478,28.500266]}],"sources":[{"hint":"B80HgJ3NB4AAAAAABgAAAAQAAAAfAAAAAAAAAPCJgUDP6yVApw-tQQAAAAAGAAAABAAAAB8AAADOAAAAGd2ZBASysgE03ZkECLKyAQEArwoq0XFj","distance":2.680987,"name":"","location":[77.192473,28.488196]},{"hint":"5n4HgDZ_B4BUAAAASgAAAAAAAAAaAAAA19ZrQoA5S0IAAAAAA9uOQVQAAABKAAAAAAAAABoAAADOAAAARoOZBCrhsgFcg5kETOGyAQAAzxIq0XFj","distance":4.339944,"name":"","location":[77.169478,28.500266]}]}
+[DEBUG SWAP CHECK] Route: GLOBAL_batch_56_c7a6e29b-94ea-491f-8f4b-1fb93f75df5c
+  Critical Female: WXYZ3414 at [28.4882, 77.1925]
+  Male Candidate: WXYZ3132 at [28.5003, 77.1695] (Index in swappableMaleCandidates: 0)
+  OSRM Road Distance (Meters): 4002.1, (KM): 4.002
+  MAX_SWAP_DISTANCE_KM: 1.5
+  Condition Check: 4.002 <= 1.5 is false
+    -> Candidate WXYZ3132 IS INVALID for swap (too far).
+--- END DEBUG FOR CANDIDATE WXYZ3132 ---
+[Guard Swap] Route GLOBAL_batch_56_c7a6e29b-94ea-491f-8f4b-1fb93f75df5c: No male candidates within 1.5km range. Guard will be assigned.
+[Guard Logic] Experiential swap for route GLOBAL_batch_56_c7a6e29b-94ea-491f-8f4b-1fb93f75df5c did not occur or was rejected.
+
+[Fleet Status Before Unrouted Processing]
+  S: 31/82 used, 51 remaining (37.8%)
+  M: 10/30 used, 20 remaining (33.3%)
+  ⚠️  MEDIUM vehicles underutilized. 33.3% used.
+  L: 23/40 used, 17 remaining (57.5%)
+  OVERALL: 64/152 vehicles used (42.1%)
+
+
+[UNROUTED HANDLING] Processing 9 unrouted employees with strict deviation checks...
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0617,28.5006],[77.0647,28.5051]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5558.1, durations[0][1]=505.6
+[Unrouted Success] Route GLOBAL_UNROUTED_ITER_60_0_6ba62c88-323a-4713-9443-6356e3125c80 created with 2 employees. Distance: 4.78km
+[Guard Needed] Route GLOBAL_UNROUTED_ITER_61_0_7e6a3d71-af20-46c0-8e46-633efd14d307: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0635,28.5044],[77.0641,28.4989]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5269, durations[0][1]=484.9
+[Unrouted Success] Route GLOBAL_UNROUTED_ITER_61_0_7e6a3d71-af20-46c0-8e46-633efd14d307 created with 2 employees. Distance: 5.38km
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0622,28.4995],[77.0653,28.5093]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5495.6, durations[0][1]=487.5
+[Unrouted Success] Route GLOBAL_UNROUTED_ITER_62_0_8a734a8d-6bce-45e5-b98c-cddfa41dd4b8 created with 2 employees. Distance: 5.06km
+[Guard Needed] Route GLOBAL_UNROUTED_ITER_63_0_15a79cab-a8b7-4ff8-ba5b-807b36af5872: Guard required for female employee at critical position
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0604,28.5005],[77.0596,28.4994]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5781.9, durations[0][1]=531.1
+[Unrouted Success] Route GLOBAL_UNROUTED_ITER_63_0_15a79cab-a8b7-4ff8-ba5b-807b36af5872 created with 2 employees. Distance: 4.90km
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.340) | m(cap:6, util:16.7%, score:0.317) | l(cap:12, util:8.3%, score:0.268) → SELECTED: s (25.0% utilized)
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.091,28.5023],[77.0691,28.4907]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=7213.5, durations[0][1]=659.7
+[Unrouted Success] Route GLOBAL_UNROUTED_ITER_64_0_4c63b155-cac3-49b0-a558-bdfee25ee8db created with 1 employees. Distance: 2.93km
+[Unrouted Summary] Created 5 routes (including 0 forced singletons). 0 employees remain unrouted.
+
+=== FINAL FLEET UTILIZATION SUMMARY ===
+S type (cap:4): 36/82 used (43.9% utilization)
+M type (cap:6): 10/30 used (33.3% utilization)
+L type (cap:12): 23/40 used (57.5% utilization)
+OVERALL FLEET: 69/152 vehicles used (45.4% utilization)

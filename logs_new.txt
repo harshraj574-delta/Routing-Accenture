@@ -1,0 +1,594 @@
+----- Available route files -----
+routeGenerationRoutes (default) exists: true
+routeGenerationRoutesV1 exists: true
+routeGenerationRoutesV2 exists: true
+----- Registered API routes -----
+/api/v1/route-generation/* registered (Legacy Algorithm)
+/api/v2/route-generation/* registered (Enhanced Algorithm)
+/api/route-generation/* registered (Default - V2)
+/api/versions - Version info endpoint
+/api/health - Health check endpoint
+Server running on port 5001
+[v2] Generating routes for 274 employees, date: 2026-04-27, shift: 0930
+[v2] Using enhanced routing algorithm with angular clustering and linear direction optimization
+[v2] No zones provided in request, will use zones from backend data file
+Generating routes for 274 employees, date: 2026-04-27, shift: 0930, city: ncr, activateGuardSystem: false
+[Fleet Analysis] MAXIMUM Capacity Configuration: {
+  "s": {
+    "minEmployees": 1,
+    "maxEmployees": 4,
+    "capacity": 4,
+    "count": 82,
+    "utilization": 0
+  },
+  "m": {
+    "minEmployees": 5,
+    "maxEmployees": 6,
+    "capacity": 6,
+    "count": 30,
+    "utilization": 0
+  },
+  "l": {
+    "minEmployees": 7,
+    "maxEmployees": 12,
+    "capacity": 12,
+    "count": 40,
+    "utilization": 0
+  }
+}
+[Fleet Analysis] MAXIMUM Optimal sizes: { s: 4, m: 6, l: 12 }
+[Fleet Analysis] Client fleet configuration analyzed: {
+  s: {
+    minEmployees: 1,
+    maxEmployees: 4,
+    capacity: 4,
+    count: 82,
+    utilization: 0
+  },
+  m: {
+    minEmployees: 5,
+    maxEmployees: 6,
+    capacity: 6,
+    count: 30,
+    utilization: 0
+  },
+  l: {
+    minEmployees: 7,
+    maxEmployees: 12,
+    capacity: 12,
+    count: 40,
+    utilization: 0
+  }
+}
+
+[Fleet Status Initial]
+  S: 0/82 used, 82 remaining (0.0%)
+  M: 0/30 used, 30 remaining (0.0%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 0.0% used.
+  L: 0/40 used, 40 remaining (0.0%)
+  OVERALL: 0/152 vehicles used (0.0%)
+
+[Zone Initial Capacity] GLOBAL: Base: 6, Fleet-adjusted: 9
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Zone Processing MAXIMUM] GLOBAL: Targeting MAXIMUM capacity: 12
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 1: 1 employees, duration: 5387s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.425) | m(cap:6, util:16.7%, score:0.383) | l(cap:12, util:8.3%, score:0.383) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 2: 1 employees, duration: 4848s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.423) | m(cap:6, util:16.7%, score:0.383) | l(cap:12, util:8.3%, score:0.383) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 3: 5 employees, duration: 6664s
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_3_ee35efd5-3882-4da8-bcfe-bc499dea3a5c (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 4: 6 employees, duration: 6018s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_4_14dd0312-1c69-4a3c-af9b-91900d12c5cd (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 5: 6 employees, duration: 5897s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_5_d9388fec-ed9a-4a7e-a68a-c0df6dd763fc (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 6: 6 employees, duration: 5923s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_6_217fd281-cb68-4604-ba9a-cb9ccc8c0ec0 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 7: 2 employees, duration: 5186s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 8: 7 employees, duration: 5741s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 9: 3 employees, duration: 5410s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 10: 1 employees, duration: 5016s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.416) | l(cap:12, util:8.3%, score:0.378) | m(cap:6, util:16.7%, score:0.357) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 11: 7 employees, duration: 5450s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 12: 7 employees, duration: 5801s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 13: 1 employees, duration: 4214s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.413) | l(cap:12, util:8.3%, score:0.368) | m(cap:6, util:16.7%, score:0.357) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 14: 7 employees, duration: 5219s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 15: 3 employees, duration: 4180s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 16: 2 employees, duration: 4569s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 17: 4 employees, duration: 5619s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 18: 1 employees, duration: 3820s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.403) | l(cap:12, util:8.3%, score:0.363) | m(cap:6, util:16.7%, score:0.357) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 19: 6 employees, duration: 5161s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_19_fe7e1cf9-0934-43df-83d9-cb77bf497b34 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 20: 1 employees, duration: 4386s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.401) | l(cap:12, util:8.3%, score:0.363) | m(cap:6, util:16.7%, score:0.350) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 21: 1 employees, duration: 4010s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.399) | l(cap:12, util:8.3%, score:0.363) | m(cap:6, util:16.7%, score:0.350) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 22: 1 employees, duration: 3702s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.396) | l(cap:12, util:8.3%, score:0.363) | m(cap:6, util:16.7%, score:0.350) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 23: 4 employees, duration: 4906s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 24: 3 employees, duration: 4141s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 25: 7 employees, duration: 5869s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 26: 1 employees, duration: 3052s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.389) | l(cap:12, util:8.3%, score:0.358) | m(cap:6, util:16.7%, score:0.350) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 27: 9 employees, duration: 5141s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 28: 2 employees, duration: 4287s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 29: 8 employees, duration: 5049s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 30: 3 employees, duration: 3601s
+[Fleet High Utilization] Occupancy 3 → HIGH UTILIZATION: s(4) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 31: 9 employees, duration: 4971s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 32: 8 employees, duration: 4967s
+[Fleet Medium Utilization] Occupancy 8 → MEDIUM UTILIZATION: l(12) - 66.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 33: 7 employees, duration: 4691s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 34: 2 employees, duration: 3566s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 35: 9 employees, duration: 4945s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 36: 1 employees, duration: 2195s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.379) | m(cap:6, util:16.7%, score:0.350) | l(cap:12, util:8.3%, score:0.328) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 37: 6 employees, duration: 3870s
+[Fleet High Utilization] Occupancy 6 → HIGH UTILIZATION: m(6) - 100.0% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_37_abf194d5-d5f4-4298-b797-b85235635330 (occupancy: 6)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 38: 5 employees, duration: 3747s
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_38_ea473b8f-2deb-4ff3-bbd7-f3beecd60ad9 (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 39: 4 employees, duration: 4057s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 40: 9 employees, duration: 4707s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 41: 1 employees, duration: 2758s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.374) | m(cap:6, util:16.7%, score:0.337) | l(cap:12, util:8.3%, score:0.323) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 42: 1 employees, duration: 3111s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.372) | m(cap:6, util:16.7%, score:0.337) | l(cap:12, util:8.3%, score:0.323) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 43: 11 employees, duration: 4287s
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 44: 10 employees, duration: 4755s
+[Fleet High Utilization] Occupancy 10 → HIGH UTILIZATION: l(12) - 83.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 45: 1 employees, duration: 1874s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.369) | m(cap:6, util:16.7%, score:0.337) | l(cap:12, util:8.3%, score:0.313) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 25.583km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 26.369km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 25.821km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 27.286km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_46_12: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 26.914km. Returning false.
+[Route Success] Route 46: 7 employees, duration: 4305s
+[Fleet Medium Utilization] Occupancy 7 → MEDIUM UTILIZATION: l(12) - 58.3% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 47: 11 employees, duration: 3842s
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 48: 2 employees, duration: 1807s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 49: 12 employees, duration: 3386s
+[Fleet High Utilization] Occupancy 12 → HIGH UTILIZATION: l(12) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 50: 11 employees, duration: 4228s
+[Fleet High Utilization] Occupancy 11 → HIGH UTILIZATION: l(12) - 91.7% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 18.108km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 18.348km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 20.749km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 21.710km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 21.805km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_51_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 20.366km. Returning false.
+[Route Success] Route 51: 9 employees, duration: 3348s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_52_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.665km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_52_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.470km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_52_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.989km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_52_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.617km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_52_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.656km. Returning false.
+[Route Success] Route 52: 9 employees, duration: 3253s
+[Fleet High Utilization] Occupancy 9 → HIGH UTILIZATION: l(12) - 75.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 22.254km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 19.318km. Returning false.
+[checkRouteDeviation] Route temp_val_progressive_53_12: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 19.004km. Returning false.
+[Route Success] Route 53: 5 employees, duration: 2963s
+[Fleet High Utilization] Occupancy 5 → HIGH UTILIZATION: m(6) - 83.3% utilized
+[Medium Vehicle] ✅ Successfully assigned medium vehicle to route GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716 (occupancy: 5)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 54: 4 employees, duration: 2521s
+[Fleet High Utilization] Occupancy 4 → HIGH UTILIZATION: s(4) - 100.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 55: 2 employees, duration: 2374s
+[Fleet Medium Utilization] Occupancy 2 → MEDIUM UTILIZATION: s(4) - 50.0% utilized
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 56: 1 employees, duration: 1369s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.360) | m(cap:6, util:16.7%, score:0.330) | l(cap:12, util:8.3%, score:0.283) → SELECTED: s (25.0% utilized)
+[Maximum Capacity] Targeting FULL capacity: 12 for vehicle type l(12)
+[Route Success] Route 57: 1 employees, duration: 792s
+[Fleet Utilization Focus] Occupancy 1 → Options: s(cap:4, util:25.0%, score:0.357) | m(cap:6, util:16.7%, score:0.330) | l(cap:12, util:8.3%, score:0.283) → SELECTED: s (25.0% utilized)
+
+[Fleet Status After Zone Processing]
+  S: 29/82 used, 53 remaining (35.4%)
+  M: 8/30 used, 22 remaining (26.7%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 26.7% used.
+  L: 20/40 used, 20 remaining (50.0%)
+  OVERALL: 57/152 vehicles used (37.5%)
+
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.4549,28.6945]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=55920.2, durations[0][1]=3412.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.4343,28.6257]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=45311.5, durations[0][1]=3401.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 6
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3819,28.6466],[77.3468,28.6348]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=44047.6, durations[0][1]=3010.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3155,28.7032],[77.3186,28.6823]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=44530.9, durations[0][1]=3084
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2017,28.7541],[77.204,28.7398]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=43969.9, durations[0][1]=3017.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2791,28.7206],[77.2638,28.7194]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=42070.5, durations[0][1]=3016.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3367,28.671],[77.3447,28.6441]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=39561.2, durations[0][1]=2919.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2811,28.7049],[77.2843,28.689]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=40967, durations[0][1]=2915
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3863,28.5979],[77.3819,28.5925]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=38328.8, durations[0][1]=2870.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3862,28.5626]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=39827.1, durations[0][1]=3077.2
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1294,28.7387],[77.1223,28.7372]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=44401.9, durations[0][1]=2758.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0436,28.7339],[77.077,28.7167]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=42486.2, durations[0][1]=2771.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0869,28.7295]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=41511.3, durations[0][1]=2739.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.207,28.7039],[77.1966,28.6863]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=33955.3, durations[0][1]=2746.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2829,28.658],[77.2842,28.6496]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=36610.3, durations[0][1]=2682.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1476,28.7111],[77.1697,28.6902]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=36379.2, durations[0][1]=2615.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3209,28.6074],[77.3001,28.5938]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=37686.4, durations[0][1]=2607.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2664,28.6583]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34237.9, durations[0][1]=2589.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3364,28.3538],[77.3018,28.3457]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=36891.2, durations[0][1]=2315
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0448,28.7023]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=40638.6, durations[0][1]=2684
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3111,28.5811]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=35222.4, durations[0][1]=2571.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2924,28.6019]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34481.4, durations[0][1]=2475.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3338,28.4984],[77.3294,28.4999]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=29424.1, durations[0][1]=2302.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3263,28.4034],[77.2918,28.4068]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34442.9, durations[0][1]=2281.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1099,28.6779],[77.1359,28.6635]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=35697.9, durations[0][1]=2289.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2284,28.6394]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=28529.4, durations[0][1]=2199.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0489,28.6665],[77.0806,28.6458]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=34622.7, durations[0][1]=2079.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.3123,28.4751],[77.2997,28.4487]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=29110, durations[0][1]=2223.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1033,28.6487],[77.1016,28.6462]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=30279.3, durations[0][1]=2212
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 4
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1191,28.6453],[77.1208,28.6344]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=28540.6, durations[0][1]=2118.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0152,28.6347],[77.028,28.6326]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=30689.5, durations[0][1]=1894.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 9
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[76.9926,28.6185],[76.9935,28.611]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=28776.7, durations[0][1]=1773.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0274,28.6254],[77.0257,28.6236]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=26512.4, durations[0][1]=1944.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0019,28.616],[77.0191,28.606]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=29060.3, durations[0][1]=1756.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2431,28.5641],[77.2419,28.5554]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=23259.5, durations[0][1]=2005.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[76.9033,28.416]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22175.4, durations[0][1]=1307.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 7
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0566,28.6255],[77.0588,28.6182]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=28348.1, durations[0][1]=2005.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 6
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2114,28.5711],[77.2146,28.5471]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=21736.6, durations[0][1]=1830.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[76.9507,28.366],[76.9636,28.3935]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=22834.6, durations[0][1]=1467.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2393,28.5042],[77.2388,28.5056]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=21095.8, durations[0][1]=1759.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2321,28.518]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=19046.8, durations[0][1]=1634.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.2397,28.4953]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=21739.9, durations[0][1]=1883.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[76.9695,28.4684],[76.9695,28.4684]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=15871.8, durations[0][1]=1206.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 11
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1787,28.5234],[77.1808,28.4937]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=13709.1, durations[0][1]=1282.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0219,28.3803]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=14754.2, durations[0][1]=1287.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 8
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[76.9821,28.4972],[76.9931,28.483]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=14981.1, durations[0][1]=1268.1
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0044,28.5154],[77.0213,28.5119]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=16420.8, durations[0][1]=1286.4
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1239,28.5444],[77.1253,28.5421]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=12735.9, durations[0][1]=1018.8
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 13
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0563,28.5339],[77.059,28.5346]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=12503.4, durations[0][1]=998.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 12
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0332,28.5163],[77.0463,28.5108]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=14281.4, durations[0][1]=1122.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0211,28.4231],[77.0383,28.4283]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=9007.8, durations[0][1]=922.9
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 10
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0146,28.49],[77.0215,28.4945]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=11742.3, durations[0][1]=897.5
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 6
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0399,28.4248],[77.0568,28.4511]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=8444.5, durations[0][1]=839
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 5
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0481,28.419],[77.0808,28.4274]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=7352.4, durations[0][1]=677.3
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 3
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0737,28.5151],[77.1053,28.498]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=8666.8, durations[0][1]=743.6
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.1381,28.437]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=9064.4, durations[0][1]=626.7
+[DEBUG-OSRM-REQ] City: delhi, Coords count: 2
+[DEBUG-OSRM-REQ] First 3 coords: [[77.0871,28.4624],[77.0539,28.4494]]
+[DEBUG-OSRM] Response code: Ok, distances[0][1]=5291.5, durations[0][1]=605.1
+
+[Fleet Status After OR-Tools]
+  S: 29/82 used, 53 remaining (35.4%)
+  M: 8/30 used, 22 remaining (26.7%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 26.7% used.
+  L: 20/40 used, 20 remaining (50.0%)
+  OVERALL: 57/152 vehicles used (37.5%)
+
+
+[Route Consolidation] Pre-consolidation: 57 routes
+
+[Route Consolidation] Starting consolidation phase...
+[Route Consolidation] Config: maxInsertionDistance=5km, lowOccupancyThreshold=2, minHostOccupancy=1
+[Route Consolidation] Found 21 low-occupancy routes, 47 potential host routes
+[Route Consolidation] ✗ Could not merge employee WXYZ5055 from route GLOBAL_batch_1_dfdc9aa3-602f-4761-8436-0eaf2729d6de
+[Route Consolidation] ✗ Could not merge employee WXYZ2982 from route GLOBAL_batch_2_5d17ddc3-aff5-41c8-898b-7db62f7f0bdc
+[Route Consolidation] ✗ Could not merge employee WXYZ3498 from route GLOBAL_batch_7_8018691a-a278-4697-bca9-f0aa0717441f
+[Route Consolidation] ✗ Could not merge employee WXYZ4671 from route GLOBAL_batch_7_8018691a-a278-4697-bca9-f0aa0717441f
+[Route Consolidation] ✓ Employee WXYZ7691 from route GLOBAL_batch_10_fa1a3ae7-76f0-43f5-8d9e-1e9156c9af89 → route GLOBAL_batch_9_7a34517f-0c17-49bc-8885-ffcf7b9fdc3a (distance impact: 5.70km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_10_fa1a3ae7-76f0-43f5-8d9e-1e9156c9af89 fully merged into GLOBAL_batch_9_7a34517f-0c17-49bc-8885-ffcf7b9fdc3a
+[Route Consolidation] ✗ Could not merge employee WXYZ7265 from route GLOBAL_batch_13_2f733520-ac58-465c-af8f-900f20f338ae
+[Route Consolidation] ✗ Could not merge employee WXYZ4924 from route GLOBAL_batch_16_bac9aa39-1f11-45c9-9bf7-51c6d5d55b47
+[Route Consolidation] ✗ Could not merge employee WXYZ3325 from route GLOBAL_batch_16_bac9aa39-1f11-45c9-9bf7-51c6d5d55b47
+[Route Consolidation] ✓ Employee WXYZ3332 from route GLOBAL_batch_18_bcf577e8-c326-41fa-b76f-18674f393d92 → route GLOBAL_batch_15_1b788311-4c93-43c9-ba45-5fbfbed45172 (distance impact: 2.00km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_18_bcf577e8-c326-41fa-b76f-18674f393d92 fully merged into GLOBAL_batch_15_1b788311-4c93-43c9-ba45-5fbfbed45172
+[Route Consolidation] ✗ Could not merge employee WXYZ4172 from route GLOBAL_batch_20_7507b949-aa4f-40ee-9696-cc163adc7538
+[Route Consolidation] ✗ Could not merge employee WXYZ4650 from route GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856
+[Route Consolidation] ✓ Employee WXYZ2662 from route GLOBAL_batch_22_14777fac-c402-4098-98bd-c15fdb01ef48 → route GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856 (distance impact: 2.95km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_22_14777fac-c402-4098-98bd-c15fdb01ef48 fully merged into GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856
+[Route Consolidation] ✗ Could not merge employee WXYZ4078 from route GLOBAL_batch_26_908766d2-0e96-4902-8671-af36cd100e70
+[Route Consolidation] ✗ Could not merge employee WXYZ2563 from route GLOBAL_batch_28_6035e678-3cdb-49fc-b1a4-1be4949ce9ee
+[Route Consolidation] ✓ Employee WXYZ4492 from route GLOBAL_batch_28_6035e678-3cdb-49fc-b1a4-1be4949ce9ee → route GLOBAL_batch_24_40dbb937-5be9-4fbc-889e-e73ad25480ba (distance impact: 8.10km)
+[Route Consolidation] ⚠ Route GLOBAL_batch_28_6035e678-3cdb-49fc-b1a4-1be4949ce9ee partially merged. Employees to remove: WXYZ4492
+[Route Consolidation] ✗ Could not merge employee WXYZ3108 from route GLOBAL_batch_34_0c8706c8-9b10-46cf-b940-bc815a5ca7fa
+[Route Consolidation] ✓ Employee WXYZ3227 from route GLOBAL_batch_34_0c8706c8-9b10-46cf-b940-bc815a5ca7fa → route GLOBAL_batch_33_a8396bc9-a703-4adb-94e7-0f7d03f8ee09 (distance impact: 1.80km)
+[Route Consolidation] ⚠ Route GLOBAL_batch_34_0c8706c8-9b10-46cf-b940-bc815a5ca7fa partially merged. Employees to remove: WXYZ3227
+[Route Consolidation] ✗ Could not merge employee WXYZ2445 from route GLOBAL_batch_36_5ac9cf9c-d0ea-489f-b949-4cb47e541377
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_38_ea473b8f-2deb-4ff3-bbd7-f3beecd60ad9: DEVIATION EXCEEDED. Rule: 15.01-20km (maxTotal: 32km). FarthestEmpDist: 19.698km. ActualRouteDist: 41.302km. Returning false.
+[Route Consolidation] ✓ Employee WXYZ3600 from route GLOBAL_batch_41_82e23a23-92ec-49d0-9639-4d5639012071 → route GLOBAL_batch_42_fcfd93d3-4a4f-4062-9dcd-2fbdcbe4870e (distance impact: 2.63km)
+[Route Consolidation] ✓✓ Route GLOBAL_batch_41_82e23a23-92ec-49d0-9639-4d5639012071 fully merged into GLOBAL_batch_42_fcfd93d3-4a4f-4062-9dcd-2fbdcbe4870e
+[Route Consolidation] ✗ Could not merge employee WXYZ5205 from route GLOBAL_batch_42_fcfd93d3-4a4f-4062-9dcd-2fbdcbe4870e
+[Route Consolidation] ✗ Could not merge employee WXYZ7812 from route GLOBAL_batch_45_4f16c07d-3692-4510-b9f2-83086bbd128b
+[Route Consolidation] ✓ Employee WXYZ3441 from route GLOBAL_batch_48_7dcc7656-2c71-410f-9f87-a372824e00d9 → route GLOBAL_batch_38_ea473b8f-2deb-4ff3-bbd7-f3beecd60ad9 (distance impact: 4.91km)
+[Route Consolidation] ✗ Could not merge employee WXYZ4405 from route GLOBAL_batch_48_7dcc7656-2c71-410f-9f87-a372824e00d9
+[Route Consolidation] ⚠ Route GLOBAL_batch_48_7dcc7656-2c71-410f-9f87-a372824e00d9 partially merged. Employees to remove: WXYZ3441
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 10.637km. ActualRouteDist: 25.845km. Returning false.
+[Route Consolidation] ✗ Could not merge employee WXYZ3459 from route GLOBAL_batch_55_3937dcff-0806-4f81-8267-ba50158269b0
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 7.442km. ActualRouteDist: 31.701km. Returning false.
+[Route Consolidation] ✗ Could not merge employee WXYZ3473 from route GLOBAL_batch_55_3937dcff-0806-4f81-8267-ba50158269b0
+[Route Consolidation] ✗ Could not merge employee WXYZ3195 from route GLOBAL_batch_56_8023f8e7-f5f3-4dc8-aa10-d609105b8067
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_8392567b-5307-48d7-8aea-f31d579feabf: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 27.286km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_51_2be087e0-2a7b-447d-9a8f-30c50416a0ad: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.210km. ActualRouteDist: 21.436km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 18.989km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.140km. ActualRouteDist: 20.027km. Returning false.
+[Route Consolidation] ✗ Could not merge employee WXYZ5034 from route GLOBAL_batch_57_a831b570-ab39-446f-b713-138b12e6e8ad
+[Route Consolidation] Final employee order for GLOBAL_batch_9_7a34517f-0c17-49bc-8885-ffcf7b9fdc3a: WXYZ7691(#1), WXYZ2442(#2), WXYZ4833(#3), WXYZ4073(#4)
+[Route Consolidation] Final employee order for GLOBAL_batch_15_1b788311-4c93-43c9-ba45-5fbfbed45172: WXYZ3332(#1), WXYZ3596(#2), WXYZ4710(#3), WXYZ3331(#4)
+[Route Consolidation] Final employee order for GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856: WXYZ4650(#1), WXYZ2662(#2)
+[Route Consolidation] Final employee order for GLOBAL_batch_24_40dbb937-5be9-4fbc-889e-e73ad25480ba: WXYZ4798(#1), WXYZ4703(#2), WXYZ3081(#3), WXYZ4492(#4)
+[Route Consolidation] Route GLOBAL_batch_28_6035e678-3cdb-49fc-b1a4-1be4949ce9ee after partial merge: WXYZ2563
+[Route Consolidation] Final employee order for GLOBAL_batch_33_a8396bc9-a703-4adb-94e7-0f7d03f8ee09: WXYZ5342(#1), WXYZ4015(#2), WXYZ5338(#3), WXYZ3227(#4), WXYZ2295(#5), WXYZ5473(#6), WXYZ5450(#7), WXYZ3119(#8)
+[Route Consolidation] Route GLOBAL_batch_34_0c8706c8-9b10-46cf-b940-bc815a5ca7fa after partial merge: WXYZ3108
+[Route Consolidation] Final employee order for GLOBAL_batch_38_ea473b8f-2deb-4ff3-bbd7-f3beecd60ad9: WXYZ4094(#1), WXYZ3671(#2), WXYZ3563(#3), WXYZ3409(#4), WXYZ4717(#5), WXYZ3441(#6)
+[Route Consolidation] Final employee order for GLOBAL_batch_42_fcfd93d3-4a4f-4062-9dcd-2fbdcbe4870e: WXYZ3600(#1), WXYZ5205(#2)
+[Route Consolidation] Route GLOBAL_batch_48_7dcc7656-2c71-410f-9f87-a372824e00d9 after partial merge: WXYZ4405
+[Route Consolidation] Complete. Merged 4 routes. Routes: 57 → 53
+[Route Consolidation] Final route count after deduplication: 53
+[Route Consolidation] SUCCESS: Merged 4 routes. Routes: 57 → 53
+[Route Consolidation] Merge details: [
+  {
+    mergedRoute: 'GLOBAL_batch_10_fa1a3ae7-76f0-43f5-8d9e-1e9156c9af89',
+    intoRoute: 'GLOBAL_batch_9_7a34517f-0c17-49bc-8885-ffcf7b9fdc3a',
+    employeeCount: 1
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_18_bcf577e8-c326-41fa-b76f-18674f393d92',
+    intoRoute: 'GLOBAL_batch_15_1b788311-4c93-43c9-ba45-5fbfbed45172',
+    employeeCount: 1
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_22_14777fac-c402-4098-98bd-c15fdb01ef48',
+    intoRoute: 'GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856',
+    employeeCount: 1
+  },
+  {
+    mergedRoute: 'GLOBAL_batch_41_82e23a23-92ec-49d0-9639-4d5639012071',
+    intoRoute: 'GLOBAL_batch_42_fcfd93d3-4a4f-4062-9dcd-2fbdcbe4870e',
+    employeeCount: 1
+  }
+]
+
+[Singleton Aggregation] Pre-aggregation: 12 singleton routes
+
+[Singleton Aggregation] Found 12 singleton routes to process
+[Singleton Aggregation] Merged 2 singletons: WXYZ7265, WXYZ4172
+[Singleton Aggregation] Complete. Aggregated 2 singletons into 1 routes
+[Singleton Aggregation] Post-aggregation: 10 singleton routes (reduced by 2)
+[Cross-Route Optimization] Starting with 52 routes. Config: iterations=4, maxDetourKm=4.5, maxDetourRatio=1.2, corridorRadiusKm=5, maxHeadingDeviationDeg=100
+[Cross-Route Optimization] Iteration 1: candidateRoutes=52, osrmBudget=624 (configured=250, dynamic=624)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.124km. ActualRouteDist: 23.833km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_8392567b-5307-48d7-8aea-f31d579feabf: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.656km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.398km. Returning false.
+[Cross-Route Optimization] Iteration 1: moved WXYZ4111 GLOBAL_batch_27_aa6f7a5f-a499-4bba-b7b1-b4ec8735cfc1 -> AGGREGATED_202de58a-9ccb-41ce-b647-8f51fb0236c9, netGain=4.049km (OSRM checks 624/624)
+[Cross-Route Optimization] Iteration 2: candidateRoutes=52, osrmBudget=624 (configured=250, dynamic=624)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.124km. ActualRouteDist: 23.833km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_8392567b-5307-48d7-8aea-f31d579feabf: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.656km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.398km. Returning false.
+[Cross-Route Optimization] Iteration 2: moved WXYZ7559 GLOBAL_batch_44_f9fff653-7997-4450-beab-0b58aa368d74 -> GLOBAL_batch_21_c5a12c85-267b-49f4-a145-7fe66d92b856, netGain=3.508km (OSRM checks 624/624)
+[Cross-Route Optimization] Iteration 3: candidateRoutes=52, osrmBudget=624 (configured=250, dynamic=624)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.124km. ActualRouteDist: 23.833km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_8392567b-5307-48d7-8aea-f31d579feabf: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.656km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.398km. Returning false.
+[Cross-Route Optimization] Iteration 3: moved WXYZ4094 GLOBAL_batch_38_ea473b8f-2deb-4ff3-bbd7-f3beecd60ad9 -> GLOBAL_batch_7_8018691a-a278-4697-bca9-f0aa0717441f, netGain=2.684km (OSRM checks 624/624)
+[Cross-Route Optimization] Iteration 4: candidateRoutes=52, osrmBudget=624 (configured=250, dynamic=624)
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_53_ca22904e-5a33-413f-983a-7ac704306716: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.124km. ActualRouteDist: 23.833km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_46_8392567b-5307-48d7-8aea-f31d579feabf: DEVIATION EXCEEDED. Rule: 10.01-15km (maxTotal: 25.5km). FarthestEmpDist: 13.804km. ActualRouteDist: 28.656km. Returning false.
+[checkRouteDeviation] Route consolidation_test_GLOBAL_batch_52_0f0b0454-fad3-4447-a53c-735b462c3f19: DEVIATION EXCEEDED. Rule: 5.01-10km (maxTotal: 18km). FarthestEmpDist: 9.636km. ActualRouteDist: 19.398km. Returning false.
+[Cross-Route Optimization] Iteration 4: moved WXYZ4095 GLOBAL_batch_3_ee35efd5-3882-4da8-bcfe-bc499dea3a5c -> GLOBAL_batch_1_dfdc9aa3-602f-4761-8436-0eaf2729d6de, netGain=3.866km (OSRM checks 624/624)
+[Cross-Route Optimization] Complete. Applied 4 moves. Routes: 52 -> 52
+[Cross-Route Optimization] SUCCESS: Applied 4 moves. Routes now: 52
+
+[Fleet Status After Route Consolidation]
+  S: 29/82 used, 53 remaining (35.4%)
+  M: 8/30 used, 22 remaining (26.7%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 26.7% used.
+  L: 20/40 used, 20 remaining (50.0%)
+  OVERALL: 57/152 vehicles used (37.5%)
+
+
+[Fleet Status Before Unrouted Processing]
+  S: 29/82 used, 53 remaining (35.4%)
+  M: 8/30 used, 22 remaining (26.7%)
+  ⚠️  MEDIUM vehicles severely underutilized! Only 26.7% used.
+  L: 20/40 used, 20 remaining (50.0%)
+  OVERALL: 57/152 vehicles used (37.5%)
+
+
+=== FINAL FLEET UTILIZATION SUMMARY ===
+S type (cap:4): 29/82 used (35.4% utilization)
+M type (cap:6): 8/30 used (26.7% utilization) ⚠️ UNDERUTILIZED
+L type (cap:12): 20/40 used (50.0% utilization)
+OVERALL FLEET: 57/152 vehicles used (37.5% utilization)
+==========================================
+

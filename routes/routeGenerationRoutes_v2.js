@@ -37,6 +37,16 @@ router.post('/eta', routeGenerationController.getEta);
 // Reoptimize route - uses VRP solver to find optimal stop order before calculating ETA/polyline
 router.post('/reoptimize', routeGenerationController.reoptimizeRoute);
 
+// Async route generation — returns jobId immediately, runs computation in background
+router.post('/generate/async', routeGenerationController.generateRoutesAsync);
+
+// Poll a specific job's status
+router.get('/jobs/:jobId', routeGenerationController.getJobStatus);
+
+// Check if a generation is already running for a given shift (cross-admin visibility)
+// Query params: facilityid, sDate, triptype
+router.get('/in-progress', routeGenerationController.checkInProgress);
+
 // Simple GET endpoint for testing (returns info about the endpoint)
 router.get('/recalculate', (req, res) => {
     res.json({

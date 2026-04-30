@@ -102,10 +102,21 @@ app.use((req, res) => {
 // Before starting the server
 const PORT = process.env.PORT || 5001;
 
-// Test database connection and sync models before starting server
-
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  if (process.env.DB_SERVER) {
+    const JobStore = require('./db/jobStore');
+    // Fix any jobs that were mid-run when the server last stopped
+    JobStore.markStuckJobsFailed()
+      .then(() => JobStore.purgeOldJobs());
+    // Purge completed/failed jobs older than 24 h every 6 hours
+    setInterval(() => JobStore.purgeOldJobs(), 6 * 60 * 60 * 1000);
+  }
 });
+
+// Allow long-running background jobs — only the HTTP response must complete within App Runner's
+// 120 s Envoy timeout. Background setImmediate work is not subject to this limit.
+server.setTimeout(0);
 
 module.exports = { app };

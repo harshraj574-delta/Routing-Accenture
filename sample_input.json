@@ -1,0 +1,47 @@
+{
+  "employees": [
+    { "empCode": "E001", "geoY": 28.7041, "geoX": 77.1025, "gender": "M" },
+    { "empCode": "E002", "geoY": 28.6800, "geoX": 77.0900, "gender": "F" },
+    { "empCode": "E003", "geoY": 28.6600, "geoX": 77.0700, "gender": "M" },
+    { "empCode": "E004", "geoY": 28.6400, "geoX": 77.0500, "gender": "F" },
+    { "empCode": "E005", "geoY": 28.6200, "geoX": 77.0300, "gender": "M" },
+    { "empCode": "E006", "geoY": 28.7200, "geoX": 77.1500, "gender": "F" },
+    { "empCode": "E007", "geoY": 28.7350, "geoX": 77.1700, "gender": "M" },
+    { "empCode": "E008", "geoY": 28.7500, "geoX": 77.1900, "gender": "M" },
+    { "empCode": "E009", "geoY": 28.5900, "geoX": 77.3200, "gender": "F" },
+    { "empCode": "E010", "geoY": 28.6100, "geoX": 77.3000, "gender": "M" },
+    { "empCode": "E011", "geoY": 28.6300, "geoX": 77.2800, "gender": "M" },
+    { "empCode": "E012", "geoY": 28.6500, "geoX": 77.2600, "gender": "F" },
+    { "empCode": "E013", "geoY": 28.4800, "geoX": 77.0800, "gender": "M" },
+    { "empCode": "E014", "geoY": 28.5000, "geoX": 77.0600, "gender": "F" },
+    { "empCode": "E015", "geoY": 28.5200, "geoX": 77.0500, "gender": "M" },
+    { "empCode": "E016", "geoY": 28.5400, "geoX": 77.0400, "gender": "M" },
+    { "empCode": "E017", "geoY": 28.4300, "geoX": 77.0200, "gender": "F", "isMedical": true },
+    { "empCode": "E018", "geoY": 28.4500, "geoX": 77.0300, "gender": "M", "isNMT": true },
+    { "empCode": "E019", "geoY": 28.6900, "geoX": 77.4100, "gender": "M" },
+    { "empCode": "E020", "geoY": 28.7100, "geoX": 77.4300, "gender": "F" }
+  ],
+  "facility": {
+    "geoX": 77.2090,
+    "geoY": 28.6139
+  },
+  "shiftTime": "0900",
+  "date": "2025-04-30",
+  "tripType": "P",
+  "guard": true,
+  "pickupTimePerEmployee": 120,
+  "reportingTime": 300,
+  "profile": {
+    "id": 1,
+    "name": "ncr",
+    "zoneClubbing": false,
+    "zoneBasedRouting": false,
+    "maxDuration": 7200,
+    "directionPenaltyWeight": 5.0,
+    "fleet": [
+      { "type": "s", "capacity": 4,  "count": 5  },
+      { "type": "m", "capacity": 9,  "count": 10 },
+      { "type": "l", "capacity": 14, "count": 3  }
+    ]
+  }
+}

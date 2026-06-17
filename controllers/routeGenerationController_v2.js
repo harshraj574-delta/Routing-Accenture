@@ -1,11 +1,11 @@
 /**
- * Route Generation Controller v2 (New/Enhanced)
- * Uses the improved routing algorithm with angular sector clustering,
- * singleton aggregation, and linear direction optimization.
+ * Route Generation Controller v2
+ * Uses the v3 routing service: single OSRM matrix call + true multi-vehicle
+ * OR-Tools VRP with direction penalties. Replaces the old greedy heuristic.
  */
 
 const { v4: uuidv4 } = require('uuid');
-const routeGenerationService = require('../services/routeGenerationService');
+const routeGenerationService = require('../services/routeGenerationService_v3');
 const { routeRequestSchema, recalculateRouteRequestSchema, etaRequestSchema } = require('../validators/routeGenerationValidator');
 const JobStore = require('../db/jobStore');
 

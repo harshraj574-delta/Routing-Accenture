@@ -1,0 +1,2835 @@
+{
+    "employees": [                      // The roster to route. One object per person.
+        {
+            "empCode": "WXYZ2319",      // Unique employee ID. Echoed back in the output unchanged.
+            "geoX": 77.0961,            // Home LONGITUDE.
+            "geoY": 28.4956,            // Home LATITUDE.
+            "gender": "M",              // "M" / "F". A female at the critical stop (first pickup / last drop) triggers the guard rule.
+            "isMedical": false,         // true = medical-needs employee. Routed separately, max 2 per cab.
+            "isNMT": false,             // true = special transport ("Needs Must Travel"). Routed separately, capped at small-vehicle capacity.
+            "isOOB": false,             // true = "Out Of Boundary" (lives beyond normal service area). Flagged in output, still routed.
+            "isPWD": false              // true = person with disability. Same special handling as medical (max 2 per cab).
+        },
+        {
+            "empCode": "WXYZ3988",
+            "geoX": 77.0568,
+            "geoY": 28.4511,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2295",
+            "geoX": 77.0291,
+            "geoY": 28.6101,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2343",
+            "geoX": 77.1008,
+            "geoY": 28.4869,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4010",
+            "geoX": 77.1925,
+            "geoY": 28.6719,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4015",
+            "geoX": 77.0257,
+            "geoY": 28.6236,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4027",
+            "geoX": 77.1208,
+            "geoY": 28.6344,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2442",
+            "geoX": 77.3819,
+            "geoY": 28.5925,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2415",
+            "geoX": 77.0813,
+            "geoY": 28.5996,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2385",
+            "geoX": 77.0868,
+            "geoY": 28.6098,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2437",
+            "geoX": 77.2027,
+            "geoY": 28.6759,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2379",
+            "geoX": 77.0777,
+            "geoY": 28.6134,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2368",
+            "geoX": 77.1327,
+            "geoY": 28.6856,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2413",
+            "geoX": 77.1588,
+            "geoY": 28.4939,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2445",
+            "geoX": 76.9033,
+            "geoY": 28.416,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2428",
+            "geoX": 77.1441,
+            "geoY": 28.4951,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2425",
+            "geoX": 77.0502,
+            "geoY": 28.5074,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2395",
+            "geoX": 77.2009,
+            "geoY": 28.5103,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4032",
+            "geoX": 77.2388,
+            "geoY": 28.5056,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2482",
+            "geoX": 77.0994,
+            "geoY": 28.441,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2459",
+            "geoX": 77.219,
+            "geoY": 28.5384,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2476",
+            "geoX": 77.1005,
+            "geoY": 28.4854,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3035",
+            "geoX": 77.0949,
+            "geoY": 28.4567,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2774",
+            "geoX": 77.2267,
+            "geoY": 28.501,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2723",
+            "geoX": 77.028,
+            "geoY": 28.6326,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2982",
+            "geoX": 77.4343,
+            "geoY": 28.6257,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2525",
+            "geoX": 77.2811,
+            "geoY": 28.7049,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2649",
+            "geoX": 77.2892,
+            "geoY": 28.6471,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2786",
+            "geoX": 77.0806,
+            "geoY": 28.6458,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2519",
+            "geoX": 77.2029,
+            "geoY": 28.7408,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2557",
+            "geoX": 77.1223,
+            "geoY": 28.7372,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2733",
+            "geoX": 77.2431,
+            "geoY": 28.5641,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2625",
+            "geoX": 77.2934,
+            "geoY": 28.6569,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3055",
+            "geoX": 77.0942,
+            "geoY": 28.4905,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2934",
+            "geoX": 77.024,
+            "geoY": 28.4973,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2999",
+            "geoX": 77.0567,
+            "geoY": 28.6656,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2765",
+            "geoX": 76.9926,
+            "geoY": 28.6185,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2842",
+            "geoX": 77.0824,
+            "geoY": 28.6215,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2533",
+            "geoX": 77.3112,
+            "geoY": 28.4899,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2675",
+            "geoX": 77.2877,
+            "geoY": 28.6477,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2601",
+            "geoX": 77.3018,
+            "geoY": 28.3457,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2760",
+            "geoX": 77.1092,
+            "geoY": 28.6099,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4061",
+            "geoX": 77.1661,
+            "geoY": 28.6462,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2831",
+            "geoX": 77.0587,
+            "geoY": 28.6167,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2572",
+            "geoX": 77.1197,
+            "geoY": 28.7166,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2887",
+            "geoX": 77.0421,
+            "geoY": 28.4608,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2848",
+            "geoX": 76.9695,
+            "geoY": 28.4684,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3051",
+            "geoX": 77.103,
+            "geoY": 28.4861,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2918",
+            "geoX": 77.0481,
+            "geoY": 28.4387,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2851",
+            "geoX": 77.1783,
+            "geoY": 28.5164,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4078",
+            "geoX": 77.2284,
+            "geoY": 28.6394,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2970",
+            "geoX": 77.0508,
+            "geoY": 28.5042,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2870",
+            "geoX": 77.1885,
+            "geoY": 28.4979,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2948",
+            "geoX": 77.0953,
+            "geoY": 28.4884,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2796",
+            "geoX": 77.021,
+            "geoY": 28.4502,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2662",
+            "geoX": 77.2924,
+            "geoY": 28.6019,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2566",
+            "geoX": 77.0904,
+            "geoY": 28.7073,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2779",
+            "geoX": 77.1081,
+            "geoY": 28.6092,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2504",
+            "geoX": 77.2599,
+            "geoY": 28.6901,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2975",
+            "geoX": 77.0601,
+            "geoY": 28.4986,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2947",
+            "geoX": 77.0934,
+            "geoY": 28.4898,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3004",
+            "geoX": 77.1191,
+            "geoY": 28.6453,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2610",
+            "geoX": 77.0792,
+            "geoY": 28.7005,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3031",
+            "geoX": 77.0173,
+            "geoY": 28.4693,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2788",
+            "geoX": 77.0566,
+            "geoY": 28.6255,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2885",
+            "geoX": 77.0362,
+            "geoY": 28.4541,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2724",
+            "geoX": 77.0327,
+            "geoY": 28.6313,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3025",
+            "geoX": 77.067,
+            "geoY": 28.4485,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2856",
+            "geoX": 77.0481,
+            "geoY": 28.419,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2597",
+            "geoX": 77.2985,
+            "geoY": 28.683,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2911",
+            "geoX": 77.0213,
+            "geoY": 28.5119,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2663",
+            "geoX": 77.3001,
+            "geoY": 28.5938,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2517",
+            "geoX": 77.204,
+            "geoY": 28.7398,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2657",
+            "geoX": 77.2961,
+            "geoY": 28.5559,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2563",
+            "geoX": 77.3123,
+            "geoY": 28.4751,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4073",
+            "geoX": 77.3649,
+            "geoY": 28.5935,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2558",
+            "geoX": 77.1171,
+            "geoY": 28.7365,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2820",
+            "geoX": 77.1808,
+            "geoY": 28.4937,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ2707",
+            "geoX": 77.1359,
+            "geoY": 28.6635,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4095",
+            "geoX": 77.3819,
+            "geoY": 28.6466,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3146",
+            "geoX": 77.0355,
+            "geoY": 28.5013,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3107",
+            "geoX": 77.1447,
+            "geoY": 28.4966,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3159",
+            "geoX": 76.9821,
+            "geoY": 28.4972,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3137",
+            "geoX": 77.0603,
+            "geoY": 28.4495,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3093",
+            "geoX": 77.1033,
+            "geoY": 28.6487,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3119",
+            "geoX": 77.0829,
+            "geoY": 28.5743,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4111",
+            "geoX": 77.0489,
+            "geoY": 28.6665,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3081",
+            "geoX": 77.2888,
+            "geoY": 28.4129,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3152",
+            "geoX": 77.3021,
+            "geoY": 28.6035,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4094",
+            "geoX": 77.2114,
+            "geoY": 28.5711,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3140",
+            "geoX": 77.0798,
+            "geoY": 28.4754,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3108",
+            "geoX": 77.0019,
+            "geoY": 28.616,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3131",
+            "geoX": 77.1901,
+            "geoY": 28.5038,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3197",
+            "geoX": 77.1038,
+            "geoY": 28.6318,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4145",
+            "geoX": 77.3265,
+            "geoY": 28.6353,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3227",
+            "geoX": 77.0191,
+            "geoY": 28.606,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3219",
+            "geoX": 77.0399,
+            "geoY": 28.4248,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3183",
+            "geoX": 77.3155,
+            "geoY": 28.7032,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4108",
+            "geoX": 76.9931,
+            "geoY": 28.483,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3229",
+            "geoX": 77.0431,
+            "geoY": 28.5637,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3262",
+            "geoX": 77.3338,
+            "geoY": 28.4984,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3238",
+            "geoX": 77.0265,
+            "geoY": 28.4983,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3247",
+            "geoX": 77.0747,
+            "geoY": 28.4414,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3208",
+            "geoX": 77.1966,
+            "geoY": 28.6863,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3195",
+            "geoX": 77.1381,
+            "geoY": 28.437,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3214",
+            "geoX": 76.9635,
+            "geoY": 28.3952,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3222",
+            "geoX": 77.054,
+            "geoY": 28.6205,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3498",
+            "geoX": 77.3367,
+            "geoY": 28.671,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3489",
+            "geoX": 77.095,
+            "geoY": 28.4893,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3473",
+            "geoX": 77.1053,
+            "geoY": 28.498,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3365",
+            "geoX": 77.2079,
+            "geoY": 28.5339,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3444",
+            "geoX": 77.0192,
+            "geoY": 28.4684,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3332",
+            "geoX": 77.2664,
+            "geoY": 28.6583,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3409",
+            "geoX": 77.1735,
+            "geoY": 28.5539,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3450",
+            "geoX": 77.0808,
+            "geoY": 28.4274,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3459",
+            "geoX": 77.0737,
+            "geoY": 28.5151,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3331",
+            "geoX": 77.2831,
+            "geoY": 28.6479,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3417",
+            "geoX": 77.1839,
+            "geoY": 28.4953,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3323",
+            "geoX": 77.077,
+            "geoY": 28.7167,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3461",
+            "geoX": 77.1406,
+            "geoY": 28.4912,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3503",
+            "geoX": 77.2977,
+            "geoY": 28.6227,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3372",
+            "geoX": 76.9935,
+            "geoY": 28.611,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3514",
+            "geoX": 77.0893,
+            "geoY": 28.4722,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3310",
+            "geoX": 77.296,
+            "geoY": 28.4888,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4172",
+            "geoX": 77.0448,
+            "geoY": 28.7023,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3325",
+            "geoX": 77.1697,
+            "geoY": 28.6902,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3458",
+            "geoX": 77.0664,
+            "geoY": 28.5117,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3441",
+            "geoX": 77.1239,
+            "geoY": 28.5444,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3292",
+            "geoX": 77.3468,
+            "geoY": 28.6348,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3448",
+            "geoX": 77.0768,
+            "geoY": 28.5878,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3520",
+            "geoX": 77.055,
+            "geoY": 28.4366,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3401",
+            "geoX": 76.9636,
+            "geoY": 28.3935,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3390",
+            "geoX": 77.0336,
+            "geoY": 28.6251,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3542",
+            "geoX": 77.0607,
+            "geoY": 28.5002,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3557",
+            "geoX": 77.0619,
+            "geoY": 28.6024,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3564",
+            "geoX": 77.1658,
+            "geoY": 28.5195,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3567",
+            "geoX": 77.0686,
+            "geoY": 28.5076,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3563",
+            "geoX": 77.2038,
+            "geoY": 28.5433,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4187",
+            "geoX": 77.0542,
+            "geoY": 28.4373,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3587",
+            "geoX": 77.0271,
+            "geoY": 28.4976,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3671",
+            "geoX": 77.2146,
+            "geoY": 28.5471,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3657",
+            "geoX": 77.0215,
+            "geoY": 28.4945,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3600",
+            "geoX": 77.2321,
+            "geoY": 28.518,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3681",
+            "geoX": 76.9914,
+            "geoY": 28.4512,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3596",
+            "geoX": 77.2829,
+            "geoY": 28.658,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3689",
+            "geoX": 77.0621,
+            "geoY": 28.5,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3679",
+            "geoX": 76.9879,
+            "geoY": 28.5954,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3656",
+            "geoX": 77.027,
+            "geoY": 28.4951,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3637",
+            "geoX": 77.0044,
+            "geoY": 28.5154,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3593",
+            "geoX": 77.3214,
+            "geoY": 28.6759,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3685",
+            "geoX": 77.0434,
+            "geoY": 28.5624,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3698",
+            "geoX": 77.0211,
+            "geoY": 28.4231,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4212",
+            "geoX": 77.1294,
+            "geoY": 28.7387,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ3706",
+            "geoX": 77.0685,
+            "geoY": 28.4304,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ6362",
+            "geoX": 77.0406,
+            "geoY": 28.465,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7619",
+            "geoX": 77.0691,
+            "geoY": 28.4453,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ6008",
+            "geoX": 77.1016,
+            "geoY": 28.6462,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7603",
+            "geoX": 77.0758,
+            "geoY": 28.5967,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7265",
+            "geoX": 77.0869,
+            "geoY": 28.7295,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7493",
+            "geoX": 77.1763,
+            "geoY": 28.72,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7674",
+            "geoX": 77.0367,
+            "geoY": 28.6224,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ6222",
+            "geoX": 76.9645,
+            "geoY": 28.4081,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7531",
+            "geoX": 77.1583,
+            "geoY": 28.6517,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4483",
+            "geoX": 77.0028,
+            "geoY": 28.4464,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7682",
+            "geoX": 77.3186,
+            "geoY": 28.6823,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4539",
+            "geoX": 76.9507,
+            "geoY": 28.366,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7691",
+            "geoX": 77.3862,
+            "geoY": 28.5626,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7559",
+            "geoX": 77.1787,
+            "geoY": 28.5234,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7698",
+            "geoX": 77.0178,
+            "geoY": 28.4558,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4826",
+            "geoX": 77.0563,
+            "geoY": 28.5339,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ6924",
+            "geoX": 77.0628,
+            "geoY": 28.5063,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5330",
+            "geoX": 77.0367,
+            "geoY": 28.5071,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5338",
+            "geoX": 77.0196,
+            "geoY": 28.6206,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4400",
+            "geoX": 77.1039,
+            "geoY": 28.4889,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4405",
+            "geoX": 77.1253,
+            "geoY": 28.5421,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5344",
+            "geoX": 77.2009,
+            "geoY": 28.6534,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4426",
+            "geoX": 77.0931,
+            "geoY": 28.6034,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4427",
+            "geoX": 77.0201,
+            "geoY": 28.5772,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5342",
+            "geoX": 77.0274,
+            "geoY": 28.6254,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4453",
+            "geoX": 77.0071,
+            "geoY": 28.592,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4463",
+            "geoX": 77.125,
+            "geoY": 28.6921,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4482",
+            "geoX": 76.9962,
+            "geoY": 28.4464,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4492",
+            "geoX": 77.2997,
+            "geoY": 28.4487,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4502",
+            "geoX": 77.0332,
+            "geoY": 28.6225,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4506",
+            "geoX": 77.2791,
+            "geoY": 28.7206,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4524",
+            "geoX": 77.0966,
+            "geoY": 28.5976,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4529",
+            "geoX": 77.1809,
+            "geoY": 28.5217,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5387",
+            "geoX": 77.0953,
+            "geoY": 28.4939,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4618",
+            "geoX": 77.0383,
+            "geoY": 28.4283,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4568",
+            "geoX": 77.2903,
+            "geoY": 28.6456,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4594",
+            "geoX": 77.0801,
+            "geoY": 28.6388,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5393",
+            "geoX": 77.1843,
+            "geoY": 28.6391,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4631",
+            "geoX": 77.0505,
+            "geoY": 28.5143,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4620",
+            "geoX": 77.0425,
+            "geoY": 28.4626,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4555",
+            "geoX": 77.2862,
+            "geoY": 28.3553,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4558",
+            "geoX": 77.2017,
+            "geoY": 28.7541,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4581",
+            "geoX": 77.2419,
+            "geoY": 28.5554,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4650",
+            "geoX": 77.3111,
+            "geoY": 28.5811,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5383",
+            "geoX": 77.1099,
+            "geoY": 28.6779,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4569",
+            "geoX": 77.2393,
+            "geoY": 28.5042,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4751",
+            "geoX": 77.0588,
+            "geoY": 28.6182,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4710",
+            "geoX": 77.2842,
+            "geoY": 28.6496,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4689",
+            "geoX": 77.1649,
+            "geoY": 28.7055,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4708",
+            "geoX": 77.2879,
+            "geoY": 28.3874,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4709",
+            "geoX": 77.2751,
+            "geoY": 28.3993,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4717",
+            "geoX": 77.1714,
+            "geoY": 28.5589,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4677",
+            "geoX": 77.3294,
+            "geoY": 28.4999,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5403",
+            "geoX": 77.291,
+            "geoY": 28.6892,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4671",
+            "geoX": 77.3447,
+            "geoY": 28.6441,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4690",
+            "geoX": 77.1213,
+            "geoY": 28.7372,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4731",
+            "geoX": 77.2346,
+            "geoY": 28.5069,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5399",
+            "geoX": 77.1086,
+            "geoY": 28.6119,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4688",
+            "geoX": 77.1884,
+            "geoY": 28.7406,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4703",
+            "geoX": 77.2918,
+            "geoY": 28.4068,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4798",
+            "geoX": 77.3263,
+            "geoY": 28.4034,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4801",
+            "geoX": 77.2166,
+            "geoY": 28.5355,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4835",
+            "geoX": 77.0152,
+            "geoY": 28.6347,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5423",
+            "geoX": 77.0704,
+            "geoY": 28.6841,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4833",
+            "geoX": 77.3863,
+            "geoY": 28.5979,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4849",
+            "geoX": 77.2931,
+            "geoY": 28.5601,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4850",
+            "geoX": 77.0799,
+            "geoY": 28.598,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4867",
+            "geoX": 77.2843,
+            "geoY": 28.689,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5437",
+            "geoX": 77.1181,
+            "geoY": 28.6282,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4887",
+            "geoX": 77.3364,
+            "geoY": 28.3538,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4893",
+            "geoX": 77.0833,
+            "geoY": 28.4784,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4898",
+            "geoX": 77.0978,
+            "geoY": 28.4924,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4924",
+            "geoX": 77.1476,
+            "geoY": 28.7111,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4921",
+            "geoX": 77.0356,
+            "geoY": 28.5013,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4923",
+            "geoX": 77.2821,
+            "geoY": 28.3621,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4940",
+            "geoX": 77.0381,
+            "geoY": 28.6327,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5034",
+            "geoX": 77.0539,
+            "geoY": 28.4494,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4962",
+            "geoX": 77.3209,
+            "geoY": 28.6074,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5052",
+            "geoX": 77.0332,
+            "geoY": 28.5163,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4948",
+            "geoX": 77.2648,
+            "geoY": 28.7111,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4969",
+            "geoX": 77.0898,
+            "geoY": 28.714,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5031",
+            "geoX": 77.0915,
+            "geoY": 28.4919,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5453",
+            "geoX": 77.1971,
+            "geoY": 28.657,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4971",
+            "geoX": 77.2578,
+            "geoY": 28.6639,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5447",
+            "geoX": 77.0599,
+            "geoY": 28.4974,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5033",
+            "geoX": 77.0463,
+            "geoY": 28.5108,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ4950",
+            "geoX": 77.2579,
+            "geoY": 28.7162,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5089",
+            "geoX": 77.0436,
+            "geoY": 28.7339,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5055",
+            "geoX": 77.4549,
+            "geoY": 28.6945,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": true,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5135",
+            "geoX": 76.9695,
+            "geoY": 28.4684,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5450",
+            "geoX": 77.0717,
+            "geoY": 28.5891,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5160",
+            "geoX": 77.0377,
+            "geoY": 28.4766,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5104",
+            "geoX": 76.9887,
+            "geoY": 28.5911,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5126",
+            "geoX": 77.0034,
+            "geoY": 28.4734,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5455",
+            "geoX": 77.299,
+            "geoY": 28.6822,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5140",
+            "geoX": 77.0973,
+            "geoY": 28.4942,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5153",
+            "geoX": 77.1386,
+            "geoY": 28.6237,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5151",
+            "geoX": 77.23,
+            "geoY": 28.5089,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5125",
+            "geoX": 76.9818,
+            "geoY": 28.4589,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5183",
+            "geoX": 77.2638,
+            "geoY": 28.7194,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5174",
+            "geoX": 77.0373,
+            "geoY": 28.4608,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5208",
+            "geoX": 77.0877,
+            "geoY": 28.6117,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5222",
+            "geoX": 77.0146,
+            "geoY": 28.49,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5461",
+            "geoX": 77.0728,
+            "geoY": 28.6019,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5205",
+            "geoX": 77.2397,
+            "geoY": 28.4953,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5211",
+            "geoX": 77.059,
+            "geoY": 28.5346,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5467",
+            "geoX": 77.0299,
+            "geoY": 28.4572,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5482",
+            "geoX": 77.1793,
+            "geoY": 28.4943,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5473",
+            "geoX": 77.044,
+            "geoY": 28.601,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5259",
+            "geoX": 77.0442,
+            "geoY": 28.6191,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5479",
+            "geoX": 77.0952,
+            "geoY": 28.49,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ5734",
+            "geoX": 77.0225,
+            "geoY": 28.4957,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7760",
+            "geoX": 77.0671,
+            "geoY": 28.5034,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7743",
+            "geoX": 77.207,
+            "geoY": 28.7039,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7744",
+            "geoX": 77.2868,
+            "geoY": 28.676,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ6909",
+            "geoX": 77.0999,
+            "geoY": 28.636,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7773",
+            "geoX": 77.0354,
+            "geoY": 28.5022,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7808",
+            "geoX": 77.0314,
+            "geoY": 28.5088,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7784",
+            "geoX": 77.0691,
+            "geoY": 28.4295,
+            "gender": "F",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        },
+        {
+            "empCode": "WXYZ7812",
+            "geoX": 77.0219,
+            "geoY": 28.3803,
+            "gender": "M",
+            "isMedical": false,
+            "isNMT": false,
+            "isOOB": false,
+            "isPWD": false
+        }
+    ],
+    "facility": {                       // The office/depot. All routes start here (pickup) or end here (dropoff).
+        "id": 1,                        // Facility ID.
+        "name": "GGN",                  // Facility short name.
+        "geoX": 77.0871,                // Facility LONGITUDE.
+        "geoY": 28.4624                 // Facility LATITUDE.
+    },
+    "shiftTime": "0930",                // Shift login (pickup) / logout (dropoff) time, "HHMM". Drives ETA calc + traffic buffer.
+    "date": "2026-04-30",               // Service date, "YYYY-MM-DD".
+    "tripType": "P",                    // "P" = Pickup (home → facility). "D" = Dropoff (facility → home). Also accepts "PICKUP"/"DROPOFF".
+    "pickupTimePerEmployee": 420,       // Dwell/boarding time per stop, in SECONDS (420 = 7 min). Added to route duration + solver budget.
+    "reportingTime": 1800,              // How early the cab must reach the facility before shiftTime, in SECONDS (1800 = 30 min).
+    "guard": false,                     // true = enforce the female-safety guard rule (guard takes one seat unless avoided by a male swap).
+    "profile": {                        // Routing policy + fleet configuration for this facility/city.
+        "id": 1,                        // Profile ID.
+        "name": "ncr",                  // CITY KEY — selects the road network. One of: "ncr"/"delhi", "bengaluru", "chennai".
+        "zoneClubbing": true,           // Legacy flag (compatibility). v3 uses geographic sector clustering instead.
+        "zoneBasedRouting": false,      // Legacy flag (compatibility).
+        "isAutoClubbing": false,        // Legacy flag (compatibility).
+        "maxDuration": 9000,            // Hard cap on one route's drive + boarding time, in SECONDS. Solver never exceeds this.
+        "routeDeviationRules": {        // CDC distance bands: cap how circuitous a route may be vs. its farthest employee. Key ("CDC"/"DC"/...) varies by facility; engine reads the first ruleset.
+            "CDC": [
+                {
+                    "minDistKm": 0,         // Band lower bound: farthest employee's straight-line distance from facility (km).
+                    "maxDistKm": 5,         // Band upper bound (km).
+                    "maxTotalOneWayKm": 9.5 // Max allowed total one-way ROAD distance for a route whose farthest employee falls in this band. Breach → deviationExceeded flag (warning only).
+                },
+                {
+                    "minDistKm": 5.01,
+                    "maxDistKm": 10,
+                    "maxTotalOneWayKm": 18
+                },
+                {
+                    "minDistKm": 10.01,
+                    "maxDistKm": 15,
+                    "maxTotalOneWayKm": 25.5
+                },
+                {
+                    "minDistKm": 15.01,
+                    "maxDistKm": 20,
+                    "maxTotalOneWayKm": 32
+                },
+                {
+                    "minDistKm": 20.01,
+                    "maxDistKm": 25,
+                    "maxTotalOneWayKm": 37.5
+                },
+                {
+                    "minDistKm": 25.01,
+                    "maxDistKm": 30,
+                    "maxTotalOneWayKm": 42
+                },
+                {
+                    "minDistKm": 30.01,
+                    "maxDistKm": 40,
+                    "maxTotalOneWayKm": 52
+                },
+                {
+                    "minDistKm": 40.01,
+                    "maxDistKm": 50,
+                    "maxTotalOneWayKm": 62.5
+                },
+                {
+                    "minDistKm": 50.01,
+                    "maxDistKm": 100,
+                    "maxTotalOneWayKm": 120
+                },
+                {
+                    "minDistKm": 20.01,
+                    "maxDistKm": 25,
+                    "maxTotalOneWayKm": 37.5
+                }
+            ]
+        },
+        "fleet": [                      // Available vehicles. Engine assigns the SMALLEST vehicle that fits each route, drawing down "count".
+            {
+                "type": "s",            // Vehicle size code: "s" small, "m" medium, "l" large.
+                "capacity": 4,          // Seats in this vehicle type.
+                "count": 82             // How many of this type are available.
+            },
+            {
+                "type": "m",
+                "capacity": 6,
+                "count": 30
+            },
+            {
+                "type": "l",
+                "capacity": 12,
+                "count": 40
+            }
+        ]
+    }
+}

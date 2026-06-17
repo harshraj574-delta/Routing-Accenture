@@ -1,0 +1,940 @@
+{
+  "employees": [
+    {
+      "empCode": "WXYZ76155",
+      "geoX": 77.6964,
+      "geoY": 12.7954,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76158",
+      "geoX": 77.7004,
+      "geoY": 12.7989,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76154",
+      "geoX": 77.7734,
+      "geoY": 12.8353,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76216",
+      "geoX": 77.6503,
+      "geoY": 12.8383,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76217",
+      "geoX": 77.6475,
+      "geoY": 12.8416,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76215",
+      "geoX": 77.6517,
+      "geoY": 12.8481,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76153",
+      "geoX": 77.6387,
+      "geoY": 12.8731,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76152",
+      "geoX": 77.6605,
+      "geoY": 12.8745,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76195",
+      "geoX": 77.6059,
+      "geoY": 12.8775,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76210",
+      "geoX": 77.6269,
+      "geoY": 12.8845,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76196",
+      "geoX": 77.6166,
+      "geoY": 12.8864,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76212",
+      "geoX": 77.6291,
+      "geoY": 12.8866,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76159",
+      "geoX": 77.7171,
+      "geoY": 12.8898,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76211",
+      "geoX": 77.6259,
+      "geoY": 12.8937,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76213",
+      "geoX": 77.6324,
+      "geoY": 12.8994,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76214",
+      "geoX": 77.6392,
+      "geoY": 12.9001,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ75402",
+      "geoX": 77.6768,
+      "geoY": 12.9033,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76209",
+      "geoX": 77.4773,
+      "geoY": 12.9044,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76207",
+      "geoX": 77.6132,
+      "geoY": 12.9084,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76197",
+      "geoX": 77.623,
+      "geoY": 12.9087,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76157",
+      "geoX": 77.6776,
+      "geoY": 12.9132,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76160",
+      "geoX": 77.7001,
+      "geoY": 12.9152,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76141",
+      "geoX": 77.6141,
+      "geoY": 12.9154,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76194",
+      "geoX": 77.5459,
+      "geoY": 12.9173,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76193",
+      "geoX": 77.634,
+      "geoY": 12.9174,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76142",
+      "geoX": 77.6529,
+      "geoY": 12.9191,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76221",
+      "geoX": 77.6121,
+      "geoY": 12.9197,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76205",
+      "geoX": 77.6724,
+      "geoY": 12.9258,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ75400",
+      "geoX": 77.597,
+      "geoY": 12.928,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76219",
+      "geoX": 77.4937,
+      "geoY": 12.9298,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76206",
+      "geoX": 77.6087,
+      "geoY": 12.9363,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76172",
+      "geoX": 77.6975,
+      "geoY": 12.9387,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76204",
+      "geoX": 77.616,
+      "geoY": 12.9417,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76161",
+      "geoX": 77.6803,
+      "geoY": 12.9468,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76168",
+      "geoX": 77.7023,
+      "geoY": 12.948,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76165",
+      "geoX": 77.7048,
+      "geoY": 12.9487,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76169",
+      "geoX": 77.7062,
+      "geoY": 12.9524,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76175",
+      "geoX": 77.6997,
+      "geoY": 12.9581,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76170",
+      "geoX": 77.7022,
+      "geoY": 12.9589,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76146",
+      "geoX": 77.6591,
+      "geoY": 12.95969,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76167",
+      "geoX": 77.7036,
+      "geoY": 12.9598,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76171",
+      "geoX": 77.7035,
+      "geoY": 12.9599,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76173",
+      "geoX": 77.5237,
+      "geoY": 12.9631,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76145",
+      "geoX": 77.6576,
+      "geoY": 12.9664,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76147",
+      "geoX": 77.6323,
+      "geoY": 12.9688,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76180",
+      "geoX": 77.4834,
+      "geoY": 12.9692,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76162",
+      "geoX": 77.6707,
+      "geoY": 12.9692,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76176",
+      "geoX": 77.7554,
+      "geoY": 12.9722,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76179",
+      "geoX": 77.5547,
+      "geoY": 12.9798,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76163",
+      "geoX": 77.674,
+      "geoY": 12.9813,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76164",
+      "geoX": 77.687,
+      "geoY": 12.9886,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76178",
+      "geoX": 77.5575,
+      "geoY": 12.9901,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76166",
+      "geoX": 77.717,
+      "geoY": 12.9906,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76144",
+      "geoX": 77.607,
+      "geoY": 12.9907,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76201",
+      "geoX": 77.6884,
+      "geoY": 12.9912,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76203",
+      "geoX": 77.7291,
+      "geoY": 12.9923,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76218",
+      "geoX": 77.6291,
+      "geoY": 12.9955,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76174",
+      "geoX": 77.6092,
+      "geoY": 12.9975,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76177",
+      "geoX": 77.5777,
+      "geoY": 12.9976,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76151",
+      "geoX": 77.5536,
+      "geoY": 12.999,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76200",
+      "geoX": 77.7005,
+      "geoY": 13.0096,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76198",
+      "geoX": 77.6741,
+      "geoY": 13.0106,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76187",
+      "geoX": 77.6409,
+      "geoY": 13.0152,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76199",
+      "geoX": 77.6837,
+      "geoY": 13.0158,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ75394",
+      "geoX": 77.7053,
+      "geoY": 13.0163,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76186",
+      "geoX": 77.6601,
+      "geoY": 13.0168,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76202",
+      "geoX": 77.7135,
+      "geoY": 13.0245,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76191",
+      "geoX": 77.5563,
+      "geoY": 13.0286,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76183",
+      "geoX": 77.6058,
+      "geoY": 13.0366,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76188",
+      "geoX": 77.6676,
+      "geoY": 13.0399,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76181",
+      "geoX": 77.6678,
+      "geoY": 13.0399,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76184",
+      "geoX": 77.601,
+      "geoY": 13.0402,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76156",
+      "geoX": 77.6135,
+      "geoY": 13.0403,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76192",
+      "geoX": 77.5536,
+      "geoY": 13.0412,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76185",
+      "geoX": 77.6119,
+      "geoY": 13.0418,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76149",
+      "geoX": 77.5547,
+      "geoY": 13.0429,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76150",
+      "geoX": 77.519,
+      "geoY": 13.0531,
+      "gender": "M",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76182",
+      "geoX": 77.6482,
+      "geoY": 13.0611,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76189",
+      "geoX": 77.513,
+      "geoY": 13.067,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76190",
+      "geoX": 77.5121,
+      "geoY": 13.0698,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76143",
+      "geoX": 77.5623,
+      "geoY": 13.074,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76148",
+      "geoX": 77.5001,
+      "geoY": 13.0879,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76208",
+      "geoX": 77.5486,
+      "geoY": 13.0918,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76220",
+      "geoX": 77.5463,
+      "geoY": 13.0924,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    },
+    {
+      "empCode": "WXYZ76222",
+      "geoX": 77.6413,
+      "geoY": 13.0984,
+      "gender": "F",
+      "isMedical": false,
+      "isNMT": false,
+      "isOOB": false,
+      "isPWD": false
+    }
+  ],
+  "facility": {
+    "id": 7,
+    "name": "BDC 7",
+    "geoX": 77.6814,
+    "geoY": 12.9246
+  },
+  "shiftTime": "1730",
+  "date": "2026-06-01",
+  "tripType": "P",
+  "pickupTimePerEmployee": 180,
+  "reportingTime": 0,
+  "guard": false,
+  "profile": {
+    "id": 10,
+    "name": "bengaluru",
+    "zoneClubbing": false,
+    "zoneBasedRouting": false,
+    "isAutoClubbing": false,
+    "maxDuration": 9000,
+    "routeDeviationRules": {
+      "CDC": [
+        {
+          "minDistKm": 0,
+          "maxDistKm": 5,
+          "maxTotalOneWayKm": 9.5
+        },
+        {
+          "minDistKm": 5.01,
+          "maxDistKm": 10,
+          "maxTotalOneWayKm": 18
+        },
+        {
+          "minDistKm": 10.01,
+          "maxDistKm": 15,
+          "maxTotalOneWayKm": 25.5
+        },
+        {
+          "minDistKm": 15.01,
+          "maxDistKm": 20,
+          "maxTotalOneWayKm": 32
+        },
+        {
+          "minDistKm": 20.01,
+          "maxDistKm": 25,
+          "maxTotalOneWayKm": 37.5
+        },
+        {
+          "minDistKm": 25.01,
+          "maxDistKm": 30,
+          "maxTotalOneWayKm": 42
+        },
+        {
+          "minDistKm": 30.01,
+          "maxDistKm": 40,
+          "maxTotalOneWayKm": 52
+        },
+        {
+          "minDistKm": 40.01,
+          "maxDistKm": 50,
+          "maxTotalOneWayKm": 62.5
+        },
+        {
+          "minDistKm": 50.01,
+          "maxDistKm": 100,
+          "maxTotalOneWayKm": 120
+        }
+      ]
+    },
+    "fleet": [
+      {
+        "type": "s",
+        "capacity": 3,
+        "count": 90
+      },
+      {
+        "type": "m",
+        "capacity": 5,
+        "count": 90
+      },
+      {
+        "type": "l",
+        "capacity": 8,
+        "count": 50
+      }
+    ]
+  }
+}

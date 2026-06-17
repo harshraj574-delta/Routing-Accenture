@@ -1,0 +1,48 @@
+{
+  "_README": "Per-facility routing config for the Accenture batch exercise. EDIT the 'count' (and 'capacity' if needed) for each facility's fleet. city/CDC/maxDuration are pre-filled from your existing samples. PEAK = busiest single-slice employee count seen in the Excel (size the fleet so total seats comfortably exceed PEAK).",
+
+  "_cityDeviationRules": {
+    "bengaluru": [
+      { "minDistKm": 0,     "maxDistKm": 5,   "maxTotalOneWayKm": 9.5 },
+      { "minDistKm": 5.01,  "maxDistKm": 10,  "maxTotalOneWayKm": 18 },
+      { "minDistKm": 10.01, "maxDistKm": 15,  "maxTotalOneWayKm": 25.5 },
+      { "minDistKm": 15.01, "maxDistKm": 20,  "maxTotalOneWayKm": 32 },
+      { "minDistKm": 20.01, "maxDistKm": 25,  "maxTotalOneWayKm": 37.5 },
+      { "minDistKm": 25.01, "maxDistKm": 30,  "maxTotalOneWayKm": 42 },
+      { "minDistKm": 30.01, "maxDistKm": 40,  "maxTotalOneWayKm": 52 },
+      { "minDistKm": 40.01, "maxDistKm": 50,  "maxTotalOneWayKm": 62.5 },
+      { "minDistKm": 50.01, "maxDistKm": 100, "maxTotalOneWayKm": 120 }
+    ],
+    "delhi": [
+      { "minDistKm": 0,     "maxDistKm": 5,   "maxTotalOneWayKm": 9.5 },
+      { "minDistKm": 5.01,  "maxDistKm": 10,  "maxTotalOneWayKm": 18 },
+      { "minDistKm": 10.01, "maxDistKm": 15,  "maxTotalOneWayKm": 25.5 },
+      { "minDistKm": 15.01, "maxDistKm": 20,  "maxTotalOneWayKm": 32 },
+      { "minDistKm": 20.01, "maxDistKm": 25,  "maxTotalOneWayKm": 37.5 },
+      { "minDistKm": 25.01, "maxDistKm": 30,  "maxTotalOneWayKm": 42 },
+      { "minDistKm": 30.01, "maxDistKm": 40,  "maxTotalOneWayKm": 52 },
+      { "minDistKm": 40.01, "maxDistKm": 50,  "maxTotalOneWayKm": 62.5 },
+      { "minDistKm": 50.01, "maxDistKm": 100, "maxTotalOneWayKm": 120 }
+    ]
+  },
+
+  "_defaults": {
+    "pickupTimePerEmployee": 180,
+    "reportingTime": 1800,
+    "guard": false
+  },
+
+  "facilities": {
+    "BDC 10": { "city": "bengaluru", "maxDuration": 9000, "_peak": 1007, "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "BDC 14": { "city": "bengaluru", "maxDuration": 9000, "_peak": 355,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "BDC 7":  { "city": "bengaluru", "maxDuration": 9000, "_peak": 360,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "BDC 9":  { "city": "bengaluru", "maxDuration": 9000, "_peak": 413,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "BEXDC2": { "city": "bengaluru", "maxDuration": 9000, "_peak": 8,    "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "BEXDC6": { "city": "bengaluru", "maxDuration": 9000, "_peak": 267,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "DDC 1":  { "city": "delhi", "maxDuration": 9000, "_peak": 2,   "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "DDC 3":  { "city": "delhi", "maxDuration": 9000, "_peak": 53,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "DDC 4":  { "city": "delhi", "maxDuration": 9000, "_peak": 231, "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "DDC 5":  { "city": "delhi", "maxDuration": 9000, "_peak": 836, "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] },
+    "DDC 6G": { "city": "delhi", "maxDuration": 9000, "_peak": 18,  "fleet": [ { "type": "s", "capacity": 4, "count": 0 }, { "type": "m", "capacity": 6, "count": 0 }, { "type": "l", "capacity": 12, "count": 0 } ] }
+  }
+}

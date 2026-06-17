@@ -1,52 +1,52 @@
 {
-    "uuid": "3b04ec76-4791-4674-aff9-9137305a2ea5",
-    "date": "2026-01-21",
-    "shift": "1900",
-    "tripType": "P",
-    "totalEmployees": 312,
-    "totalRoutedEmployees": 312,
-    "totalRoutes": 62,
-    "totalGuardedRoutes": 23,
-    "averageOccupancy": 5.03,
+    "uuid": "3b04ec76-4791-4674-aff9-9137305a2ea5",  // Unique ID for this generation run.
+    "date": "2026-01-21",                  // Service date (echoed from input).
+    "shift": "1900",                       // Shift time (echoed from input).
+    "tripType": "P",                       // "P" pickup / "D" dropoff (echoed from input).
+    "totalEmployees": 312,                 // Roster size received.
+    "totalRoutedEmployees": 312,           // How many were placed on a route. Goal: equals totalEmployees.
+    "totalRoutes": 62,                     // Number of cabs/routes created.
+    "totalGuardedRoutes": 23,              // Routes needing a guard (guard consumes one seat).
+    "averageOccupancy": 5.03,              // Avg employees per route. Higher = more efficient packing.
     "overallRouteDetails": {
-        "totalDistance": 2038.47,
-        "totalDuration": 394542
+        "totalDistance": 2038.47,          // Sum of all route road distances, in KM.
+        "totalDuration": 394542            // Sum of all route durations, in SECONDS (traffic-buffered).
     },
-    "totalSwappedRoutes": 5,
-    "routes": [
+    "totalSwappedRoutes": 5,               // Routes where a male was swapped into the critical seat to AVOID needing a guard.
+    "routes": [                            // The actual routes. One object per cab.
         {
-            "routeNumber": 1,
-            "zone": "GLOBAL",
-            "vehicleCapacity": 4,
-            "vehicleType": "s",
-            "guard": true,
-            "swapped": false,
-            "swappedPairInfo": null,
-            "durationExceeded": false,
-            "uniqueKey": "GLOBAL_batch_1_2626487a-ff92-483e-ba03-75fbbe863505",
-            "isSpecialNeedsRoute": false,
-            "afterFleetExhaustion": false,
-            "distance": 65.29,
-            "duration": 8236,
-            "occupancy": 3,
-            "farthestEmployeeDistance": 57.59,
-            "isMedicalRoute": false,
-            "isPWDRoute": false,
-            "isNMTRoute": false,
-            "isOOBRoute": true,
+            "routeNumber": 1,              // Sequential route number.
+            "zone": "GLOBAL",              // Dominant zone label of this route's employees.
+            "vehicleCapacity": 4,          // Seats in the assigned vehicle.
+            "vehicleType": "s",            // Assigned vehicle size code ("s"/"m"/"l").
+            "guard": true,                 // true = a guard rides along (effective seats = capacity - 1).
+            "swapped": false,              // true = a male was moved into the critical seat to save a guard.
+            "swappedPairInfo": null,       // Details of that swap (who moved in/out + road distance); null if no swap.
+            "durationExceeded": false,     // true = buffered duration MAY exceed profile.maxDuration (warning only, nobody dropped).
+            "uniqueKey": "GLOBAL_batch_1_2626487a-ff92-483e-ba03-75fbbe863505",  // Stable unique route ID. (v3 uses "v3_<uuid>" form.)
+            "isSpecialNeedsRoute": false,  // true = a separately-routed medical/PWD/NMT route.
+            "afterFleetExhaustion": false, // true = assigned only after the proper vehicle type ran out (review flag).
+            "distance": 65.29,             // This route's road distance, in KM.
+            "duration": 8236,              // This route's duration, in SECONDS (traffic-buffered).
+            "occupancy": 3,                // Actual employees on this route.
+            "farthestEmployeeDistance": 57.59,  // Straight-line KM from facility to the farthest employee on this route.
+            "isMedicalRoute": false,       // true = carries at least one medical employee.
+            "isPWDRoute": false,           // true = carries at least one PWD employee.
+            "isNMTRoute": false,           // true = carries at least one NMT employee.
+            "isOOBRoute": true,            // true = carries at least one out-of-boundary employee.
             "encodedPolyline": "kc}mDozxwMN_@Xq@r@d@RLz@n@X\\DJCJOZq@jAUd@eBhEq@fBCv@Tg@r@mBzA}DRa@Pa@Xc@Xa@`@i@~ByCpGoIfAyATYNWp@eBFGDGjAwA|BuCd@c@b@a@`@[b@Y`Am@~AcANKp@_@RK\\M`@O^I`@Ib@Eh@AtBBp@?VBVBRBVMLKLOVi@t@}ADIpGnERLdBbA`At@|HdF~AfArCjB\\TnAz@bJdGvCrBxAhANJFFBRh@TLHhL~HPJpC`B`Bv@vDlBn@Zn@Xf@PxFrCr@b@`@VhAz@~@v@jAlAr@`ANTV`@Vd@h@dAhBhEt@fCHXZ~ARjAHv@HfAN~BBhB?`@Ap@KvBEn@I|@I~@_BzL_@rC?@CTAFw@~FmA~JGb@DN?NE~@FM@C@EFYj@{DXaCJu@ZmCBU@GP}ARaBFC`@WZYx@a@t@UfA_@XGb@IhAG^@VDv@XH@JALEj@[~@_@ZK^IjAa@FAFAJ?L?FALCb@OPGf@[h@a@VSHKP[d@w@^c@RS`@a@HIJIh@[`@[vAwArEzCFDtBvA|@j@`@VjAt@hB`AvA~@nBpADDn@^bDpBDBLHpBnA|@h@ZP|@h@t@`@{@vBOl@SjAGb@Ir@EdAMlBEd@Gn@AJCTG\\ITMVOTKLGJIJ_@d@]b@g@n@^d@r@r@@@[x@ERKt@Gj@?D?BBBNFRHRH\\Hz@Rc@`CO`BMnAQ~Ag@f@MLe@`@KLSd@[`A_@vA]dAm@vBCPMAECc@QAAICCj@Ab@@h@?J@LBJFLz@hAT\\j@~@`@z@JZDV?TGtAEf@ANELWn@DFDL@N?R?RCPa@dBa@nAYz@u@pC_@pAUz@Qd@c@dAaAtBS\\g@p@o@bAc@~@OXW^m@x@SJUXADCFDLZTJJZZT`@z@pB@J@D?JALi@`DjAt@l@b@\\TTPnBvAh@d@p@p@`EoB|@c@HEl@]M_@a@}AAE?EFM?S@?@@@?@A?A@??Cd@bAJHJ?`GqCYy@[aAK[u@{BIu@M_AL~@Ht@`@lARl@JZZ`AXx@LZLZlCmALGx@a@f@WzEaCbD}ANEN?ATEAK@iD~AgAh@[PwE`CMFUJcAh@wIjEeAh@IDcP~H]NCQIYq@{BCKAIAYEgDCo@@U@SLi@h@aD@M?KAEAK{@qBUa@[[YLMHWTOJGBIBC@E?EAMEa@?M?o@BM?u@Bs@@E?M@eA@sADo@@U?OAKAI?K?CDQRGDGDIBA?G@MHYLc@P[F]Hk@LQFy@XODE@WHUDWBKBSDc@Xo@b@SLKFq@f@YN[JmAXOBsBb@cCZW@[A]Gg@Ku@UQEuBi@GAyCo@ICqASKEQE[Oa@Wc@]c@]SOSMUM]UaAo@a@[k@c@w@e@KGC^E^oAhKuAdLm@zCIh@eAdJGh@QvAQrAAHo@zFWtCMjBG`CCh@A\\GjD?tCBdCJjDLvBPzBJfAH~@b@jDj@nDb@pBLl@p@|CnL`j@Lh@DP~CpNXpAz@vDlAlFdChLZ~AZzABNhApFNv@Ll@Lh@fA`Fz@~DxEbUJf@Np@BPJb@b@~CXtCPlCJfCJhFD~BGjK?TAjBCfI@`CAnRIvB?hM?V?fAAfJAjK?n@AbFC~Q?`I?J?t@?L?\\AhDApAAzB?f@Ab@?t@AlE?vAAf]Aj@?hCGbNJhGDbECvCQ?AjDElGMhB?~BCrEApEC`J@rA?tANrCVfCf@|CDTHX^zA\\vA|AzGjCxLhBlIlEbSpAhFlC|KfExQdCnKvAbH|DbQDNVjAT|@Pp@BNvBrI`L`f@Jd@hDvNPx@|AnGdL|e@Pt@rBdHj@zA`@`AtAvCtA~BdDxEpBlCVVz@t@nBdBRLVPZTh@\\jQnO`Az@\\ZlAfA~@`A~BvC`AtAfBpC`AnBp@~ARj@h@xAtCrIdAxCzH~SdDrJj@tAXf@d@|@Zt@~@lClNba@`@hAvBjGRn@ZfAh@jB`@dBBVAr@A\\IrA@f@A^Fr@WFwBd@uH~As@NuFjA{O~C_c@pJ}@VuDz@aE|@iAVo@NqE|@wBh@iAhASRIJGJELCLCNAN?N?NBNBNNl@Zx@vBnGh@zARjADz@G~@YdA{KhWG^G`@C`@C`@A`@?^?`@B^DXlDpJTd@vBnGrAlEl@rBHJJJJHLHLFLDNDxFRP?P@vEFXB|@TLFNLh@h@Pf@jAtDVh@BDVx@`@pAr@|BL`A?`AU`AwArCWf@Wf@GLCD_@x@wAhCMbACn@?JDp@Dh@BZbDhJ^h@NANDLHHLFN?D@LALADCHCF?NBLHTVv@nBtGn@jBTp@Z~@f@vAj@bBx@tBd@vARj@DLLNHHHDX@P@ZFNJ~@j@PPR^HRDT@\\E^GTMRUXYT?P?TDLPd@`ApCfB~EvAjEvAzD~@zCDNJTJN@@PLDBDAN@H@HBFDFDFFDHBHBHBL?L?LCLCJGJEHEB@N@NFP`@nA~@lC`AdCf@dBxAhExAdEbAxCRn@JZJHJBT?RDZVFHJb@?NCTFRHJTNv@f@XPNJh@^p@d@\\Tp@d@dBhADBbAp@dBlAjAv@lAz@@@d@\\h@`@^V@@HDHUJg@FMJQBJN`ANbA@~@?BCnACfAEjE?ZFLBHHLTFPLJRDP?RCRGNB\\BP@FBRLt@RjAJ~@HbBDj@?t@CXKbAQhAOdASv@Ef@ADAT@VHR@TCRKPOJM@OFKJIPELK^a@nAy@vC]bAQr@EZCl@D^BP?PEN?LILE@IFE@KHSNOLO\\w@bCiBhGG^AP@PBF@PAPGNMJKDM?IHIHGLADABc@hBkAxDwCtJIVKZ}AfFUt@ILYl@a@v@e@h@_@Za@Zo@f@CHAL?RtB`F`LlWHPv@jBbBzDd@fAP`@fAhCRb@`BtDvA|CNZt@bBpAzC^v@d@jAJRBJRd@Th@`AzBd@fA`DjIj@nAd@lATh@l@zAb@nA`A`DPf@^jAxBfHFNbBhF~BpHd@bBLh@V|@x@~CPr@nAhEtAlEFPFP@DzE|OnBrGV|@t@pBXj@Vb@HNJPj@|@vBbCdAfAnAbA^R`AXxCl@\\FxDn@`QtCtAT~Ev@hCr@`AVnDbAhB`AzCvCv@rAh@hBtCnJhCxGzDpI`BjCn@rAR^^f@b@f@`@\\d@^d@Xn@Zf@Rd@Ld@L`@Fl@Fr@Dr@BtADbDDv@BL?l@@zc@fAjFPxAVvVdFdFvAfGdB`Bv@bAp@z@z@jDrEl@v@dLxO~KpObAxAjAjBxAhDz@bCpBhFfAnCr@bAdAdAnA|@|@d@bC|@hLbErIdDXRn@b@z@z@|@~@t@tAtFbNzAnDrD|IzBnF`B~D|CpHfAdBf@d@`A|@|BxAJH~BzArC~A`I|EbDlBTLrDtBnBlAlQnKnL|GdQnKtAr@t@G`@TrEpCnAr@b@z@jFdClB`@`CLv@Cd@c@p@s@jAm@lCqA`Cy@tFsBt@SrAWl@G\\?z@Rp@E~@GdDBtDp@LDRH`Ab@HBJF|CpBb@ZzC`C`@Z^Z^V\\Xd@H\\PTLn@f@d@\\PLPNPL`BrAfAZj@P~CnCnBbBtAjATNh@LRCPKp@qAR_@Zk@d@{@Ta@^o@zAkCTc@NWFMd@u@FIVSFEHXRKJCZCh@@l@LzQfI~@^~CrA~@^JDVJ~@\\ZLVBV?d@I`@Uf@m@Vg@Tg@d@{@l@mA~B_FJYjA}Bf@cA`@y@FITa@`A_BHMXW`@]PKt@[JCTEZG@?\\ARC~ADzBNnCNjEf@`L~Bb@HnDn@hALhA?L?dBCnBC~@AB?~D@~BAzDClDEpCC`@A\\@v@?\\Of@A`G?d@@zAGlCYjCW\\EpAMFANAF`AAf@C|@F`KArE?`G@rF@jA?N?vB?v@AzBA|@?J?tA?X?nA?R@vD?`@?P?hDZ?rA?fC@R?lB@x@Id@KHCFC\\QpAo@\\Sh@[VUHMLQbAqBl@uAP_@^cA`BqDFIh@_A\\UNGt@Y",
-            "employees": [
+            "employees": [             // Stops IN pickup/drop order. Always consistent with "order" and "eta".
                 {
-                    "empCode": "WXYZ5416",
-                    "gender": "F",
-                    "isMedical": false,
-                    "isPWD": false,
-                    "isNMT": false,
-                    "isOOB": true,
-                    "eta": "04:12 PM",
-                    "order": 1,
-                    "geoX": 77.4649,
-                    "geoY": 28.6625
+                    "empCode": "WXYZ5416",  // Employee ID.
+                    "gender": "F",          // "M" / "F".
+                    "isMedical": false,     // Echoed attribute.
+                    "isPWD": false,         // Echoed attribute.
+                    "isNMT": false,         // Echoed attribute.
+                    "isOOB": true,          // Echoed attribute.
+                    "eta": "04:12 PM",      // Pickup time (pickup trip) or drop time (dropoff trip) for this stop.
+                    "order": 1,             // Stop sequence (1 = first pickup / first drop).
+                    "geoX": 77.4649,        // Home LONGITUDE.
+                    "geoY": 28.6625         // Home LATITUDE.
                 },
                 {
                     "empCode": "WXYZ5041",
@@ -5259,19 +5259,19 @@
             ]
         }
     ],
-    "unroutedEmployees": [],
-    "fleetUtilization": {
-        "totalVehiclesUsed": 71,
-        "totalVehiclesAvailable": 152,
-        "overallUtilization": 46.7,
-        "byType": [
+    "unroutedEmployees": [],               // Anyone who could not be routed (e.g. missing coordinates). Same employee shape as input. Should be empty.
+    "fleetUtilization": {                  // Vehicles used vs available.
+        "totalVehiclesUsed": 71,           // Total cabs assigned across all routes.
+        "totalVehiclesAvailable": 152,     // Total cabs available across all types (sum of fleet counts).
+        "overallUtilization": 46.7,        // % of total fleet used. [old-only field]
+        "byType": [                        // Breakdown per vehicle type.
             {
-                "type": "s",
-                "capacity": 4,
-                "total": 82,
-                "used": 37,
-                "remaining": 45,
-                "utilization": 45.1
+                "type": "s",               // Vehicle size code.
+                "capacity": 4,             // Seats per vehicle of this type.
+                "total": 82,               // How many were available.
+                "used": 37,                // How many were assigned.
+                "remaining": 45,           // total - used.
+                "utilization": 45.1        // used / total, as a %.
             },
             {
                 "type": "m",
@@ -5291,15 +5291,15 @@
             }
         ]
     },
-    "routeConsolidation": {
-        "enabled": true,
-        "mergedRouteCount": 7,
-        "routesSavedByConsolidation": 7,
-        "mergeDetails": [
+    "routeConsolidation": {                // [old-only] Report of small routes merged together. v3 does NOT emit this block.
+        "enabled": true,                   // Whether consolidation ran.
+        "mergedRouteCount": 7,             // How many routes were merged away.
+        "routesSavedByConsolidation": 7,   // Net reduction in route count.
+        "mergeDetails": [                  // Per-merge audit trail.
             {
-                "mergedRoute": "GLOBAL_batch_2_2fa2703f-dd95-4640-85bb-5055da217738",
-                "intoRoute": "GLOBAL_batch_1_2626487a-ff92-483e-ba03-75fbbe863505",
-                "employeeCount": 2
+                "mergedRoute": "GLOBAL_batch_2_2fa2703f-dd95-4640-85bb-5055da217738",  // The route that was absorbed.
+                "intoRoute": "GLOBAL_batch_1_2626487a-ff92-483e-ba03-75fbbe863505",    // The route it was merged into.
+                "employeeCount": 2         // Employees moved in this merge.
             },
             {
                 "mergedRoute": "GLOBAL_batch_6_461cb77b-bf74-4d39-a4ce-5bfc8f858977",
@@ -5333,5 +5333,11 @@
             }
         ]
     },
-    "apiVersion": "v2"
+    "apiVersion": "v2"                     // Engine API version tag.
+    // ── Version differences ──────────────────────────────────────────────────
+    // v3 (current engine) ADDS per route:  "deviationExceeded" (CDC band breach flag),
+    //                                       "detourRatio" (route linearity metric).
+    // v3 DROPS:                            the "routeConsolidation" block; uses "v3_<uuid>"
+    //                                       uniqueKeys and real zone labels (not "GLOBAL"/"GLOBAL_batch_").
+    // Everything else has the same shape across versions.
 }
